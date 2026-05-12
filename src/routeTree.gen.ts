@@ -9,38 +9,104 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProspectsRouteImport } from './routes/prospects'
+import { Route as PipelineRouteImport } from './routes/pipeline'
+import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
 
+const ProspectsRoute = ProspectsRouteImport.update({
+  id: '/prospects',
+  path: '/prospects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PipelineRoute = PipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OutreachRoute = OutreachRouteImport.update({
+  id: '/outreach',
+  path: '/outreach',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProspectsIdRoute = ProspectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ProspectsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/outreach': typeof OutreachRoute
+  '/pipeline': typeof PipelineRoute
+  '/prospects': typeof ProspectsRouteWithChildren
+  '/prospects/$id': typeof ProspectsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/outreach': typeof OutreachRoute
+  '/pipeline': typeof PipelineRoute
+  '/prospects': typeof ProspectsRouteWithChildren
+  '/prospects/$id': typeof ProspectsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/outreach': typeof OutreachRoute
+  '/pipeline': typeof PipelineRoute
+  '/prospects': typeof ProspectsRouteWithChildren
+  '/prospects/$id': typeof ProspectsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/outreach' | '/pipeline' | '/prospects' | '/prospects/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/outreach' | '/pipeline' | '/prospects' | '/prospects/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/outreach'
+    | '/pipeline'
+    | '/prospects'
+    | '/prospects/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OutreachRoute: typeof OutreachRoute
+  PipelineRoute: typeof PipelineRoute
+  ProspectsRoute: typeof ProspectsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/prospects': {
+      id: '/prospects'
+      path: '/prospects'
+      fullPath: '/prospects'
+      preLoaderRoute: typeof ProspectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pipeline': {
+      id: '/pipeline'
+      path: '/pipeline'
+      fullPath: '/pipeline'
+      preLoaderRoute: typeof PipelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/outreach': {
+      id: '/outreach'
+      path: '/outreach'
+      fullPath: '/outreach'
+      preLoaderRoute: typeof OutreachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +114,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prospects/$id': {
+      id: '/prospects/$id'
+      path: '/$id'
+      fullPath: '/prospects/$id'
+      preLoaderRoute: typeof ProspectsIdRouteImport
+      parentRoute: typeof ProspectsRoute
+    }
   }
 }
 
+interface ProspectsRouteChildren {
+  ProspectsIdRoute: typeof ProspectsIdRoute
+}
+
+const ProspectsRouteChildren: ProspectsRouteChildren = {
+  ProspectsIdRoute: ProspectsIdRoute,
+}
+
+const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
+  ProspectsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OutreachRoute: OutreachRoute,
+  PipelineRoute: PipelineRoute,
+  ProspectsRoute: ProspectsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
