@@ -171,7 +171,7 @@ function SettingsPage() {
             rows={3}
             value={objection}
             onChange={(e) => setObjection(e.target.value)}
-            placeholder='Paste the prospect objection. e.g. "I already tried outbound, didn\'t work."'
+            placeholder={`Paste the prospect objection. e.g. "I already tried outbound, didn't work."`}
           />
           {obAnswer && (
             <pre className="mt-3 whitespace-pre-wrap rounded-md bg-surface p-3 text-sm leading-relaxed">{obAnswer}</pre>
