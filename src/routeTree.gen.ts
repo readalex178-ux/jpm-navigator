@@ -9,12 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrainingRouteImport } from './routes/training'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProspectsRouteImport } from './routes/prospects'
 import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as OutreachRouteImport } from './routes/outreach'
+import { Route as KpiRouteImport } from './routes/kpi'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
 
+const TrainingRoute = TrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProspectsRoute = ProspectsRouteImport.update({
   id: '/prospects',
   path: '/prospects',
@@ -30,6 +43,11 @@ const OutreachRoute = OutreachRouteImport.update({
   path: '/outreach',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KpiRoute = KpiRouteImport.update({
+  id: '/kpi',
+  path: '/kpi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,49 +61,94 @@ const ProspectsIdRoute = ProspectsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/kpi': typeof KpiRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
+  '/settings': typeof SettingsRoute
+  '/training': typeof TrainingRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/kpi': typeof KpiRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
+  '/settings': typeof SettingsRoute
+  '/training': typeof TrainingRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/kpi': typeof KpiRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
+  '/settings': typeof SettingsRoute
+  '/training': typeof TrainingRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/outreach' | '/pipeline' | '/prospects' | '/prospects/$id'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/outreach' | '/pipeline' | '/prospects' | '/prospects/$id'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/kpi'
     | '/outreach'
     | '/pipeline'
     | '/prospects'
+    | '/settings'
+    | '/training'
+    | '/prospects/$id'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/kpi'
+    | '/outreach'
+    | '/pipeline'
+    | '/prospects'
+    | '/settings'
+    | '/training'
+    | '/prospects/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/kpi'
+    | '/outreach'
+    | '/pipeline'
+    | '/prospects'
+    | '/settings'
+    | '/training'
     | '/prospects/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  KpiRoute: typeof KpiRoute
   OutreachRoute: typeof OutreachRoute
   PipelineRoute: typeof PipelineRoute
   ProspectsRoute: typeof ProspectsRouteWithChildren
+  SettingsRoute: typeof SettingsRoute
+  TrainingRoute: typeof TrainingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/training': {
+      id: '/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prospects': {
       id: '/prospects'
       path: '/prospects'
@@ -105,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/outreach'
       fullPath: '/outreach'
       preLoaderRoute: typeof OutreachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kpi': {
+      id: '/kpi'
+      path: '/kpi'
+      fullPath: '/kpi'
+      preLoaderRoute: typeof KpiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -138,9 +208,12 @@ const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  KpiRoute: KpiRoute,
   OutreachRoute: OutreachRoute,
   PipelineRoute: PipelineRoute,
   ProspectsRoute: ProspectsRouteWithChildren,
+  SettingsRoute: SettingsRoute,
+  TrainingRoute: TrainingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
