@@ -112,6 +112,13 @@ export const useStore = create<State & Actions>()(
       commissions: [],
       settings: DEFAULT_SETTINGS,
       hydrated: false,
+      pairingCode: "",
+      extensionConnected: false,
+      extensionLastSeen: null,
+      linkedinThreads: {},
+      linkedinProfiles: {},
+      threadProspectMap: {},
+      vnScripts: [],
 
       addProspect: (p) => {
         const prospect: Prospect = {
