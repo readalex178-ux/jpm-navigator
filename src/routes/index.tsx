@@ -21,8 +21,26 @@ export const Route = createFileRoute("/")({
 function DashboardPage() {
   const [open, setOpen] = useState(false);
   const prospects = useStore((s) => s.prospects);
-  const today = useStore((s) => s.getKpiDay(todayStr()));
+  const kpiDays = useStore((s) => s.kpiDays);
   const commissions = useStore((s) => s.commissions);
+
+  const today = useMemo(() => {
+    const date = todayStr();
+    return (
+      kpiDays.find((entry) => entry.date === date) ?? {
+        date,
+        vnSent: 0,
+        connectionsSent: 0,
+        replies: 0,
+        activeConvos: 0,
+        calendarsSent: 0,
+        booked: 0,
+        shows: 0,
+        hours: 0,
+        byPlatform: {},
+      }
+    );
+  }, [kpiDays]);
 
   const replyRate = today.vnSent > 0 ? Math.round((today.replies / today.vnSent) * 100) : 0;
   const activeConvos = prospects.filter((p) =>
