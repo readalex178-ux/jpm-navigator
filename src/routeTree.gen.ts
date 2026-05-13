@@ -14,6 +14,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProspectsRouteImport } from './routes/prospects'
 import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as OutreachRouteImport } from './routes/outreach'
+import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as KpiRouteImport } from './routes/kpi'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
@@ -43,6 +44,11 @@ const OutreachRoute = OutreachRouteImport.update({
   path: '/outreach',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LinkedinRoute = LinkedinRouteImport.update({
+  id: '/linkedin',
+  path: '/linkedin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KpiRoute = KpiRouteImport.update({
   id: '/kpi',
   path: '/kpi',
@@ -62,6 +68,7 @@ const ProspectsIdRoute = ProspectsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kpi': typeof KpiRoute
+  '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kpi': typeof KpiRoute
+  '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/kpi': typeof KpiRoute
+  '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/kpi'
+    | '/linkedin'
     | '/outreach'
     | '/pipeline'
     | '/prospects'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/kpi'
+    | '/linkedin'
     | '/outreach'
     | '/pipeline'
     | '/prospects'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/kpi'
+    | '/linkedin'
     | '/outreach'
     | '/pipeline'
     | '/prospects'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   KpiRoute: typeof KpiRoute
+  LinkedinRoute: typeof LinkedinRoute
   OutreachRoute: typeof OutreachRoute
   PipelineRoute: typeof PipelineRoute
   ProspectsRoute: typeof ProspectsRouteWithChildren
@@ -170,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OutreachRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/linkedin': {
+      id: '/linkedin'
+      path: '/linkedin'
+      fullPath: '/linkedin'
+      preLoaderRoute: typeof LinkedinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kpi': {
       id: '/kpi'
       path: '/kpi'
@@ -209,6 +229,7 @@ const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KpiRoute: KpiRoute,
+  LinkedinRoute: LinkedinRoute,
   OutreachRoute: OutreachRoute,
   PipelineRoute: PipelineRoute,
   ProspectsRoute: ProspectsRouteWithChildren,
@@ -218,3 +239,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
