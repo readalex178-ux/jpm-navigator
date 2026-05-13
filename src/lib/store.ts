@@ -208,11 +208,36 @@ export const useStore = create<State & Actions>()(
 
       updateSettings: (patch) => set({ settings: { ...get().settings, ...patch } }),
 
+      setPairingCode: (code) => set({ pairingCode: code }),
+      setExtensionConnected: (connected) =>
+        set({ extensionConnected: connected, extensionLastSeen: connected ? now() : get().extensionLastSeen }),
+      upsertLinkedinThread: (t) =>
+        set({
+          linkedinThreads: { ...get().linkedinThreads, [t.threadId]: t },
+          extensionLastSeen: now(),
+        }),
+      upsertLinkedinProfile: (p) =>
+        set({
+          linkedinProfiles: { ...get().linkedinProfiles, [p.profileUrl]: p },
+          extensionLastSeen: now(),
+        }),
+      linkThreadToProspect: (threadId, prospectId) =>
+        set({ threadProspectMap: { ...get().threadProspectMap, [threadId]: prospectId } }),
+      addVnScript: (s) => {
+        const script: VNScript = { id: uid(), ...s };
+        set({ vnScripts: [script, ...get().vnScripts] });
+        return script;
+      },
+      updateVnScript: (id, patch) =>
+        set({ vnScripts: get().vnScripts.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
+      removeVnScript: (id) =>
+        set({ vnScripts: get().vnScripts.filter((x) => x.id !== id) }),
+
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
-        const { prospects, kpiDays, scripts, training, commissions, settings } = get();
+        const { prospects, kpiDays, scripts, training, commissions, settings, vnScripts } = get();
         return JSON.stringify(
-          { prospects, kpiDays, scripts, training, commissions, settings, exportedAt: now() },
+          { prospects, kpiDays, scripts, training, commissions, settings, vnScripts, exportedAt: now() },
           null,
           2,
         );
