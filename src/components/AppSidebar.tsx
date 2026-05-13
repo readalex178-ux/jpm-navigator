@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Settings as SettingsIcon,
   Flame,
+  Linkedin,
 } from "lucide-react";
 import {
   Sidebar,
@@ -22,12 +23,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { CommissionStrip } from "./CommissionStrip";
+import { useStore } from "@/lib/store";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Prospects", url: "/prospects", icon: Users },
   { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
   { title: "Outreach", url: "/outreach", icon: MessageSquare },
+  { title: "LinkedIn", url: "/linkedin", icon: Linkedin },
   { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
   { title: "Training", url: "/training", icon: GraduationCap },
   { title: "Settings", url: "/settings", icon: SettingsIcon },
