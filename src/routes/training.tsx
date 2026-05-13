@@ -134,6 +134,8 @@ function TrainingPage() {
               </ul>
             )}
           </Section>
+
+          <ScriptVault />
         </div>
 
         <div>
@@ -204,5 +206,66 @@ function TrainingPage() {
         </div>
       </PageBody>
     </>
+  );
+}
+
+function ScriptVault() {
+  const scripts = useStore((s) => s.vnScripts);
+  const updateVnScript = useStore((s) => s.updateVnScript);
+  const removeVnScript = useStore((s) => s.removeVnScript);
+  if (!scripts.length) {
+    return (
+      <Section title="Script Vault">
+        <div className="text-xs text-muted-foreground">
+          AI-generated VN scripts and replies you save from the LinkedIn Co-Pilot show up here.
+        </div>
+      </Section>
+    );
+  }
+  return (
+    <Section title={`Script Vault (${scripts.length})`}>
+      <ul className="space-y-2">
+        {scripts.slice(0, 12).map((s) => (
+          <li key={s.id} className="rounded-md border border-border bg-surface p-2 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate font-medium">{s.prospectName}</span>
+              <Badge variant="outline" className="text-[9px]">{s.scenario}</Badge>
+            </div>
+            <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap text-[11px] text-muted-foreground">
+              {s.text}
+            </pre>
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px]"
+                onClick={() => {
+                  navigator.clipboard.writeText(s.text);
+                  toast.success("Copied");
+                }}
+              >
+                Copy
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px]"
+                onClick={() => updateVnScript(s.id, { used: !s.used })}
+              >
+                {s.used ? "✓ Used" : "Mark used"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px] text-destructive"
+                onClick={() => removeVnScript(s.id)}
+              >
+                Delete
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Section>
   );
 }
