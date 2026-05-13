@@ -75,6 +75,16 @@ type Actions = {
 
   updateSettings: (patch: Partial<Settings>) => void;
 
+  // LinkedIn / extension
+  setPairingCode: (code: string) => void;
+  setExtensionConnected: (connected: boolean) => void;
+  upsertLinkedinThread: (t: ScrapedThread) => void;
+  upsertLinkedinProfile: (p: ScrapedProfile) => void;
+  linkThreadToProspect: (threadId: string, prospectId: string) => void;
+  addVnScript: (s: Omit<VNScript, "id">) => VNScript;
+  updateVnScript: (id: string, patch: Partial<VNScript>) => void;
+  removeVnScript: (id: string) => void;
+
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
 };
