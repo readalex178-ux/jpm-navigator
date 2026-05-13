@@ -15,6 +15,19 @@ import {
   DEFAULT_SETTINGS,
   EMPTY_SIGNALS,
 } from "./btf/types";
+import type { ScrapedThread, ScrapedProfile } from "./extension/types";
+
+export type VNScript = {
+  id: string;
+  date: string;
+  prospectId?: string;
+  prospectName: string;
+  niche?: string;
+  scenario: string;
+  text: string;
+  used: boolean;
+  outcome?: "reply" | "booked" | "ghosted";
+};
 
 const uid = () => Math.random().toString(36).slice(2, 11);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -28,6 +41,14 @@ type State = {
   commissions: Commission[];
   settings: Settings;
   hydrated: boolean;
+  // LinkedIn extension bridge state
+  pairingCode: string;
+  extensionConnected: boolean;
+  extensionLastSeen: string | null;
+  linkedinThreads: Record<string, ScrapedThread>;
+  linkedinProfiles: Record<string, ScrapedProfile>;
+  threadProspectMap: Record<string, string>; // threadId -> prospectId
+  vnScripts: VNScript[];
 };
 
 type Actions = {
