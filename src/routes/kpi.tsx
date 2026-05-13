@@ -49,8 +49,26 @@ function KpiPage() {
 }
 
 function TodayTab() {
-  const day = useStore((s) => s.getKpiDay(todayStr()));
+  const kpiDays = useStore((s) => s.kpiDays);
   const upsert = useStore((s) => s.upsertKpiDay);
+
+  const day = useMemo(() => {
+    const date = todayStr();
+    return (
+      kpiDays.find((entry) => entry.date === date) ?? {
+        date,
+        vnSent: 0,
+        connectionsSent: 0,
+        replies: 0,
+        activeConvos: 0,
+        calendarsSent: 0,
+        booked: 0,
+        shows: 0,
+        hours: 0,
+        byPlatform: {},
+      }
+    );
+  }, [kpiDays]);
 
   const set = (patch: Partial<typeof day>) => upsert({ ...day, ...patch, date: todayStr() });
   const replyRate = day.vnSent ? Math.round((day.replies / day.vnSent) * 100) : 0;
@@ -218,11 +236,28 @@ function ScriptsTab() {
 
 function ReportTab({ kind }: { kind: "eod" | "eow" }) {
   const settings = useStore((s) => s.settings);
-  const day = useStore((s) => s.getKpiDay(todayStr()));
   const kpiDays = useStore((s) => s.kpiDays);
   const prospects = useStore((s) => s.prospects);
   const [out, setOut] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const day = useMemo(() => {
+    const date = todayStr();
+    return (
+      kpiDays.find((entry) => entry.date === date) ?? {
+        date,
+        vnSent: 0,
+        connectionsSent: 0,
+        replies: 0,
+        activeConvos: 0,
+        calendarsSent: 0,
+        booked: 0,
+        shows: 0,
+        hours: 0,
+        byPlatform: {},
+      }
+    );
+  }, [kpiDays]);
 
   const generate = async () => {
     setBusy(true);
