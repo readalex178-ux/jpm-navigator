@@ -1,0 +1,162 @@
+// BTF Setter OS — LinkedIn content script
+// Runs on linkedin.com. Watches the DOM for active conversations and the
+// open profile, scrapes structured data, sends to background worker.
+//
+// This is intentionally defensive — LinkedIn changes selectors often.
+// All selectors live below; if scraping breaks, patch SELECTORS first.
+
+(() => {
+  "use strict";
+
+  const SELECTORS = {
+    // Messaging
+    messagingThread: ".msg-conversations-container__convo-item",
+    activeConvoTitle: ".msg-thread__link-to-profile, .msg-entity-lockup__entity-title",
+    messageBubble: ".msg-s-event-listitem",
+    messageSenderName: ".msg-s-message-group__name",
+    messageBody: ".msg-s-event-listitem__body",
+    messageTimestamp: ".msg-s-message-list__time-heading, time",
+    selfHeader: ".global-nav__me-photo",
+    replyBox: ".msg-form__contenteditable",
+
+    // Profile
+    profileName: "h1",
+    profileHeadline: ".text-body-medium.break-words, .pv-text-details__left-panel h2",
+    profileAbout: "#about ~ * .display-flex .visually-hidden + span, .pv-shared-text-with-see-more span",
+    profileLocation: ".text-body-small.inline.t-black--light",
+  };
+
+  const log = (...a) => console.debug("[BTF]", ...a);
+
+  const getMyName = () => {
+    const meImg = document.querySelector(SELECTORS.selfHeader);
+    if (meImg && meImg.alt) return meImg.alt.trim();
+    return null;
+  };
+
+  const hashId = (s) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return Math.abs(h).toString(36);
+  };
+
+  const scrapeOpenThread = () => {
+    if (!location.pathname.startsWith("/messaging")) return null;
+
+    const titleEl = document.querySelector(SELECTORS.activeConvoTitle);
+    const participantName = titleEl ? titleEl.textContent.trim() : null;
+    if (!participantName) return null;
+
+    const bubbles = Array.from(document.querySelectorAll(SELECTORS.messageBubble));
+    if (bubbles.length === 0) return null;
+
+    const myName = getMyName();
+    let lastSender = "them";
+    const messages = [];
+
+    for (const b of bubbles) {
+      const nameEl = b.querySelector(SELECTORS.messageSenderName);
+      if (nameEl) {
+        const name = nameEl.textContent.trim();
+        lastSender = myName && name === myName ? "me" : "them";
+      }
+      const bodyEl = b.querySelector(SELECTORS.messageBody);
+      if (!bodyEl) continue;
+      const text = bodyEl.textContent.trim();
+      if (!text) continue;
+      const tsEl = b.querySelector(SELECTORS.messageTimestamp);
+      const timestamp = tsEl ? tsEl.textContent.trim() : new Date().toISOString();
+      messages.push({
+        id: hashId(text + timestamp),
+        sender: lastSender,
+        text,
+        timestamp,
+      });
+    }
+
+    const profileLinkEl = titleEl && titleEl.closest("a");
+    const profileUrl = profileLinkEl ? profileLinkEl.href : location.href;
+
+    return {
+      threadId: hashId(profileUrl),
+      participantName,
+      participantHeadline: undefined,
+      participantProfileUrl: profileUrl,
+      unread: false,
+      lastMessagePreview: messages.length ? messages[messages.length - 1].text.slice(0, 120) : undefined,
+      messages,
+      scrapedAt: new Date().toISOString(),
+    };
+  };
+
+  const scrapeOpenProfile = () => {
+    if (!location.pathname.startsWith("/in/")) return null;
+    const nameEl = document.querySelector(SELECTORS.profileName);
+    if (!nameEl) return null;
+    const name = nameEl.textContent.trim();
+    const headlineEl = document.querySelector(SELECTORS.profileHeadline);
+    const aboutEl = document.querySelector(SELECTORS.profileAbout);
+    const locEl = document.querySelector(SELECTORS.profileLocation);
+
+    return {
+      profileUrl: location.origin + location.pathname,
+      name,
+      headline: headlineEl ? headlineEl.textContent.trim() : undefined,
+      about: aboutEl ? aboutEl.textContent.trim() : undefined,
+      currentRole: headlineEl ? headlineEl.textContent.trim() : undefined,
+      location: locEl ? locEl.textContent.trim() : undefined,
+      recentActivity: [],
+      scrapedAt: new Date().toISOString(),
+    };
+  };
+
+  let lastSent = "";
+  const tick = () => {
+    try {
+      const thread = scrapeOpenThread();
+      if (thread && thread.messages.length) {
+        const sig = thread.threadId + ":" + thread.messages.length + ":" + (thread.messages.at(-1)?.id ?? "");
+        if (sig !== lastSent) {
+          lastSent = sig;
+          chrome.runtime.sendMessage({ kind: "scraped:thread", thread });
+          log("sent thread", thread.participantName, thread.messages.length);
+        }
+        return;
+      }
+      const profile = scrapeOpenProfile();
+      if (profile) {
+        const sig = "p:" + profile.profileUrl;
+        if (sig !== lastSent) {
+          lastSent = sig;
+          chrome.runtime.sendMessage({ kind: "scraped:profile", profile });
+          log("sent profile", profile.name);
+        }
+      }
+    } catch (e) {
+      console.warn("[BTF] scrape error", e);
+    }
+  };
+
+  // Insert text into active reply box on demand
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.kind === "insert:reply") {
+      const box = document.querySelector(SELECTORS.replyBox);
+      if (box) {
+        box.focus();
+        const p = document.createElement("p");
+        p.textContent = msg.text;
+        box.innerHTML = "";
+        box.appendChild(p);
+        box.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      }
+    }
+  });
+
+  const obs = new MutationObserver(() => {
+    clearTimeout(window.__btfTimer);
+    window.__btfTimer = setTimeout(tick, 600);
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+  setInterval(tick, 4000);
+  tick();
+})();

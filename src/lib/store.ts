@@ -15,6 +15,19 @@ import {
   DEFAULT_SETTINGS,
   EMPTY_SIGNALS,
 } from "./btf/types";
+import type { ScrapedThread, ScrapedProfile } from "./extension/types";
+
+export type VNScript = {
+  id: string;
+  date: string;
+  prospectId?: string;
+  prospectName: string;
+  niche?: string;
+  scenario: string;
+  text: string;
+  used: boolean;
+  outcome?: "reply" | "booked" | "ghosted";
+};
 
 const uid = () => Math.random().toString(36).slice(2, 11);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -28,6 +41,14 @@ type State = {
   commissions: Commission[];
   settings: Settings;
   hydrated: boolean;
+  // LinkedIn extension bridge state
+  pairingCode: string;
+  extensionConnected: boolean;
+  extensionLastSeen: string | null;
+  linkedinThreads: Record<string, ScrapedThread>;
+  linkedinProfiles: Record<string, ScrapedProfile>;
+  threadProspectMap: Record<string, string>; // threadId -> prospectId
+  vnScripts: VNScript[];
 };
 
 type Actions = {
@@ -53,6 +74,16 @@ type Actions = {
   removeCommission: (id: string) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
+
+  // LinkedIn / extension
+  setPairingCode: (code: string) => void;
+  setExtensionConnected: (connected: boolean) => void;
+  upsertLinkedinThread: (t: ScrapedThread) => void;
+  upsertLinkedinProfile: (p: ScrapedProfile) => void;
+  linkThreadToProspect: (threadId: string, prospectId: string) => void;
+  addVnScript: (s: Omit<VNScript, "id">) => VNScript;
+  updateVnScript: (id: string, patch: Partial<VNScript>) => void;
+  removeVnScript: (id: string) => void;
 
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
@@ -81,6 +112,13 @@ export const useStore = create<State & Actions>()(
       commissions: [],
       settings: DEFAULT_SETTINGS,
       hydrated: false,
+      pairingCode: "",
+      extensionConnected: false,
+      extensionLastSeen: null,
+      linkedinThreads: {},
+      linkedinProfiles: {},
+      threadProspectMap: {},
+      vnScripts: [],
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -170,11 +208,36 @@ export const useStore = create<State & Actions>()(
 
       updateSettings: (patch) => set({ settings: { ...get().settings, ...patch } }),
 
+      setPairingCode: (code) => set({ pairingCode: code }),
+      setExtensionConnected: (connected) =>
+        set({ extensionConnected: connected, extensionLastSeen: connected ? now() : get().extensionLastSeen }),
+      upsertLinkedinThread: (t) =>
+        set({
+          linkedinThreads: { ...get().linkedinThreads, [t.threadId]: t },
+          extensionLastSeen: now(),
+        }),
+      upsertLinkedinProfile: (p) =>
+        set({
+          linkedinProfiles: { ...get().linkedinProfiles, [p.profileUrl]: p },
+          extensionLastSeen: now(),
+        }),
+      linkThreadToProspect: (threadId, prospectId) =>
+        set({ threadProspectMap: { ...get().threadProspectMap, [threadId]: prospectId } }),
+      addVnScript: (s) => {
+        const script: VNScript = { id: uid(), ...s };
+        set({ vnScripts: [script, ...get().vnScripts] });
+        return script;
+      },
+      updateVnScript: (id, patch) =>
+        set({ vnScripts: get().vnScripts.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
+      removeVnScript: (id) =>
+        set({ vnScripts: get().vnScripts.filter((x) => x.id !== id) }),
+
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
-        const { prospects, kpiDays, scripts, training, commissions, settings } = get();
+        const { prospects, kpiDays, scripts, training, commissions, settings, vnScripts } = get();
         return JSON.stringify(
-          { prospects, kpiDays, scripts, training, commissions, settings, exportedAt: now() },
+          { prospects, kpiDays, scripts, training, commissions, settings, vnScripts, exportedAt: now() },
           null,
           2,
         );

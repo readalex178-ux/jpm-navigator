@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>BTF Setter OS</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: #0a0a0a;
+        color: #fafafa;
+        margin: 0;
+        padding: 16px;
+        width: 280px;
+      }
+      h1 { font-size: 14px; margin: 0 0 4px; letter-spacing: -0.01em; }
+      .sub { font-size: 11px; color: #888; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+      label { font-size: 11px; color: #aaa; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+      input {
+        width: 100%; padding: 8px 10px; box-sizing: border-box; background: #161616; color: #fafafa;
+        border: 1px solid #2a2a2a; border-radius: 6px; font-size: 14px; font-family: ui-monospace, monospace;
+        text-transform: uppercase; letter-spacing: 0.15em;
+      }
+      input:focus { outline: none; border-color: #f5a623; }
+      button {
+        width: 100%; margin-top: 10px; padding: 8px 10px; background: #f5a623; color: #0a0a0a;
+        border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;
+      }
+      button:hover { background: #ffb733; }
+      .status { margin-top: 12px; padding: 8px 10px; border-radius: 6px; background: #161616; font-size: 12px; color: #aaa; }
+      .ok { color: #4ade80; }
+      .footer { margin-top: 14px; font-size: 10px; color: #555; line-height: 1.5; }
+      a { color: #f5a623; }
+    </style>
+  </head>
+  <body>
+    <h1>BTF Setter OS</h1>
+    <div class="sub">LinkedIn Co-Pilot</div>
+
+    <label for="code">Pairing code</label>
+    <input id="code" maxlength="6" placeholder="ABC123" autocomplete="off" />
+    <button id="save">Pair with app</button>
+
+    <div class="status" id="status">Not paired yet.</div>
+
+    <div class="footer">
+      Open BTF Setter OS → LinkedIn page to get your pairing code.
+      Then open a LinkedIn conversation — the app will mirror it live.
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
