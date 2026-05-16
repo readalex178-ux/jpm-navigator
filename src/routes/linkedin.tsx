@@ -334,6 +334,13 @@ function LinkedInPage() {
             </div>
           ) : (
             <>
+              <AnalyzerStrip
+                analysis={analysis}
+                loading={analyzing}
+                error={analyzeError}
+                onRefresh={refreshAnalysis}
+                onUseDraft={useAnalyzerDraft}
+              />
               {activeProfile && (
                 <div className="mb-3 rounded-md bg-surface p-3 text-xs">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
