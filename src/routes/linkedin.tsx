@@ -120,6 +120,31 @@ function LinkedInPage() {
     ? prospects.find((p) => p.id === linkedProspectId)
     : undefined;
 
+  const {
+    analysis,
+    loading: analyzing,
+    error: analyzeError,
+    refresh: refreshAnalysis,
+  } = useThreadAnalysis(activeThread?.threadId ?? null);
+
+  const useAnalyzerDraft = (next: NextAction, text: string) => {
+    setDraft(text);
+    // pre-select the closest Co-Pilot action so manual regenerate matches
+    const map: Partial<Record<NextAction, LinkedinAction>> = {
+      send_connection: "connect",
+      voice_note_1: "vn",
+      voice_note_2: "vn",
+      text_followup: "followup",
+      breakup: "followup",
+      objection_response: "objection",
+      send_calendar_link: "reply",
+      book_call: "reply",
+    };
+    const mapped = map[next];
+    if (mapped) setAction(mapped);
+    toast.success("Draft loaded into Co-Pilot. Edit then Insert.");
+  };
+
   const generate = async () => {
     if (!activeThread && action !== "connect") {
       toast.error("Open a LinkedIn conversation first.");
