@@ -20,6 +20,10 @@ import { useStore, daysSince, todayStr } from "@/lib/store";
 import { listenFromExtension, postToExtension, generatePairingCode } from "@/lib/extension/bridge";
 import { ACTION_META, buildPrompt, type LinkedinAction } from "@/lib/ai/linkedinPrompts";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
+import { useThreadAnalysis } from "@/lib/ai/useThreadAnalysis";
+import { AnalyzerStrip } from "@/components/linkedin/AnalyzerStrip";
+import { InboxTriageDot, InboxTriageVerdict } from "@/components/linkedin/InboxTriageDot";
+import type { NextAction } from "@/lib/ai/analyzerSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
