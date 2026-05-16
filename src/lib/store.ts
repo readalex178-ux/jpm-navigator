@@ -16,6 +16,7 @@ import {
   EMPTY_SIGNALS,
 } from "./btf/types";
 import type { ScrapedThread, ScrapedProfile } from "./extension/types";
+import type { CachedAnalysis } from "./ai/analyzerSchema";
 
 export type VNScript = {
   id: string;
@@ -49,6 +50,7 @@ type State = {
   linkedinProfiles: Record<string, ScrapedProfile>;
   threadProspectMap: Record<string, string>; // threadId -> prospectId
   vnScripts: VNScript[];
+  analyses: Record<string, CachedAnalysis>; // threadId -> latest analysis
 };
 
 type Actions = {
@@ -84,6 +86,8 @@ type Actions = {
   addVnScript: (s: Omit<VNScript, "id">) => VNScript;
   updateVnScript: (id: string, patch: Partial<VNScript>) => void;
   removeVnScript: (id: string) => void;
+  upsertAnalysis: (a: CachedAnalysis) => void;
+  clearAnalysis: (threadId: string) => void;
 
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
@@ -119,6 +123,7 @@ export const useStore = create<State & Actions>()(
       linkedinProfiles: {},
       threadProspectMap: {},
       vnScripts: [],
+      analyses: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -232,6 +237,13 @@ export const useStore = create<State & Actions>()(
         set({ vnScripts: get().vnScripts.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       removeVnScript: (id) =>
         set({ vnScripts: get().vnScripts.filter((x) => x.id !== id) }),
+      upsertAnalysis: (a) =>
+        set({ analyses: { ...get().analyses, [a.threadId]: a } }),
+      clearAnalysis: (threadId) => {
+        const next = { ...get().analyses };
+        delete next[threadId];
+        set({ analyses: next });
+      },
 
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
