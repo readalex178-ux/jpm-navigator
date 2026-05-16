@@ -74,7 +74,7 @@ export function useThreadAnalysis(threadId: string | null | undefined) {
           });
           // Sync to linked prospect
           if (prospect) {
-            setBant(prospect.id, res.analysis.bantSuggestion);
+            setBant(prospect.id, res.analysis.bantSuggestion as typeof prospect.bant);
             setQualScore(prospect.id, res.analysis.qualScoreSuggestion);
             if (res.analysis.market && !prospect.niche) {
               updateProspect(prospect.id, { niche: res.analysis.market });
