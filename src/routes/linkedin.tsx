@@ -20,6 +20,10 @@ import { useStore, daysSince, todayStr } from "@/lib/store";
 import { listenFromExtension, postToExtension, generatePairingCode } from "@/lib/extension/bridge";
 import { ACTION_META, buildPrompt, type LinkedinAction } from "@/lib/ai/linkedinPrompts";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
+import { useThreadAnalysis } from "@/lib/ai/useThreadAnalysis";
+import { AnalyzerStrip } from "@/components/linkedin/AnalyzerStrip";
+import { InboxTriageDot, InboxTriageVerdict } from "@/components/linkedin/InboxTriageDot";
+import type { NextAction } from "@/lib/ai/analyzerSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +119,31 @@ function LinkedInPage() {
   const linkedProspect = linkedProspectId
     ? prospects.find((p) => p.id === linkedProspectId)
     : undefined;
+
+  const {
+    analysis,
+    loading: analyzing,
+    error: analyzeError,
+    refresh: refreshAnalysis,
+  } = useThreadAnalysis(activeThread?.threadId ?? null);
+
+  const useAnalyzerDraft = (next: NextAction, text: string) => {
+    setDraft(text);
+    // pre-select the closest Co-Pilot action so manual regenerate matches
+    const map: Partial<Record<NextAction, LinkedinAction>> = {
+      send_connection: "connect",
+      voice_note_1: "vn",
+      voice_note_2: "vn",
+      text_followup: "followup",
+      breakup: "followup",
+      objection_response: "objection",
+      send_calendar_link: "reply",
+      book_call: "reply",
+    };
+    const mapped = map[next];
+    if (mapped) setAction(mapped);
+    toast.success("Draft loaded into Co-Pilot. Edit then Insert.");
+  };
 
   const generate = async () => {
     if (!activeThread && action !== "connect") {
@@ -248,7 +277,10 @@ function LinkedInPage() {
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate font-medium">{t.participantName}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <InboxTriageDot threadId={t.threadId} />
+                          <span className="truncate font-medium">{t.participantName}</span>
+                        </span>
                         {linked && (
                           <Badge variant="outline" className="text-[9px]">
                             linked
@@ -258,6 +290,7 @@ function LinkedInPage() {
                       <div className="truncate text-xs text-muted-foreground">
                         {t.lastMessagePreview ?? "—"}
                       </div>
+                      <InboxTriageVerdict threadId={t.threadId} />
                       <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
                         {t.messages.length} msg
                       </div>
@@ -301,6 +334,13 @@ function LinkedInPage() {
             </div>
           ) : (
             <>
+              <AnalyzerStrip
+                analysis={analysis}
+                loading={analyzing}
+                error={analyzeError}
+                onRefresh={refreshAnalysis}
+                onUseDraft={useAnalyzerDraft}
+              />
               {activeProfile && (
                 <div className="mb-3 rounded-md bg-surface p-3 text-xs">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">

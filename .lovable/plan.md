@@ -1,127 +1,90 @@
-# BTF Setter OS — Build Plan
+## AI Analyzer for LinkedIn Co-Pilot
 
-A purpose-built CRM and AI co-pilot for appointment setters running the Behind the Funnel (JPM Media) offer. Single-operator app, dark theme, localStorage-only, AI calls direct from browser to Groq/OpenAI/OpenRouter/LM Studio.
+Grounded in the BTF playbook you just shared (voice-first, Master Script, 3-part conversation flow, qualification 4-criteria, objection map, tone-matching rules). The analyzer codifies that doc as the AI's brain — so it doesn't just generate messages, it tells you **where the prospect is, what they need next, and gives you the script ready to record/send.**
 
-## Scope
+### What it does
 
-7 pages with left-sidebar nav: Dashboard, Prospects, Pipeline, Outreach, KPI Tracker, Training, Settings. Plus an always-visible commission tracker.
+For every LinkedIn thread + profile mirrored by the extension, the analyzer returns:
 
-## Design System
+1. **Prospect Read**
+   - ICP match: Under-Monetised Expert? (green/yellow/red)
+   - Market bucket: AI Consultant · AI Educator · Community Builder · Fractional Exec · Coach · Other
+   - One specific personalisation hook pulled from their profile/posts (the "60 seconds of research" line)
 
-- Background `#0a0a0a`, surface `#111`, border `#1f1f1f`, text white, accent orange/amber `#f5a623`
-- Headings: Space Grotesk (loaded via Google Fonts in root). Body: Inter
-- Tokens defined in `src/styles.css` (oklch), semantic only — no raw color classes in components
-- Card-heavy layout, subtle borders, generous spacing, monospace for numbers/KPIs
-- Lucide icons, Recharts for KPI charts
+2. **Qualification (BTF 4-criteria)**
+   - Decision Maker · Has Offer · Earning Something · Wants More — each scored 0/1/unknown
+   - Overall: Qualified / Needs more convo / Disqualify (with reason)
 
-## Routes (TanStack file-based)
+3. **Conversation Stage**
+   - Where in the BTF sequence: Connection sent · Accepted (no VN yet) · VN1 sent · Replied (voice) · Replied (text) · 2nd VN due · Day 7 follow-up due · Day 12 final text due · Objection raised · Ready to book · Booked · Ghost / break-up
+   - Days since last touch + which step the playbook says comes next
 
+4. **Tone & Format Recommendation**
+   - Voice note vs text (applies the "two VNs then match" rule automatically)
+   - Energy match (their last reply's tone)
+
+5. **Next Move + Ready-to-Use Output**
+   - One recommended action: `voiceNote1` · `voiceNote2` · `textFollowup` · `breakup` · `objectionResponse` · `sendCalendarLink` · `bookCall` · `disqualify`
+   - The actual script — built from the Master Script template with the right market variation (trust line, pain line, industry word) swapped in, ≤150 words, ready to record
+   - For objections: detects which one (time/system/cost/sales call/not interested/send info) and returns the BTF-approved rebuttal
+   - For VN scripts: includes pacing cues `[pause]`, `[smile]`, `[lower energy]`
+
+6. **Confidence + Reasoning** — short "why this move" so you can override intelligently
+
+### Where it shows up
+
+**(a) Inbox triage strip** — each thread in the left pane gets:
+- colored dot (🟢 hot / 🟡 warm / 🔴 cold / ⚫ disqualify)
+- one-line verdict ("Replied in text — send VN2", "Day 7 — follow-up overdue", "Objection: cost — rebuttal ready", "Ready to book — send link")
+- so you can work top-down without opening every thread
+
+**(b) Analyzer panel** at the top of the Conversation pane:
+```text
+Market: AI Educator · ICP: Green · Qual: 3/4 (no budget signal)
+Stage: Replied in text after VN1 · Tone: warm, curious
+Next move: Send VN2 (still voice — first text reply)
+[Use this draft ▾]  [Regenerate]  [Mark done]
 ```
-src/routes/
-  __root.tsx                 # SidebarProvider + AppSidebar + Outlet + commission strip
-  index.tsx                  # Dashboard
-  prospects.tsx              # Prospect list + add/edit drawer
-  pipeline.tsx               # Kanban
-  outreach.tsx               # Active conversations + AI next action
-  kpi.tsx                    # Tabs: Today / Weekly / Scripts / EOD / EOW
-  training.tsx               # Roleplay scenarios + chat
-  settings.tsx               # AI config, BTF profile, export
-  api/ai.ts                  # Optional pass-through (kept client-side per spec)
-```
 
-## Data Model (localStorage, single JSON blob `btf-setter-os:v1`)
+**(c) Co-Pilot panel** auto-pre-fills with the analyzer's recommended action + draft. You can still flip to any other action manually (your existing 5 buttons stay).
 
-- `prospects[]`: id, name, profileUrl, platform, niche, bio, leadType, tier, stage, qualScore, buyingSignals{}, bant{need,timeline,authority,budget}, activities[], vnLog[], createdAt, stageEnteredAt, lastTouchAt
-- `kpiDays[]`: date, vnSent, connectionsSent, replies, activeConvos, calendarsSent, booked, shows, hours, byPlatform{}
-- `scripts[]`: variationId, market, niche, replied, booked, sentAt
-- `trainingSessions[]`: scenarioId, transcript, grade, feedback, frameworkScore, date
-- `settings`: aiProvider, baseUrl, model, apiKey, name, linkedinUrl, igHandle, calendarLink, monthlyTarget
-- `commissions[]`: prospectId, tier, amount, closedAt
+**(d) Auto Prospect sync** — if the thread isn't linked, the analyzer creates a Prospect with the right market/niche/stage/BANT/qualScore and logs an Activity. If it is linked, it patches stage + bant + qualScore + lastTouchAt and logs the analysis as an Activity so it flows into your KPI page and pipeline.
 
-Wrapped in `useLocalStorage` hook + Zustand store for ergonomics. All mutations go through store actions; auto-persist on change.
+### When it runs
 
-## Page Specs
+- **Auto** when the extension pushes a thread whose `lastMessageAt` changed since the last analysis (debounced ~1.5s)
+- **Manual** "Analyze" button per thread, "Analyze all" on the Inbox
+- **Cached** by `threadId + lastMessageAt` in the Zustand store so re-opens are free and we don't re-bill the gateway
 
-**Dashboard** — Stat row (VNs sent, replies, reply %, calls booked, active convos). Hot Prospects panel (sort by qualScore desc, recent activity). Quick action buttons (open Add Prospect drawer, Log Activity modal, link to Pipeline). Commission strip (today projected). Weekly minimum progress bars (LinkedIn 4, IG 6).
+### Technical implementation
 
-**Prospects** — Search + filter chips (platform, stage, niche, tier). Card grid. Card: name, platform emoji, niche, stage chip, days-since-touch, leadType badge, tier badge, score/100, green/red flag dot derived from buying signals count. Row actions: Log Activity, Move Stage (popover), AI Next Action. Add/Edit Drawer with full form including buying-signal checkboxes.
+- **Server function**: `src/lib/ai/linkedinAnalyzer.functions.ts` — `createServerFn({ method: "POST" })` with Zod `inputValidator` (thread + profile + prospect + settingsContext) and a `handler` that calls Lovable AI Gateway directly via `fetch` to `https://ai.gateway.lovable.dev/v1/chat/completions` using `process.env.LOVABLE_API_KEY`. No SDK install needed.
+- **Model**: `google/gemini-3-flash-preview` (fast, cheap, accurate enough for classification + short generation). Falls back to `google/gemini-2.5-flash` if 429.
+- **Structured output**: JSON mode + a strict Zod schema (`src/lib/ai/analyzerSchema.ts`) covering all fields above. Server validates before returning.
+- **System prompt**: full BTF framework digest — Master Script template, market variations table, qualification criteria, objection map, tone-matching rules, do/don't rules ("blank connect", "two VNs then match", "one question per message", "never pitch the offer", "client count = 19"). Lives in `src/lib/ai/btfAnalyzerPrompt.ts` so it's one place to tune.
+- **Client wrapper**: `useServerFn(analyzeThread)` + a small hook `useThreadAnalysis(threadId)` that returns `{ analysis, loading, refresh }` and triggers the debounced auto-run.
+- **Store additions**: `analyses: Record<string, ThreadAnalysis>`, `upsertAnalysis`, `clearAnalysis`. Persisted with rest of store. No new Supabase tables (consistent with the rest of the app today).
+- **Error handling**: 429 → toast "AI rate-limited, retry in a moment"; 402 → toast "Add Lovable AI credits in Workspace settings"; bad JSON → retry once, then surface "AI returned malformed output, click Regenerate". Per the TanStack server-fn guidance, return `{ analysis, error }` rather than throwing for recoverable cases.
+- **Settings hook**: the existing `Settings.aiProvider` flow still works for the old `chat()` path used by the 5 manual generate buttons. The analyzer always uses Lovable AI Gateway so your team doesn't each need their own key. (We can later add a toggle if you want.)
 
-**Pipeline** — Kanban with 12 columns listed in spec. dnd-kit for drag/drop (already a typical pattern; install if missing). Card shows name, platform emoji, days-in-stage, tier. Red border when days-in-stage > stage threshold (config map). Top filter: platform + tier.
+### Files
 
-**Outreach** — List of prospects with stage in {Connected, VN1 Sent, Replied, VN2 Sent, Calendar Sent, Re-Engaged}. Each row: last message preview, days since, next-recommended-action (computed from BTF sequence map + AI button for richer suggestion). VN tracker: list of sent VNs with reply type (VN/text/none). Tone-match indicator (heuristic: replied within 24h + matched format = green). Activity log modal. Overdue flag using sequence timing maps:
-- LinkedIn: D3 VN1, D7 VN2, D12 text
-- Instagram: D1 text, D4 follow-up, D7 value, D10 VN
+**New**
+- `src/lib/ai/linkedinAnalyzer.functions.ts` — server function
+- `src/lib/ai/analyzerSchema.ts` — Zod schema + TypeScript type for `ThreadAnalysis`
+- `src/lib/ai/btfAnalyzerPrompt.ts` — BTF system prompt + market-variation table + objection map
+- `src/lib/ai/useThreadAnalysis.ts` — client hook (cache + debounce + auto-run)
+- `src/components/linkedin/AnalyzerStrip.tsx` — top-of-conversation panel
+- `src/components/linkedin/InboxTriageDot.tsx` — left-pane dot + verdict line
 
-**KPI Tracker** — Tabs:
-- Today: numeric inputs with target hints + progress bars
-- Weekly: aggregated from last 7 days vs benchmarks (LI 4, IG 6, FB 3, X 2, Email 4 qualified calls/week)
-- Scripts: table + add row (variation, market, niche, replied?, booked?). Aggregations by niche/platform
-- EOD: button → AI generates report from today's data + active pipeline → markdown preview + Copy
-- EOW: same, weekly window
+**Edited**
+- `src/routes/linkedin.tsx` — wire AnalyzerStrip, replace Inbox item with InboxTriageDot, auto-pre-fill Co-Pilot from `analysis.nextAction`/`analysis.draftMessage`, add "Analyze all" button to Inbox header
+- `src/lib/store.ts` — `analyses` slice, `upsertAnalysis`, persist
+- `src/lib/extension/bridge.ts` — no change, but the existing `upsertLinkedinThread` becomes the trigger point for auto-analyze (via subscription in the hook, not in the store, to keep the store pure)
 
-**Training** — Scenario picker (8 scenarios listed in spec). Chat UI; AI plays prospect with system prompt loaded from a `btfFramework.ts` knowledge file. End Session button → AI grades A–D with strengths/improvements/framework score. Saved to history list.
+### Out of scope (call out so we don't drift)
 
-**Settings** — Form sections: AI Config (provider select: Groq/OpenAI/OpenRouter/LM Studio, baseUrl, model, apiKey — stored in localStorage with a clear warning), BTF Profile, Commission target, Export JSON button (download of full store), Import JSON.
-
-## AI Layer
-
-`src/lib/ai/client.ts` — single `chat({messages, json?})` function that reads provider from settings and calls the configured OpenAI-compatible endpoint directly from the browser. Per user's spec — no backend.
-
-`src/lib/ai/btfFramework.ts` — system prompt with BTF tone rules, sequence timings, lead type taxonomy, BANT-in-BTF-order, villain frame, voice-note-aware reply rules.
-
-Functions:
-- `detectLeadType(prospect)` 
-- `scoreProspect(prospect)` → BANT scores + tier recommendation
-- `nextAction(prospect)` → step + talking points
-- `suggestReply(prospect, lastMessage)` → warm, ends in 1 question
-- `handleObjection(text)` 
-- `eodReport(today, pipeline)` / `eowReport(week, pipeline)`
-- `roleplayTurn(scenario, history)` and `gradeSession(history)`
-
-All return typed objects via JSON mode where supported; fallback to text parse.
-
-## Commission Calculator
-
-Tier amounts: DIY $50–100, DWY $150–300, DFY $600–1200 (use midpoints, configurable). Persistent strip in sidebar footer: month-to-date earned, pace, % to monthly target, "X more DFY closes to $5k OTE".
-
-## Components to Build
-
-- `AppSidebar` (collapsible icon mode, nav items, commission footer)
-- `StatCard`, `ProgressRow`, `Section`
-- `ProspectCard`, `ProspectDrawer`, `BuyingSignalsChecklist`, `FlagDot`
-- `KanbanBoard`, `KanbanColumn`, `KanbanCard`
-- `ActivityLog`, `VNLog`, `NextActionPanel`
-- `KpiInput`, `BenchmarkBar`, `ScriptTable`, `ReportPanel`
-- `RoleplayChat`, `ScenarioPicker`, `SessionGrade`
-- `CommissionStrip`, `CommissionBreakdown`
-
-Reuse shadcn primitives (Card, Tabs, Dialog, Drawer/Sheet, Input, Select, Badge, Progress, Button, Tooltip) — already installed.
-
-## Build Order
-
-1. Tokens + fonts + sidebar shell + routes scaffolding (placeholders)
-2. Store + localStorage + types + seed data
-3. Prospects (list + add/edit) — foundation for everything else
-4. Pipeline kanban
-5. Outreach + activity/VN logging + sequence engine
-6. KPI Tracker tabs (without AI reports first)
-7. AI client + framework prompt + wire AI features (next action, reply, score, objection, reports)
-8. Training mode
-9. Settings + export/import
-10. Dashboard (depends on data from above)
-11. Commission strip + calculator
-12. Polish pass — empty states, overdue flags, toasts, keyboard shortcuts
-
-## Technical Notes
-
-- TanStack Start, file-based routes, `<Link to="...">` only
-- Each route gets its own `head()` with unique title/description
-- API key in localStorage — show clear warning in Settings that it's stored client-side
-- dnd-kit for kanban (install if not present)
-- Recharts for any sparklines/weekly trends
-- No backend, no Lovable Cloud — explicit per spec
-- Single user, no auth
-
-## Open Question
-
-Before building, one confirmation: the spec says AI calls go directly from the browser to Groq with the API key in localStorage. That works but exposes the key to anyone who opens the browser/devtools on this machine. Confirm you want this (vs. routing through a TanStack server function which would keep the key server-side via Lovable Cloud secrets). Default if unanswered: follow the spec exactly — browser-direct, key in localStorage.
+- No auto-send to LinkedIn (safety + LinkedIn ToS — you always press Send)
+- No background polling when the tab is closed
+- No multi-account analyzer profiles — single BTF profile baked in (matches the playbook being one canonical doc)
+- No accuracy dashboard yet — can add a thumbs-up/down on each analysis later if you want training data
