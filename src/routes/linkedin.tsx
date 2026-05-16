@@ -277,7 +277,10 @@ function LinkedInPage() {
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate font-medium">{t.participantName}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <InboxTriageDot threadId={t.threadId} />
+                          <span className="truncate font-medium">{t.participantName}</span>
+                        </span>
                         {linked && (
                           <Badge variant="outline" className="text-[9px]">
                             linked
@@ -287,6 +290,7 @@ function LinkedInPage() {
                       <div className="truncate text-xs text-muted-foreground">
                         {t.lastMessagePreview ?? "—"}
                       </div>
+                      <InboxTriageVerdict threadId={t.threadId} />
                       <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
                         {t.messages.length} msg
                       </div>
