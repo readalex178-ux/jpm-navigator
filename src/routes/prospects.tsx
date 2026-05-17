@@ -99,6 +99,7 @@ function ProspectsPage() {
                 key={p.id}
                 prospect={p}
                 onClick={() => navigate({ to: "/prospects/$id", params: { id: p.id } })}
+                onEdit={() => { setEditingId(p.id); setOpen(true); }}
               />
             ))}
           </div>
