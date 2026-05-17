@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Trash2, Sparkles, Loader2, Pencil } from "lucide-react";
+import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { PageBody, PageHeader, Section } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ function ProspectDetail() {
   const [vnReply, setVnReply] = useState<ReplyType>("none");
   const [aiAction, setAiAction] = useState<string>("");
   const [aiBusy, setAiBusy] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const stageDays = useMemo(
     () => (prospect ? daysSince(prospect.stageEnteredAt) : 0),
@@ -126,6 +128,9 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
             </a>
           </Button>
         )}
+        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+          <Pencil className="mr-1 h-4 w-4" /> Edit
+        </Button>
         <Button
           variant="outline"
           size="sm"
