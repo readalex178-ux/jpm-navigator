@@ -22,6 +22,7 @@ import { ACTION_META, buildPrompt, type LinkedinAction } from "@/lib/ai/linkedin
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
 import { useThreadAnalysis } from "@/lib/ai/useThreadAnalysis";
 import { AnalyzerStrip } from "@/components/linkedin/AnalyzerStrip";
+import { AnalyzerHistoryTimeline } from "@/components/linkedin/AnalyzerHistoryTimeline";
 import { InboxTriageDot, InboxTriageVerdict } from "@/components/linkedin/InboxTriageDot";
 import type { NextAction } from "@/lib/ai/analyzerSchema";
 import { toast } from "sonner";
@@ -341,6 +342,7 @@ function LinkedInPage() {
                 onRefresh={refreshAnalysis}
                 onUseDraft={useAnalyzerDraft}
               />
+              <AnalyzerHistoryTimeline threadId={activeThread.threadId} />
               {activeProfile && (
                 <div className="mb-3 rounded-md bg-surface p-3 text-xs">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">

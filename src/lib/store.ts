@@ -51,6 +51,7 @@ type State = {
   threadProspectMap: Record<string, string>; // threadId -> prospectId
   vnScripts: VNScript[];
   analyses: Record<string, CachedAnalysis>; // threadId -> latest analysis
+  analysisHistory: Record<string, CachedAnalysis[]>; // threadId -> chronological history (oldest first)
 };
 
 type Actions = {
@@ -124,6 +125,7 @@ export const useStore = create<State & Actions>()(
       threadProspectMap: {},
       vnScripts: [],
       analyses: {},
+      analysisHistory: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -237,12 +239,28 @@ export const useStore = create<State & Actions>()(
         set({ vnScripts: get().vnScripts.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       removeVnScript: (id) =>
         set({ vnScripts: get().vnScripts.filter((x) => x.id !== id) }),
-      upsertAnalysis: (a) =>
-        set({ analyses: { ...get().analyses, [a.threadId]: a } }),
+      upsertAnalysis: (a) => {
+        const prevHistory = get().analysisHistory[a.threadId] ?? [];
+        const last = prevHistory[prevHistory.length - 1];
+        // If the new analysis is based on the same last message, replace the last entry (re-analysis of same state).
+        // Otherwise append as a new historical point.
+        const nextHistory =
+          last && last.basedOnLastMessageAt === a.basedOnLastMessageAt
+            ? [...prevHistory.slice(0, -1), a]
+            : [...prevHistory, a];
+        // Cap history at 20 entries per thread to bound storage.
+        const capped = nextHistory.slice(-20);
+        set({
+          analyses: { ...get().analyses, [a.threadId]: a },
+          analysisHistory: { ...get().analysisHistory, [a.threadId]: capped },
+        });
+      },
       clearAnalysis: (threadId) => {
         const next = { ...get().analyses };
+        const nextHist = { ...get().analysisHistory };
         delete next[threadId];
-        set({ analyses: next });
+        delete nextHist[threadId];
+        set({ analyses: next, analysisHistory: nextHist });
       },
 
       importJson: (data) => set({ ...get(), ...data }),
