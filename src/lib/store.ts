@@ -125,6 +125,7 @@ export const useStore = create<State & Actions>()(
       threadProspectMap: {},
       vnScripts: [],
       analyses: {},
+      analysisHistory: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
