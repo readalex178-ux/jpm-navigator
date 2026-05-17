@@ -308,6 +308,8 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
           </Section>
         </div>
       </PageBody>
+
+      <ProspectDrawer open={editOpen} onOpenChange={setEditOpen} editing={prospect} />
     </>
   );
 }
