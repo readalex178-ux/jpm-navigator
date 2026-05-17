@@ -342,6 +342,7 @@ function LinkedInPage() {
                 onRefresh={refreshAnalysis}
                 onUseDraft={useAnalyzerDraft}
               />
+              <AnalyzerHistoryTimeline threadId={activeThread.threadId} />
               {activeProfile && (
                 <div className="mb-3 rounded-md bg-surface p-3 text-xs">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
