@@ -51,6 +51,7 @@ type State = {
   threadProspectMap: Record<string, string>; // threadId -> prospectId
   vnScripts: VNScript[];
   analyses: Record<string, CachedAnalysis>; // threadId -> latest analysis
+  analysisHistory: Record<string, CachedAnalysis[]>; // threadId -> chronological history (oldest first)
 };
 
 type Actions = {
