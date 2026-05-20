@@ -24,6 +24,8 @@ import { useThreadAnalysis } from "@/lib/ai/useThreadAnalysis";
 import { AnalyzerStrip } from "@/components/linkedin/AnalyzerStrip";
 import { AnalyzerHistoryTimeline } from "@/components/linkedin/AnalyzerHistoryTimeline";
 import { InboxTriageDot, InboxTriageVerdict } from "@/components/linkedin/InboxTriageDot";
+import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
+import { ProspectStateButton } from "@/components/linkedin/ProspectStateButton";
 import type { NextAction } from "@/lib/ai/analyzerSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
