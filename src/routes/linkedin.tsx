@@ -469,7 +469,28 @@ function LinkedInPage() {
               Vault
             </Button>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2 w-full"
+            onClick={() => {
+              const link = settings.calendarLink;
+              if (!link) {
+                toast.error("Set your calendar link in Settings first.");
+                return;
+              }
+              const name = activeThread?.participantName?.split(" ")[0] ?? "there";
+              setDraft(
+                `Hey ${name} — here's the link to grab a 15-min slot, no pressure: ${link}\n\nLet me know if any of those times work for you.`,
+              );
+              toast.success("Calendar-link template loaded.");
+            }}
+          >
+            📅 Send calendar link
+          </Button>
         </Section>
+        <ProfileQualifierBox />
+        </div>
       </PageBody>
     </>
   );
