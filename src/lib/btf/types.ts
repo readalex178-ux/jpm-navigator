@@ -151,6 +151,7 @@ export type Commission = {
   tier: Tier;
   amount: number;
   closedAt: string;
+  claimedInGhl?: boolean;
 };
 
 export type AiProvider = "groq" | "openai" | "openrouter" | "lmstudio";
