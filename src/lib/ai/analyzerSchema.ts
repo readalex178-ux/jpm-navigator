@@ -61,6 +61,9 @@ export type ObjectionType = z.infer<typeof ObjectionType>;
 export const Triage = z.enum(["hot", "warm", "cold", "disqualify"]);
 export type Triage = z.infer<typeof Triage>;
 
+export const PredictedTier = z.enum(["DIY", "DWY", "DFY", "unknown"]);
+export type PredictedTier = z.infer<typeof PredictedTier>;
+
 export const ThreadAnalysisSchema = z.object({
   triage: Triage,
   icpMatch: IcpMatch,
@@ -83,7 +86,7 @@ export const ThreadAnalysisSchema = z.object({
   objection: ObjectionType,
   nextAction: NextAction,
   draftMessage: z.string().max(2000),
-  oneLineVerdict: z.string().max(120),
+  oneLineVerdict: z.string().max(160),
   reasoning: z.string().max(500),
   confidence: z.number().min(0).max(1),
   bantSuggestion: z.object({
@@ -93,6 +96,8 @@ export const ThreadAnalysisSchema = z.object({
     budget: z.number().int().min(0).max(2),
   }),
   qualScoreSuggestion: z.number().int().min(0).max(100),
+  predictedTier: PredictedTier.default("unknown"),
+  predictedTierReason: z.string().max(200).default(""),
 });
 
 export type ThreadAnalysis = z.infer<typeof ThreadAnalysisSchema>;
