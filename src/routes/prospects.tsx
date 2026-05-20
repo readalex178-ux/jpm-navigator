@@ -3,12 +3,14 @@ import { useMemo, useState } from "react";
 import { PageBody, PageHeader } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
 import { ProspectCard } from "@/components/ProspectCard";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { useStore } from "@/lib/store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PLATFORMS, STAGES, type Platform, type Stage, type Tier } from "@/lib/btf/types";
+import { prospectsToCsv, downloadCsv } from "@/lib/csvExport";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/prospects")({
   head: () => ({
@@ -45,6 +47,17 @@ function ProspectsPage() {
   return (
     <>
       <PageHeader title="Prospects" subtitle={`${prospects.length} total`}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            if (!filtered.length) return toast.error("Nothing to export.");
+            downloadCsv(`prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospectsToCsv(filtered));
+            toast.success(`Exported ${filtered.length} prospects`);
+          }}
+        >
+          <Download className="mr-1 h-4 w-4" /> Export CSV
+        </Button>
         <Button size="sm" onClick={() => { setEditingId(null); setOpen(true); }}>
           <Plus className="mr-1 h-4 w-4" /> Add
         </Button>

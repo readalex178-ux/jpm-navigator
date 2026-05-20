@@ -24,6 +24,8 @@ import { useThreadAnalysis } from "@/lib/ai/useThreadAnalysis";
 import { AnalyzerStrip } from "@/components/linkedin/AnalyzerStrip";
 import { AnalyzerHistoryTimeline } from "@/components/linkedin/AnalyzerHistoryTimeline";
 import { InboxTriageDot, InboxTriageVerdict } from "@/components/linkedin/InboxTriageDot";
+import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
+import { ProspectStateButton } from "@/components/linkedin/ProspectStateButton";
 import type { NextAction } from "@/lib/ai/analyzerSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -342,6 +344,7 @@ function LinkedInPage() {
                 onRefresh={refreshAnalysis}
                 onUseDraft={useAnalyzerDraft}
               />
+              <ProspectStateButton thread={activeThread} prospectStage={linkedProspect?.stage} />
               <AnalyzerHistoryTimeline threadId={activeThread.threadId} />
               {activeProfile && (
                 <div className="mb-3 rounded-md bg-surface p-3 text-xs">
@@ -401,6 +404,7 @@ function LinkedInPage() {
         </Section>
 
         {/* CO-PILOT */}
+        <div className="space-y-4">
         <Section title="AI Co-Pilot">
           <div className="grid grid-cols-2 gap-1.5">
             {(Object.keys(ACTION_META) as LinkedinAction[]).map((a) => (
@@ -465,7 +469,28 @@ function LinkedInPage() {
               Vault
             </Button>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2 w-full"
+            onClick={() => {
+              const link = settings.calendarLink;
+              if (!link) {
+                toast.error("Set your calendar link in Settings first.");
+                return;
+              }
+              const name = activeThread?.participantName?.split(" ")[0] ?? "there";
+              setDraft(
+                `Hey ${name} — here's the link to grab a 15-min slot, no pressure: ${link}\n\nLet me know if any of those times work for you.`,
+              );
+              toast.success("Calendar-link template loaded.");
+            }}
+          >
+            📅 Send calendar link
+          </Button>
         </Section>
+        <ProfileQualifierBox />
+        </div>
       </PageBody>
     </>
   );

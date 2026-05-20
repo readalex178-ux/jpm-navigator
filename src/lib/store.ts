@@ -98,6 +98,7 @@ const blankKpi = (date: string): KpiDay => ({
   date,
   vnSent: 0,
   connectionsSent: 0,
+  connectionsAccepted: 0,
   replies: 0,
   activeConvos: 0,
   calendarsSent: 0,

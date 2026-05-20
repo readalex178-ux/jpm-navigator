@@ -112,6 +112,7 @@ export type KpiDay = {
   date: string; // YYYY-MM-DD
   vnSent: number;
   connectionsSent: number;
+  connectionsAccepted: number;
   replies: number;
   activeConvos: number;
   calendarsSent: number;
@@ -150,6 +151,7 @@ export type Commission = {
   tier: Tier;
   amount: number;
   closedAt: string;
+  claimedInGhl?: boolean;
 };
 
 export type AiProvider = "groq" | "openai" | "openrouter" | "lmstudio";
@@ -164,6 +166,8 @@ export type Settings = {
   igHandle: string;
   calendarLink: string;
   monthlyTarget: number;
+  roleStartDate: string; // YYYY-MM-DD — when you started the BTF setter role
+  managerNames: string; // e.g. "Yarek & Marcus"
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -176,6 +180,8 @@ export const DEFAULT_SETTINGS: Settings = {
   igHandle: "",
   calendarLink: "",
   monthlyTarget: 5000,
+  roleStartDate: "",
+  managerNames: "Yarek & Marcus",
 };
 
 export const TIER_VALUE: Record<Tier, number> = { DIY: 75, DWY: 225, DFY: 900 };

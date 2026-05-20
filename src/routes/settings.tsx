@@ -150,6 +150,17 @@ function SettingsPage() {
             <Field label="Instagram handle" value={settings.igHandle} onChange={(v) => update({ igHandle: v })} />
             <Field label="Calendar booking link" value={settings.calendarLink} onChange={(v) => update({ calendarLink: v })} />
             <Field
+              label="Role start date"
+              type="date"
+              value={settings.roleStartDate}
+              onChange={(v) => update({ roleStartDate: v })}
+            />
+            <Field
+              label="Manager names (for report sign-off)"
+              value={settings.managerNames}
+              onChange={(v) => update({ managerNames: v })}
+            />
+            <Field
               label="Monthly commission target ($)"
               type="number"
               value={String(settings.monthlyTarget)}

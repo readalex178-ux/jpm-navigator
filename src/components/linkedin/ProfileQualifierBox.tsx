@@ -1,0 +1,173 @@
+import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Sparkles, Copy, X } from "lucide-react";
+import { Section } from "@/components/Page";
+import { qualifyProfile, type ProfileQualifierResult } from "@/lib/ai/aiAssistants.functions";
+import { toast } from "sonner";
+import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+const ICP_COLOR = {
+  green: "border-success text-success",
+  yellow: "border-amber-400 text-amber-500",
+  red: "border-destructive text-destructive",
+} as const;
+
+const FLAG = (v: number) => (v === 1 ? "✓" : v === 0 ? "✗" : "?");
+
+export function ProfileQualifierBox() {
+  const fn = useServerFn(qualifyProfile);
+  const addProspect = useStore((s) => s.addProspect);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<ProfileQualifierResult | null>(null);
+
+  const run = async () => {
+    if (text.trim().length < 10) {
+      toast.error("Paste a profile first.");
+      return;
+    }
+    setBusy(true);
+    setRes(null);
+    try {
+      const r = await fn({ data: { profileText: text.trim() } });
+      if (r.ok) setRes(r.result);
+      else toast.error(r.error);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyVerdict = () => {
+    if (!res) return;
+    const body = [
+      res.verdictLine,
+      `Market: ${res.market}  ·  ICP: ${res.icpMatch}  ·  Tier: ${res.predictedTier}`,
+      `Qualifiers: DM ${FLAG(res.qualification.decisionMaker)} · Offer ${FLAG(res.qualification.hasOffer)} · Earning ${FLAG(res.qualification.earningSomething)} · Wants more ${FLAG(res.qualification.wantsMore)}`,
+      `Hook: ${res.personalisationHook}`,
+      `Opening line: ${res.suggestedFirstLine}`,
+    ].join("\n");
+    navigator.clipboard.writeText(body);
+    toast.success("Copied verdict");
+  };
+
+  const createProspect = () => {
+    if (!res) return;
+    const nameLine = text.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+    const created = addProspect({
+      name: nameLine,
+      platform: "linkedin",
+      bio: text.slice(0, 800),
+      niche: res.market,
+      tier: res.predictedTier === "unknown" ? "DWY" : res.predictedTier,
+      stage: res.verdict === "SEND_VN" ? "Found" : "Cold",
+    });
+    toast.success(`Prospect created: ${created.name}`);
+  };
+
+  return (
+    <Section
+      title="Paste-a-profile verdict"
+      action={
+        res ? (
+          <Button size="sm" variant="ghost" onClick={() => { setRes(null); setText(""); }}>
+            <X className="mr-1 h-3 w-3" /> Clear
+          </Button>
+        ) : null
+      }
+    >
+      {!res ? (
+        <>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Paste raw LinkedIn profile (name, headline, about, recent activity) — get an instant ✅/❌ verdict before sending a connection."
+            className="min-h-[120px] text-xs"
+          />
+          <div className="mt-2 flex justify-end">
+            <Button size="sm" onClick={run} disabled={busy}>
+              {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+              Qualify
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-2 text-xs">
+          <div
+            className={cn(
+              "rounded-md border p-2 font-medium",
+              res.verdict === "SEND_VN" && "border-success/40 bg-success/5 text-success",
+              res.verdict === "SKIP" && "border-destructive/40 bg-destructive/5 text-destructive",
+              res.verdict === "MAYBE" && "border-amber-400/40 bg-amber-400/5 text-amber-500",
+            )}
+          >
+            {res.verdictLine}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="outline" className={cn("uppercase", ICP_COLOR[res.icpMatch])}>
+              ICP {res.icpMatch}
+            </Badge>
+            <Badge variant="outline">{res.market}</Badge>
+            <Badge variant="outline">Tier: {res.predictedTier}</Badge>
+            <Badge variant="outline">Conf {Math.round(res.confidence * 100)}%</Badge>
+          </div>
+
+          <div>
+            <span className="text-muted-foreground">4 qualifiers:</span>{" "}
+            DM {FLAG(res.qualification.decisionMaker)} ·{" "}
+            Offer {FLAG(res.qualification.hasOffer)} ·{" "}
+            Earning {FLAG(res.qualification.earningSomething)} ·{" "}
+            Wants more {FLAG(res.qualification.wantsMore)}
+          </div>
+
+          <div className="grid gap-1 sm:grid-cols-2">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-success">Green</div>
+              <ul className="list-inside list-disc text-[11px]">
+                {res.greenFlags.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-destructive">Red</div>
+              <ul className="list-inside list-disc text-[11px]">
+                {res.redFlags.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </div>
+          </div>
+
+          <div className="rounded bg-surface p-2">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Tier reason</div>
+            <div>{res.predictedTierReason}</div>
+          </div>
+
+          <div className="rounded bg-surface p-2">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Hook</div>
+            <div className="italic">"{res.personalisationHook}"</div>
+          </div>
+
+          <div className="rounded bg-surface p-2">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Opening line</div>
+            <div>{res.suggestedFirstLine}</div>
+          </div>
+
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" onClick={copyVerdict}>
+              <Copy className="mr-1 h-3 w-3" /> Copy
+            </Button>
+            {res.verdict !== "SKIP" && (
+              <Button size="sm" variant="outline" onClick={createProspect}>
+                + Add as prospect
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
