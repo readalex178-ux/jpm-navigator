@@ -240,6 +240,7 @@ function ReportTab({ kind }: { kind: "eod" | "eow" }) {
   const settings = useStore((s) => s.settings);
   const kpiDays = useStore((s) => s.kpiDays);
   const prospects = useStore((s) => s.prospects);
+  const commissions = useStore((s) => s.commissions);
   const [out, setOut] = useState("");
   const [busy, setBusy] = useState(false);
 
