@@ -47,6 +47,17 @@ function ProspectsPage() {
   return (
     <>
       <PageHeader title="Prospects" subtitle={`${prospects.length} total`}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            if (!filtered.length) return toast.error("Nothing to export.");
+            downloadCsv(`prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospectsToCsv(filtered));
+            toast.success(`Exported ${filtered.length} prospects`);
+          }}
+        >
+          <Download className="mr-1 h-4 w-4" /> Export CSV
+        </Button>
         <Button size="sm" onClick={() => { setEditingId(null); setOpen(true); }}>
           <Plus className="mr-1 h-4 w-4" /> Add
         </Button>
