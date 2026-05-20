@@ -112,6 +112,7 @@ export type KpiDay = {
   date: string; // YYYY-MM-DD
   vnSent: number;
   connectionsSent: number;
+  connectionsAccepted: number;
   replies: number;
   activeConvos: number;
   calendarsSent: number;
