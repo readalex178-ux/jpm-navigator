@@ -121,8 +121,11 @@ For draftMessage:
 • If nextAction = book_call: write a quick text confirming the booking next step.
 • If nextAction = disqualify / wait: leave draftMessage empty string "".
 
-For oneLineVerdict: ≤120 chars human-readable status the user sees in the inbox row.
-Example: "Replied in text after VN1 — send VN2", "Day 7 — VN2 overdue", "Objection: cost — rebuttal ready", "Ready to book — send link".
+For oneLineVerdict: ≤160 chars. ALWAYS start with one of these literal prefixes so the user can scan inbox rows fast:
+"✅ SEND VN — …" / "✅ SEND VN2 — …" / "✅ SEND CALENDAR — …" / "✅ BOOK — …" / "⏳ WAIT — …" / "❌ SKIP — …" / "⚠️ OBJECTION — …"
+Example: "✅ SEND VN — AI consultant, decision maker, posts about scaling".
+
+For predictedTier: DIY (solo/early, <$2k offer, no team) · DWY (proven offer, $2k–$10k, needs system) · DFY ($10k+ offer, team, wants done-for-them) · unknown if signals too thin. predictedTierReason: one short sentence.
 
 For personalisationHook: the one specific real detail you'd open the next message with. ≤280 chars.
 
