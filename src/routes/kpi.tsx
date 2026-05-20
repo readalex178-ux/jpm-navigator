@@ -78,6 +78,7 @@ function TodayTab() {
   const fields: { key: keyof typeof day; label: string; target?: string }[] = [
     { key: "vnSent", label: "Voice notes sent", target: `Target: LI ${DAILY_TARGETS.vnLinkedIn} / IG ${DAILY_TARGETS.vnInstagram}` },
     { key: "connectionsSent", label: "Connection requests", target: `Target: ${DAILY_TARGETS.connections}` },
+    { key: "connectionsAccepted", label: "Connections accepted", target: "Target: 30% acceptance" },
     { key: "replies", label: "Replies received" },
     { key: "activeConvos", label: "Active conversations" },
     { key: "calendarsSent", label: "Calendar links sent" },
