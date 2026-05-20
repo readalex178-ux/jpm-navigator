@@ -3,12 +3,14 @@ import { useMemo, useState } from "react";
 import { PageBody, PageHeader } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
 import { ProspectCard } from "@/components/ProspectCard";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { useStore } from "@/lib/store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PLATFORMS, STAGES, type Platform, type Stage, type Tier } from "@/lib/btf/types";
+import { prospectsToCsv, downloadCsv } from "@/lib/csvExport";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/prospects")({
   head: () => ({
