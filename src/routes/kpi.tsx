@@ -271,21 +271,108 @@ function ReportTab({ kind }: { kind: "eod" | "eow" }) {
         .reduce(
           (a, k) => ({
             vnSent: a.vnSent + k.vnSent,
+            connectionsSent: a.connectionsSent + k.connectionsSent,
+            connectionsAccepted: a.connectionsAccepted + (k.connectionsAccepted ?? 0),
             replies: a.replies + k.replies,
             booked: a.booked + k.booked,
             shows: a.shows + k.shows,
+            hours: a.hours + k.hours,
           }),
-          { vnSent: 0, replies: 0, booked: 0, shows: 0 },
+          { vnSent: 0, connectionsSent: 0, connectionsAccepted: 0, replies: 0, booked: 0, shows: 0, hours: 0 },
         );
-      const pipeline = `Active prospects by stage:\n${
-        Array.from(new Set(prospects.map((p) => p.stage)))
-          .map((s) => `- ${s}: ${prospects.filter((p) => p.stage === s).length}`)
-          .join("\n")
-      }`;
+
+      const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
+
+      const activeStages = ["Connected", "VN1 Sent", "Replied", "VN2 Sent", "Calendar Sent", "Call Booked"];
+      const stale = prospects.filter(
+        (p) => activeStages.includes(p.stage) && daysSince(p.lastTouchAt) >= 3,
+      );
+      const staleList = stale.length
+        ? stale
+            .slice(0, 15)
+            .map((p) => `- ${p.name} (${p.stage}, ${daysSince(p.lastTouchAt)}d cold)`)
+            .join("\n")
+        : "- (none)";
+
+      const bookedProspects = prospects.filter((p) => p.stage === "Call Booked");
+      const claimedIds = new Set(commissions.filter((c) => c.claimedInGhl).map((c) => c.prospectId));
+      const unclaimed = bookedProspects.filter((p) => !claimedIds.has(p.id));
+      const unclaimedList = unclaimed.length
+        ? unclaimed.map((p) => `- ${p.name} (booked ${daysSince(p.stageEnteredAt)}d ago)`).join("\n")
+        : "- (all claimed ✓)";
+
+      const pipeline = Array.from(new Set(prospects.map((p) => p.stage)))
+        .map((s) => `- ${s}: ${prospects.filter((p) => p.stage === s).length}`)
+        .join("\n");
+
+      const weeksInRole = settings.roleStartDate
+        ? Math.max(1, Math.floor(daysSince(settings.roleStartDate) / 7))
+        : null;
+      const weeksLine = weeksInRole ? `WEEKS INTO ROLE: ${weeksInRole}` : "WEEKS INTO ROLE: (set Role start date in Settings)";
+
+      const managers = settings.managerNames || "the team";
+
+      const eodData = `TODAY (${day.date})
+VNs sent: ${day.vnSent} (target ${DAILY_TARGETS.vnLinkedIn} LI)
+Connections sent: ${day.connectionsSent} (target ${DAILY_TARGETS.connections})
+Connections accepted: ${day.connectionsAccepted} → acceptance rate ${pct(day.connectionsAccepted, day.connectionsSent)}% (target 30%)
+Replies: ${day.replies} → reply rate ${pct(day.replies, day.vnSent)}% (target ${DAILY_TARGETS.replyRate}%)
+Booked: ${day.booked} → booking-from-replies ${pct(day.booked, day.replies)}%
+Shows: ${day.shows} → show rate ${pct(day.shows, day.booked)}% (target ${DAILY_TARGETS.showRate}%)
+Active convos: ${day.activeConvos}
+Hours: ${day.hours}
+
+STALE PROSPECTS (3+ days no touch, active stages):
+${staleList}
+
+BOOKED BUT NOT CLAIMED IN GHL:
+${unclaimedList}
+
+PIPELINE:
+${pipeline}
+
+${weeksLine}`;
+
+      const eowData = `LAST 7 DAYS
+VNs: ${week.vnSent} · Connections: ${week.connectionsSent} accepted ${week.connectionsAccepted} (${pct(week.connectionsAccepted, week.connectionsSent)}%)
+Replies: ${week.replies} (reply rate ${pct(week.replies, week.vnSent)}%)
+Booked: ${week.booked} (booking-from-replies ${pct(week.booked, week.replies)}%)
+Shows: ${week.shows} (${pct(week.shows, week.booked)}%)
+Hours: ${week.hours}
+
+STALE PROSPECTS:
+${staleList}
+
+BOOKED BUT NOT CLAIMED IN GHL:
+${unclaimedList}
+
+PIPELINE:
+${pipeline}
+
+${weeksLine}`;
+
       const promptUser =
         kind === "eod"
-          ? `Today's data:\nVNs sent: ${day.vnSent}\nReplies: ${day.replies}\nBooked: ${day.booked}\nShows: ${day.shows}\nActive convos: ${day.activeConvos}\n\n${pipeline}\n\nWrite an EOD report (markdown). Sections: Today's numbers, Reply rate analysis, Patterns noticed, Tomorrow's priorities. Keep tactical.`
-          : `Last 7 days:\nVNs: ${week.vnSent}, Replies: ${week.replies}, Booked: ${week.booked}, Shows: ${week.shows}\n\n${pipeline}\n\nWrite an EOW report (markdown). Sections: Wins, Challenges, Patterns by niche/platform, Ideas for next week.`;
+          ? `${eodData}
+
+Write the EOD report as a BTF setter, no fluff, real talk. Markdown with these sections:
+1. Today's numbers (one line each, with target comparison)
+2. Acceptance / reply / booking rates (3 separate lines vs benchmarks)
+3. Stale prospects to chase tomorrow
+4. ⚠️ Unclaimed GHL bookings (if any — call them out)
+5. Tomorrow's priorities (3 bullets max)
+
+THEN, after a "---" divider, add a short message I can copy-paste to ${managers}. Include weeks-in-role, today's key numbers, brief and confident. No fluff.`
+          : `${eowData}
+
+Write the EOW report as a BTF setter, no fluff, real talk. Markdown with sections:
+1. Week's numbers (rates vs benchmarks — acceptance, reply, booking-from-replies, show)
+2. Wins
+3. Patterns by niche / market
+4. Stale prospects + unclaimed bookings (flag these)
+5. Plan for next week (3 bullets max)
+
+THEN, after a "---" divider, add a short message I can copy-paste to ${managers}. Include weeks-in-role, qualified calls this week, key rates, brief and confident.`;
       const text = await chat(settings, [{ role: "user", content: promptUser }]);
       setOut(text);
     } catch (e) {
