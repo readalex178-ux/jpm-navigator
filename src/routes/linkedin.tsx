@@ -344,6 +344,7 @@ function LinkedInPage() {
                 onRefresh={refreshAnalysis}
                 onUseDraft={useAnalyzerDraft}
               />
+              <ProspectStateButton thread={activeThread} prospectStage={linkedProspect?.stage} />
               <AnalyzerHistoryTimeline threadId={activeThread.threadId} />
               {activeProfile && (
                 <div className="mb-3 rounded-md bg-surface p-3 text-xs">
