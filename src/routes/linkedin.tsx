@@ -404,6 +404,7 @@ function LinkedInPage() {
         </Section>
 
         {/* CO-PILOT */}
+        <div className="space-y-4">
         <Section title="AI Co-Pilot">
           <div className="grid grid-cols-2 gap-1.5">
             {(Object.keys(ACTION_META) as LinkedinAction[]).map((a) => (
