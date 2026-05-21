@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageBody, PageHeader, Section } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -177,6 +177,60 @@ function LinkedInPage() {
     error: analyzeError,
     refresh: refreshAnalysis,
   } = useThreadAnalysis(activeThread?.threadId ?? null);
+
+  // Auto-add to pipeline when thread analysis is a match
+  const autoLinkedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!activeThread || !analysis) return;
+    const tid = activeThread.threadId;
+    if (threadProspectMap[tid]) return;
+    if (autoLinkedRef.current.has(tid)) return;
+
+    const isMatch =
+      analysis.triage !== "disqualify" &&
+      analysis.nextAction !== "disqualify" &&
+      (analysis.qualification.verdict === "qualified" || analysis.triage === "hot");
+    if (!isMatch) return;
+
+    autoLinkedRef.current.add(tid);
+
+    // Reuse existing prospect by profileUrl or name
+    const existing = prospects.find(
+      (p) =>
+        (activeThread.participantProfileUrl &&
+          p.profileUrl === activeThread.participantProfileUrl) ||
+        p.name.trim().toLowerCase() ===
+          (activeProfile?.name ?? activeThread.participantName ?? "").trim().toLowerCase(),
+    );
+    if (existing) {
+      linkThread(tid, existing.id);
+      toast.success(`Linked thread to ${existing.name}`);
+      return;
+    }
+
+    // Map analyzer next action → pipeline stage
+    let stage: "Found" | "Connected" | "VN1 Sent" | "Calendar Sent" | "Call Booked" = "Found";
+    if (analysis.nextAction === "book_call") stage = "Call Booked";
+    else if (analysis.nextAction === "send_calendar_link") stage = "Calendar Sent";
+    else if (analysis.nextAction === "voice_note_1") stage = "Connected";
+    else if (analysis.nextAction === "voice_note_2" || analysis.nextAction === "text_followup")
+      stage = "VN1 Sent";
+    else if (analysis.nextAction === "send_connection") stage = "Found";
+
+    const created = addProspect({
+      name: activeProfile?.name ?? activeThread.participantName ?? "New prospect",
+      profileUrl: activeThread.participantProfileUrl ?? "",
+      platform: "linkedin",
+      niche: analysis.market,
+      tier: analysis.predictedTier === "unknown" ? "DWY" : analysis.predictedTier,
+      bio: activeProfile?.headline ?? "",
+      stage,
+      bant: analysis.bantSuggestion as import("@/lib/btf/types").BANT,
+      qualScore: analysis.qualScoreSuggestion,
+    });
+    linkThread(tid, created.id);
+    toast.success(`Added ${created.name} to pipeline · ${stage}`);
+  }, [activeThread, analysis, threadProspectMap, prospects, activeProfile, addProspect, linkThread]);
 
   const useAnalyzerDraft = (next: NextAction, text: string) => {
     setDraft(text);

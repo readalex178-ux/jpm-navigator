@@ -1,47 +1,64 @@
-## Where the analyzer already lives
+## Goal
 
-It's on the **LinkedIn** page (`/linkedin`) — not on `/prospects` or the home page. Two pieces:
+When the analyzer returns a positive verdict, the prospect should land in the pipeline automatically — no extra click on "+ Add as prospect" or "Link to prospect".
 
-1. **AnalyzerStrip** — at the top of the conversation pane, shows triage / ICP / 4-qualifiers / next action / draft. Auto-runs when a thread is selected.
-2. **ProfileQualifierBox** — in the right Co-Pilot sidebar, the paste-a-profile verdict box.
+Today both analyzers stop short of that:
+- `ProfileQualifierBox` shows a `+ Add as prospect` button only after a `SEND_VN` verdict — manual.
+- `AnalyzerStrip` (thread analysis) never creates or links a prospect, even when triage is `hot`/`warm` and qualification verdict is `qualified`.
 
-The extension bridge is already wired (`src/routes/linkedin.tsx` lines 92–111): when the extension sends `ext:thread` or `ext:profile`, the data lands in the store. But there are three gaps that make it feel like "the analyzer isn't working with the extension":
+This plan wires "match → pipeline" in both places, idempotently.
 
-- A scraped thread is saved but **not auto-selected**, so the AnalyzerStrip doesn't visibly fire unless you click that thread in the list.
-- A scraped **profile** (no thread yet) does nothing visible — the qualifier only runs from manual paste.
-- There's no "Analyze" entry point on `/prospects` or `/`, so if you're not on `/linkedin` you can't see it.
+## What counts as a "match"
 
-## What to change (UI/wiring only — no new AI logic)
+- **Profile qualifier**: `verdict === "SEND_VN"` (already the SEND signal).
+- **Thread analyzer**: `qualification.verdict === "qualified"` OR `triage === "hot"`, AND `triage !== "disqualify"` AND `nextAction !== "disqualify"`.
 
-### 1. Auto-select scraped threads
-In the extension listener, after `upsertThread`, set `activeThreadId = e.thread.threadId` so AnalyzerStrip immediately runs against the freshly scraped thread.
+Anything else (MAYBE / warm-but-not-qualified / cold) stays as-is — no auto-add, manual button still available.
 
-### 2. Auto-run profile qualifier on `ext:profile`
-When the extension pushes a profile and there's no matching thread yet, feed the profile text into `ProfileQualifierBox` automatically (pre-fill + auto-submit) so you get the ✅/❌ verdict without pasting.
+## Changes
 
-### 3. "Open in Analyzer" affordance from Prospects
-Add a small **Analyze** button on `ProspectCard` and the prospect detail page that:
-- jumps to `/linkedin`
-- if a thread is linked to that prospect, selects it
-- otherwise opens the ProfileQualifierBox prefilled with the prospect's headline/notes
+### 1. `src/components/linkedin/ProfileQualifierBox.tsx`
+- In `runWith`, after a successful result, if `verdict === "SEND_VN"`:
+  - Check existing prospects for a same-name match (case-insensitive on the first non-empty line) to avoid duplicates.
+  - If none, call `addProspect(...)` with the same payload the manual button uses, plus `stage: "Found"`.
+  - Toast: `"Added <name> to pipeline (Found)"`.
+- Keep the manual `+ Add as prospect` button visible for `MAYBE` verdicts only (skip it when we already auto-added).
 
-### 4. Connection status banner on `/linkedin`
-Tighten the existing extension indicator so it clearly says **"Extension connected — open a LinkedIn DM or profile to auto-analyze"** vs **"Extension not detected"**, so you know whether scrapes will actually arrive.
+### 2. `src/routes/linkedin.tsx` — auto-create/link from thread analysis
+- Add a `useEffect` keyed on `[activeThread?.threadId, analysis]` that runs when:
+  - `analysis` exists and is a "match" per the rule above,
+  - `activeThread` exists,
+  - `threadProspectMap[activeThread.threadId]` is empty (not already linked).
+- Behaviour:
+  - Try to reuse an existing prospect whose `profileUrl === activeThread.participantProfileUrl` (or name match). If found → `linkThreadToProspect(threadId, prospect.id)`.
+  - Otherwise create a new prospect from `activeThread` + `activeProfile`:
+    - `name`: `activeProfile?.name ?? activeThread.participantName`
+    - `profileUrl`: `activeThread.participantProfileUrl`
+    - `platform: "linkedin"`
+    - `niche`: `analysis.market`
+    - `tier`: `analysis.predictedTier === "unknown" ? "DWY" : analysis.predictedTier`
+    - `bio`: `activeProfile?.headline ?? ""`
+    - `stage`: derive from `analysis.stage` / `nextAction`:
+      - `book_call` / `send_calendar_link` → `"Booked"` (or closest existing stage — confirm against `Stage` enum during impl)
+      - `voice_note_1` / `send_connection` → `"Found"`
+      - everything else qualified → `"Contacted"` (or whatever the current Stage list calls the "in convo" bucket)
+    - `bant`: copy `analysis.bantSuggestion`
+    - `qualScore`: `analysis.qualScoreSuggestion`
+  - Then `linkThreadToProspect(threadId, newProspect.id)`.
+  - Toast: `"Added <name> to pipeline · <stage>"`.
+- Guard with a local `useRef<Set<string>>` of threadIds we've already auto-handled this session, so re-analysis doesn't loop.
 
-### 5. Tiny home-page pointer
-On `/` (KPI dashboard), add a single line under the LinkedIn tile: "Analyzer lives in LinkedIn → Co-Pilot" with a link. Removes the "where is it?" question for next time.
-
-## Files touched
-
-- `src/routes/linkedin.tsx` — auto-select scraped thread, route `ext:profile` into qualifier, refine status banner
-- `src/components/linkedin/ProfileQualifierBox.tsx` — accept an external `initialText` + `autoRun` prop
-- `src/components/ProspectCard.tsx` — add "Analyze" button
-- `src/routes/prospects.$id.tsx` — add "Analyze" button
-- `src/routes/index.tsx` — small pointer line
+### 3. Visual confirmation in `AnalyzerStrip`
+- No structural change. The existing `ProspectStateButton` next to the strip already shows the linked prospect, so once the effect fires, the user sees the prospect chip light up without doing anything.
 
 ## Out of scope
 
-- No new server functions, no schema changes, no new AI prompts. Reuses existing `analyzeThread` and `qualifyProfile`.
-- Not moving the analyzer off `/linkedin` — that's the right home for it.
+- No schema, no server function, no AI prompt changes.
+- No new pipeline stages — we map onto the existing `Stage` union in `src/lib/btf/types.ts`.
+- Cross-route handoff from `/prospects → /linkedin` is untouched.
+
+## One thing to confirm before I build
+
+The `Stage` enum values I'm mapping onto (`"Found"`, `"Contacted"`, `"Booked"`) — I'll read `src/lib/btf/types.ts` during implementation and use the exact strings that exist. If your pipeline calls the first column something else (e.g. `"New"` or `"Lead"`), the mapping uses that instead. No new stages will be invented.
 
 Approve and I'll implement.
