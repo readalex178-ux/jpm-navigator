@@ -70,22 +70,6 @@ function SettingsPage() {
     }
   };
 
-  const handleObjection = async () => {
-    if (!objection) return;
-    setBusy(true);
-    setObAnswer("");
-    try {
-      const out = await chat(settings, [{
-        role: "user",
-        content: `Objection from prospect: "${objection}"\n\nGive the BTF-approved response. Voice-note-aware. Warm. End with one question.`,
-      }]);
-      setObAnswer(out);
-    } catch (e) {
-      toast.error(e instanceof AiNotConfiguredError ? e.message : `AI error: ${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <>
