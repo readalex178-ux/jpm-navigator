@@ -9,6 +9,7 @@ import {
   Settings as SettingsIcon,
   Flame,
   Linkedin,
+  Wrench,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const items = [
   { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
   { title: "Outreach", url: "/outreach", icon: MessageSquare },
   { title: "LinkedIn", url: "/linkedin", icon: Linkedin },
+  { title: "Tools", url: "/tools", icon: Wrench },
   { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
   { title: "Training", url: "/training", icon: GraduationCap },
   { title: "Settings", url: "/settings", icon: SettingsIcon },

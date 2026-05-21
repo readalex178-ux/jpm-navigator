@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrainingRouteImport } from './routes/training'
+import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProspectsRouteImport } from './routes/prospects'
 import { Route as PipelineRouteImport } from './routes/pipeline'
@@ -22,6 +23,11 @@ import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsRoute = ToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
+  '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
+  '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/pipeline': typeof PipelineRoute
   '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
+  '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/prospects'
     | '/settings'
+    | '/tools'
     | '/training'
     | '/prospects/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/prospects'
     | '/settings'
+    | '/tools'
     | '/training'
     | '/prospects/$id'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/pipeline'
     | '/prospects'
     | '/settings'
+    | '/tools'
     | '/training'
     | '/prospects/$id'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   PipelineRoute: typeof PipelineRoute
   ProspectsRoute: typeof ProspectsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
+  ToolsRoute: typeof ToolsRoute
   TrainingRoute: typeof TrainingRoute
 }
 
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/training'
       fullPath: '/training'
       preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools': {
+      id: '/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof ToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -234,6 +254,7 @@ const rootRouteChildren: RootRouteChildren = {
   PipelineRoute: PipelineRoute,
   ProspectsRoute: ProspectsRouteWithChildren,
   SettingsRoute: SettingsRoute,
+  ToolsRoute: ToolsRoute,
   TrainingRoute: TrainingRoute,
 }
 export const routeTree = rootRouteImport
