@@ -21,9 +21,11 @@ const FLAG = (v: number) => (v === 1 ? "✓" : v === 0 ? "✗" : "?");
 export function ProfileQualifierBox() {
   const fn = useServerFn(qualifyProfile);
   const addProspect = useStore((s) => s.addProspect);
+  const prospects = useStore((s) => s.prospects);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<ProfileQualifierResult | null>(null);
+  const [autoAdded, setAutoAdded] = useState(false);
 
   const runWith = async (input: string) => {
     const trimmed = input.trim();
@@ -33,10 +35,35 @@ export function ProfileQualifierBox() {
     }
     setBusy(true);
     setRes(null);
+    setAutoAdded(false);
     try {
       const r = await fn({ data: { profileText: trimmed } });
-      if (r.ok) setRes(r.result);
-      else toast.error(r.error);
+      if (r.ok) {
+        setRes(r.result);
+        if (r.result.verdict === "SEND_VN") {
+          const nameLine =
+            trimmed.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+          const dup = prospects.find(
+            (p) => p.name.trim().toLowerCase() === nameLine.toLowerCase(),
+          );
+          if (!dup) {
+            const created = addProspect({
+              name: nameLine,
+              platform: "linkedin",
+              bio: trimmed.slice(0, 800),
+              niche: r.result.market,
+              tier: r.result.predictedTier === "unknown" ? "DWY" : r.result.predictedTier,
+              stage: "Found",
+            });
+            setAutoAdded(true);
+            toast.success(`Added ${created.name} to pipeline (Found)`);
+          } else {
+            setAutoAdded(true);
+          }
+        }
+      } else {
+        toast.error(r.error);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
