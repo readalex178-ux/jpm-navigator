@@ -135,6 +135,21 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
           variant="outline"
           size="sm"
           onClick={() => {
+            const map = useStore.getState().threadProspectMap;
+            const threadId = Object.entries(map).find(([, pid]) => pid === prospect.id)?.[0];
+            const payload = threadId
+              ? { threadId }
+              : { profileText: [prospect.name, prospect.niche, prospect.bio].filter(Boolean).join("\n") };
+            sessionStorage.setItem("btf:analyze", JSON.stringify(payload));
+            navigate({ to: "/linkedin" });
+          }}
+        >
+          <Sparkles className="mr-1 h-4 w-4" /> Analyze
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
             if (confirm("Delete this prospect?")) {
               deleteProspect(prospect.id);
               navigate({ to: "/prospects" });

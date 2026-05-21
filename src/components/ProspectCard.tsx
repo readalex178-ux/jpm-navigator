@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type Prospect,
@@ -22,10 +22,12 @@ export function ProspectCard({
   prospect,
   onClick,
   onEdit,
+  onAnalyze,
 }: {
   prospect: Prospect;
   onClick?: () => void;
   onEdit?: () => void;
+  onAnalyze?: () => void;
 }) {
   const days = daysSince(prospect.lastTouchAt);
   const stageLimit = STAGE_AGE_LIMIT[prospect.stage];
@@ -70,20 +72,37 @@ export function ProspectCard({
           </span>
         </div>
       </button>
-      {onEdit && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-1 top-1 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          aria-label="Edit prospect"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      )}
+      <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        {onAnalyze && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAnalyze();
+            }}
+            aria-label="Analyze prospect"
+            title="Open in Analyzer"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            aria-label="Edit prospect"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
