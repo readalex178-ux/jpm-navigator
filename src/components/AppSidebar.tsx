@@ -53,9 +53,6 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="leading-tight">
               <div className="font-display text-sm font-bold tracking-tight">BTF Setter OS</div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                JPM Media
-              </div>
             </div>
           )}
         </Link>
