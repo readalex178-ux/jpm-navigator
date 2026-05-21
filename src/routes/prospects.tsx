@@ -113,6 +113,15 @@ function ProspectsPage() {
                 prospect={p}
                 onClick={() => navigate({ to: "/prospects/$id", params: { id: p.id } })}
                 onEdit={() => { setEditingId(p.id); setOpen(true); }}
+                onAnalyze={() => {
+                  const map = useStore.getState().threadProspectMap;
+                  const threadId = Object.entries(map).find(([, pid]) => pid === p.id)?.[0];
+                  const payload = threadId
+                    ? { threadId }
+                    : { profileText: [p.name, p.niche, p.bio].filter(Boolean).join("\n") };
+                  sessionStorage.setItem("btf:analyze", JSON.stringify(payload));
+                  navigate({ to: "/linkedin" });
+                }}
               />
             ))}
           </div>
