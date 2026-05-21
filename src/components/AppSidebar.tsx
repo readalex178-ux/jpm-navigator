@@ -17,6 +17,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -26,16 +27,34 @@ import {
 import { CommissionStrip } from "./CommissionStrip";
 import { useStore } from "@/lib/store";
 
-const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Prospects", url: "/prospects", icon: Users },
-  { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
-  { title: "Outreach", url: "/outreach", icon: MessageSquare },
-  { title: "LinkedIn", url: "/linkedin", icon: Linkedin },
-  { title: "Tools", url: "/tools", icon: Wrench },
-  { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
-  { title: "Training", url: "/training", icon: GraduationCap },
-  { title: "Settings", url: "/settings", icon: SettingsIcon },
+const groups = [
+  {
+    label: "Today",
+    items: [
+      { title: "Dashboard", url: "/", icon: LayoutDashboard },
+      { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
+      { title: "Prospects", url: "/prospects", icon: Users },
+    ],
+  },
+  {
+    label: "Outreach",
+    items: [
+      { title: "LinkedIn", url: "/linkedin", icon: Linkedin },
+      { title: "Scripts", url: "/outreach", icon: MessageSquare },
+      { title: "Tools", url: "/tools", icon: Wrench },
+    ],
+  },
+  {
+    label: "Performance",
+    items: [
+      { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
+      { title: "Training", url: "/training", icon: GraduationCap },
+    ],
+  },
+  {
+    label: "Account",
+    items: [{ title: "Settings", url: "/settings", icon: SettingsIcon }],
+  },
 ] as const;
 
 export function AppSidebar() {
@@ -48,38 +67,51 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-2 px-2 py-3">
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
+        <Link to="/" className="flex items-center gap-2.5 px-2 py-3">
+          <div className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-[0_0_20px_-4px_var(--primary)]">
             <Flame className="h-4 w-4" />
           </div>
           {!collapsed && (
             <div className="leading-tight">
               <div className="font-display text-sm font-bold tracking-tight">BTF Setter OS</div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Operator console
+              </div>
             </div>
           )}
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span className="flex-1">{item.title}</span>}
-                      {item.url === "/linkedin" && extConnected && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-success" title="Extension connected" />
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="gap-0">
+        {groups.map((group) => (
+          <SidebarGroup key={group.label}>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                {group.label}
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                      <Link to={item.url} className="flex items-center gap-3">
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span className="flex-1">{item.title}</span>}
+                        {item.url === "/linkedin" && extConnected && (
+                          <span
+                            className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_6px_var(--success)]"
+                            title="Extension connected"
+                          />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-0">
