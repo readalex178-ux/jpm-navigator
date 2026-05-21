@@ -561,9 +561,14 @@ function ExtensionStatus({
           "gap-1 text-[10px]",
           connected ? "border-success text-success" : "border-destructive text-destructive",
         )}
+        title={
+          connected
+            ? "Open any LinkedIn DM or profile — the analyzer will auto-run."
+            : "Install the extension and enter the pair code to start mirroring."
+        }
       >
         {connected ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-        Extension {connected ? "connected" : "not paired"}
+        {connected ? "Extension connected — auto-analyze on" : "Extension not paired"}
       </Badge>
       <Badge variant="outline" className="font-mono text-[10px] tracking-widest">
         Pair code: {code || "—"}
