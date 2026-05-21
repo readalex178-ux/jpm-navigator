@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Upload, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { Download, Upload, AlertTriangle, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { type AiProvider } from "@/lib/btf/types";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
 import { toast } from "sonner";
-import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -36,8 +35,6 @@ function SettingsPage() {
   const importJson = useStore((s) => s.importJson);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [objection, setObjection] = useState("");
-  const [obAnswer, setObAnswer] = useState("");
   const [busy, setBusy] = useState(false);
 
   const download = () => {
@@ -73,22 +70,6 @@ function SettingsPage() {
     }
   };
 
-  const handleObjection = async () => {
-    if (!objection) return;
-    setBusy(true);
-    setObAnswer("");
-    try {
-      const out = await chat(settings, [{
-        role: "user",
-        content: `Objection from prospect: "${objection}"\n\nGive the BTF-approved response. Voice-note-aware. Warm. End with one question.`,
-      }]);
-      setObAnswer(out);
-    } catch (e) {
-      toast.error(e instanceof AiNotConfiguredError ? e.message : `AI error: ${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <>
@@ -169,25 +150,8 @@ function SettingsPage() {
           </div>
         </Section>
 
-        <Section
-          title="Objection handler"
-          action={
-            <Button size="sm" variant="outline" onClick={handleObjection} disabled={busy || !objection}>
-              {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-              Get response
-            </Button>
-          }
-        >
-          <Textarea
-            rows={3}
-            value={objection}
-            onChange={(e) => setObjection(e.target.value)}
-            placeholder={`Paste the prospect objection. e.g. "I already tried outbound, didn't work."`}
-          />
-          {obAnswer && (
-            <pre className="mt-3 whitespace-pre-wrap rounded-md bg-surface p-3 text-sm leading-relaxed">{obAnswer}</pre>
-          )}
-        </Section>
+
+
 
         <Section title="Data">
           <div className="flex flex-wrap gap-2">
