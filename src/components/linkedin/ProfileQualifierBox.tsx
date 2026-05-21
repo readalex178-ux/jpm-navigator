@@ -206,10 +206,15 @@ export function ProfileQualifierBox() {
             <Button size="sm" variant="outline" onClick={copyVerdict}>
               <Copy className="mr-1 h-3 w-3" /> Copy
             </Button>
-            {res.verdict !== "SKIP" && (
+            {res.verdict !== "SKIP" && !autoAdded && (
               <Button size="sm" variant="outline" onClick={createProspect}>
                 + Add as prospect
               </Button>
+            )}
+            {autoAdded && (
+              <Badge variant="outline" className="border-success text-success">
+                ✓ In pipeline
+              </Badge>
             )}
           </div>
         </div>
