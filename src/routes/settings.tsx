@@ -150,25 +150,8 @@ function SettingsPage() {
           </div>
         </Section>
 
-        <Section
-          title="Objection handler"
-          action={
-            <Button size="sm" variant="outline" onClick={handleObjection} disabled={busy || !objection}>
-              {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-              Get response
-            </Button>
-          }
-        >
-          <Textarea
-            rows={3}
-            value={objection}
-            onChange={(e) => setObjection(e.target.value)}
-            placeholder={`Paste the prospect objection. e.g. "I already tried outbound, didn't work."`}
-          />
-          {obAnswer && (
-            <pre className="mt-3 whitespace-pre-wrap rounded-md bg-surface p-3 text-sm leading-relaxed">{obAnswer}</pre>
-          )}
-        </Section>
+
+
 
         <Section title="Data">
           <div className="flex flex-wrap gap-2">
