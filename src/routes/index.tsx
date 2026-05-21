@@ -77,6 +77,9 @@ function DashboardPage() {
     <>
       <PageHeader title="Dashboard" subtitle="Operator console — today's snapshot.">
         <Button variant="outline" size="sm" asChild>
+          <Link to="/linkedin">Open Analyzer <ArrowRight className="ml-1 h-3 w-3" /></Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
           <Link to="/pipeline">View pipeline <ArrowRight className="ml-1 h-3 w-3" /></Link>
         </Button>
         <Button size="sm" onClick={() => setOpen(true)}>
