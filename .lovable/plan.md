@@ -1,66 +1,78 @@
-## Part 1 — Remove JPM Media logo/wordmark
+## Goal
 
-In `src/components/AppSidebar.tsx` the sidebar header shows a flame logo with "BTF Setter OS" and a "JPM Media" subtitle. Action:
+Every prospect page becomes the home for that conversation: a running log of every message in both directions (typed or transcribed from a voice note), plus an AI co-pilot that reads the whole log and tells you exactly what to send next.
 
-- Remove the "JPM Media" subtitle line.
-- Keep the flame mark + "BTF Setter OS" title (or drop the flame too — say the word).
+Keep the existing activity log and VN log — they stay as the source of truth for "where is this prospect at, when did we last touch them, what stage". The new chat view is built on top of that same data so nothing is lost.
 
-Quick grep confirms no other references to "JPM Media" in the UI; framework prompt text in `src/lib/ai/btfFramework.ts` mentions "JPM Media" in the BTF system prompt — that's internal AI context, not user-facing, so left alone unless you want it removed too.
+## What changes
 
-## Part 2 — Full feature audit
+### 1. Conversation log on the prospect page
 
-### Routes shipped (10)
+In `src/routes/prospects.$id.tsx`, add a new top section "Conversation" above the existing Activity log. It renders `activities` + `vnLog` merged chronologically as chat bubbles:
+- Right-aligned bubbles = from Me (setter)
+- Left-aligned bubbles = from Them (prospect)
+- VN entries show a 🎙 badge with the variation name; transcripts show under the badge
+- Each bubble shows date + type pill (VN / text / email / comment / call / note)
+
+The existing Activity log and Voice notes sections stay exactly as they are underneath — same composers, same data. The chat view is a read-only visualization layered on top.
+
+### 2. Add-a-message composer with direction + transcription
+
+Above the chat, a single composer with:
+- **Direction toggle**: `From them` / `From me` (defaults to "From them" because that's the common case — you just got a reply).
+- **Type selector**: text / VN / email / comment / call / note.
+- **Message field**: textarea for the message text.
+- **Transcribe voice note** button: opens a file picker for an audio file (m4a / mp3 / wav / webm). The file is sent to a new `transcribeVoiceNote` server function backed by ElevenLabs Scribe (`scribe_v2`). The returned transcript fills the message field; the user can edit before saving. Requires `ELEVENLABS_API_KEY` secret.
+- **Save**: writes an `Activity` (with the direction encoded — `from_them: true|false` added to the Activity type) and, when type is VN, also writes a `VNEntry` so the existing Voice notes section stays in sync.
+
+### 3. Conversation-aware AI co-pilot
+
+Replace today's three-button AI Co-pilot with one primary action: **"What do I send next?"**
+
+It packages: prospect identity + stage + tier + the full chronological conversation (last 30 messages, both directions, with role labels) + buying signals, and calls a new `nextMoveFromConversation` server function. The function reuses the existing `BTF_ANALYZER_SYSTEM` prompt and returns a strict JSON shape:
+
 ```
-/                Dashboard           index.tsx          ✅ wired
-/prospects       Prospects list      prospects.tsx      ✅ wired, Analyze→LinkedIn handoff
-/prospects/$id   Prospect detail     prospects.$id.tsx  ✅ wired
-/pipeline        Kanban              pipeline.tsx       ✅ wired
-/outreach        Outreach hub        outreach.tsx       ✅ wired
-/linkedin        LinkedIn analyzer   linkedin.tsx       ✅ wired (636 lines — largest)
-/kpi             KPI tracker         kpi.tsx            ✅ wired
-/training        Roleplay/training   training.tsx       ✅ wired
-/settings        Settings            settings.tsx       ✅ wired
+{
+  verdictLine,            // ✅/⚠️/❌ one-liner
+  stage,                  // suggested stage to move them to
+  nextMove,               // plain English action
+  draftMessage,           // ready-to-send copy, ≤150 words, no brackets
+  suggestedActivityType,  // VN / text / etc.
+  reasoning,              // 2-3 sentences
+  confidence
+}
 ```
 
-### Core features confirmed present
-- **Prospect CRUD** — store + cards + drawer + detail page
-- **Pipeline kanban** with 12 stages (`Found → … → Closed/Cold`)
-- **KPI logging + commission strip** in sidebar
-- **Outreach scripts library** with logging
-- **Training/roleplay sessions** via AI assistants
-- **Chrome extension bridge** — `extension/` folder + `linkedinThreads`/`linkedinProfiles` in store + pairing code + connection badge in sidebar
-- **AI thread analyzer** (`AnalyzerStrip`) with cached history (`AnalyzerHistoryTimeline`)
-- **AI profile qualifier** (`ProfileQualifierBox`) with SEND_VN auto-add-to-pipeline
-- **Auto-link thread → prospect** when analysis is qualified/hot
-- **Cross-route handoff** (`sessionStorage` `btf:analyze`) from `/prospects` → `/linkedin`
-- **CSV export** (`src/lib/csvExport.ts`)
-- **Inbox triage dot** (`InboxTriageDot.tsx`)
-- **State persistence** via zustand `persist` (localStorage)
-- **Import/export JSON** in settings
+The result renders inline under the chat with:
+- Copy button on the draft message
+- "Move to <stage>" button that calls `moveStage`
+- "Log as my next message" button that prefills the composer with the draft + direction=Me
 
-### Gaps / things that look missing or weak
+Keep the existing `Reply` / `Score` buttons as secondary options; just put `What do I send next?` first and make it the bold one.
 
-1. **No backend** — everything is localStorage. Lovable Cloud is connected (Supabase wired in `src/integrations/supabase/`) but no tables, no auth, no server functions are using it. Data lives only in this browser. Risk: clear cache = lose everything; no multi-device; no sharing.
-2. **No authentication** — no login/signup, no `_authenticated` layout. Anyone with the URL sees your data.
-3. **`AnalyzerHistoryTimeline.tsx` exists but unused?** — confirm it's actually rendered somewhere on `/linkedin`. If not, dead code or unwired feature.
-4. **`InboxTriageDot.tsx`** — confirm it's used in the inbox list on `/linkedin`. If not, same.
-5. **Daily KPI auto-aggregation from extension activity** — KPI looks manual-entry only. Extension scrapes threads/profiles but doesn't bump `vnSent` / `replies` / `connectionsSent`.
-6. **No commission calculator from closed deals** — `commissions` table exists but I'm not sure deals auto-flow when a prospect hits stage `Closed`.
-7. **Reminders / follow-up queue** — sequences exist in the framework prompt (Day 3, Day 7, Day 12) but no automated queue surfacing "VN2 due today" prospects.
-8. **No mobile considerations** — viewport shows 384px wide; sidebar+tables aren't obviously responsive.
-9. **No published deploy** — project URL is preview only.
+### 4. Per-prospect analyser history
 
-### Suggested next moves (pick any)
-- A. Add Lovable Cloud auth + sync prospects/KPI/analyses to the database so data survives.
-- B. Wire the missing UI components (`AnalyzerHistoryTimeline`, `InboxTriageDot`) if not already on screen.
-- C. Build a "Today" queue: prospects with overdue next-touch based on stage + days since `lastTouchAt`.
-- D. Auto-bump KPI counters when extension reports new VN sent / reply received.
-- E. Auto-create a commission row when a prospect moves to `Closed`.
-- F. Mobile pass on sidebar + tables.
+Each call to `nextMoveFromConversation` is persisted to a new store slice `prospectAnalyses: Record<string, ProspectAnalysisEntry[]>` (capped 20 per prospect). Render a collapsible "Analyser history" timeline under the co-pilot, modelled on `AnalyzerHistoryTimeline` — shows verdict, stage at the time, suggested next move, and timestamp so you can see how the AI's read has evolved as the conversation moves.
 
-## What I'll do if you approve
+### 5. Stage + last-touch stay accurate
 
-1. Remove "JPM Media" from `AppSidebar`.
-2. Verify `AnalyzerHistoryTimeline` and `InboxTriageDot` are actually rendered; wire them up if not.
+Saving a message always updates `lastTouchAt` (already happens via `logActivity`). When direction=Them and the prospect is in `Found` / `Connected` / `VN1 Sent` / `VN2 Sent`, prompt with a one-click "Move to Replied" chip above the result. No automatic stage changes — the setter stays in control.
 
-Everything else in the audit is informational — tell me which gaps (A–F or others) you want me to tackle and I'll plan those separately.
+## Files touched
+
+- `src/lib/btf/types.ts` — add optional `fromMe?: boolean` to `Activity` (defaults to true for backwards compatibility so old logged activities stay attributed to the setter).
+- `src/lib/store.ts` — add `prospectAnalyses` + `addProspectAnalysis` / `clearProspectAnalyses`; thread `fromMe` through `logActivity` callers.
+- `src/lib/ai/aiAssistants.functions.ts` — add `nextMoveFromConversation` server function (Zod-validated input, JSON output, same gateway/fallback pattern as the others) and `transcribeVoiceNote` server function calling ElevenLabs Scribe `scribe_v2`.
+- `src/routes/prospects.$id.tsx` — add Conversation section (chat view + composer + transcribe button), reorder AI co-pilot, render analyser history, keep existing Activity log + VN sections underneath.
+- New small component `src/components/ConversationLog.tsx` for the chat bubbles (keeps the route file readable).
+- New small component `src/components/ProspectAnalyserHistory.tsx` adapted from `AnalyzerHistoryTimeline`.
+
+## Secrets
+
+- Requires `ELEVENLABS_API_KEY` for the transcription server function. Will request it via the secrets tool before implementing transcription so the button isn't dead on arrival.
+
+## Out of scope
+
+- No realtime/streaming STT (overkill for pasting a single VN). Plain file-upload → batch transcription.
+- No changes to the LinkedIn-extension flow (`useThreadAnalysis`, `AnalyzerStrip`) — those still drive the `/linkedin` page.
+- No backend / Supabase changes — everything stays in the Zustand persisted store.
