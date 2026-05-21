@@ -101,14 +101,62 @@ function LinkedInPage() {
         if (e.pairingCode && e.pairingCode !== pairingCode) return;
         setExtensionConnected(true);
         upsertThread(e.thread);
+        // Auto-select the freshly scraped thread so the AnalyzerStrip fires immediately
+        setActiveThreadId(e.thread.threadId);
       } else if (e.kind === "ext:profile") {
         if (e.pairingCode && e.pairingCode !== pairingCode) return;
         setExtensionConnected(true);
         upsertProfile(e.profile);
+        // If we don't already have a thread with this person, push the profile
+        // into the paste-a-profile qualifier so the user gets an instant verdict.
+        const hasThread = Object.values(useStore.getState().linkedinThreads).some(
+          (t) => t.participantProfileUrl === e.profile.profileUrl,
+        );
+        if (!hasThread) {
+          const text = [
+            e.profile.name,
+            e.profile.headline,
+            e.profile.currentRole,
+            e.profile.location,
+            e.profile.about,
+            ...(e.profile.recentActivity ?? []),
+          ]
+            .filter(Boolean)
+            .join("\n");
+          window.dispatchEvent(
+            new CustomEvent("btf:qualify-profile", { detail: { text, autoRun: true } }),
+          );
+          toast.success(`Qualifying ${e.profile.name}…`);
+        }
       }
     });
     return off;
   }, [pairingCode, setExtensionConnected, upsertThread, upsertProfile]);
+
+  // Cross-route handoff: /prospects "Analyze" button drops a target in sessionStorage.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem("btf:analyze");
+    if (!raw) return;
+    sessionStorage.removeItem("btf:analyze");
+    try {
+      const target = JSON.parse(raw) as { threadId?: string; profileText?: string };
+      if (target.threadId) {
+        setActiveThreadId(target.threadId);
+      } else if (target.profileText) {
+        // defer one tick so ProfileQualifierBox is mounted
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("btf:qualify-profile", {
+              detail: { text: target.profileText, autoRun: true },
+            }),
+          );
+        }, 0);
+      }
+    } catch {
+      // ignore malformed handoff
+    }
+  }, []);
 
   const threadList = useMemo(() => {
     return Object.values(threads).sort((a, b) => (b.scrapedAt > a.scrapedAt ? 1 : -1));
