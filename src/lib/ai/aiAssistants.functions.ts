@@ -168,3 +168,134 @@ ${data.history ? `PRIOR ANALYZER NOTES:\n${data.history}` : ""}`;
       return { ok: false, error: (e as Error).message };
     }
   });
+
+/* =========================
+ * 3. Full BTF VN1 script builder (paste profile → ≤150 word VN1, no brackets)
+ * ========================= */
+
+const VN1_BUILDER_SYS = `${BTF_ANALYZER_SYSTEM}
+
+You will be given RAW PASTED CONTENT from a LinkedIn profile. Your job: produce ONE ready-to-record Voice Note #1 script that the setter can read out loud verbatim.
+
+HARD RULES — these are non-negotiable, the script is rejected if any are broken:
+- Maximum 150 words. Count them.
+- NO brackets of any kind. No "[Name]", no "[pause]", no "{{first_name}}", no parenthetical pacing cues. The script is final spoken text only.
+- NO placeholders. Resolve their actual first name from the profile. If you genuinely cannot find a first name, omit the name entirely and open with "Hey".
+- Must follow the BTF Master Script structure in this exact order:
+  1) HOOK — "Hey <first name>, figured I'd send a quick voice note so you didn't have to read a whole book here."
+  2) PERSONALISATION — 2-3 sentences citing ONE specific real detail from their profile (offer, headline, recent post, role). Prove you actually looked.
+  3) BRIDGE — must use the literal number 19 founders/service providers and the phrase "more direct, one-on-one conversations" and "without relying on paid ads".
+  4) RELEVANCE — one sentence connecting BTF to their world / market (use the right market trust line if obvious).
+  5) CLOSE — default: "Let me know if you're open to hearing how it works?"
+- Casual, human, conversational. Zero corporate speak. No emojis. No exclamation marks unless absolutely warranted.
+- Never name the product. Never say "podcast". Never mention pricing.
+
+Return JSON ONLY:
+{
+  "firstName": "<the first name you used, or empty string>",
+  "wordCount": <integer count of words in script>,
+  "script": "<the full final spoken text, plain prose, no brackets, no labels>",
+  "personalisationDetail": "<the specific real detail you anchored on>",
+  "market": "<market bucket if identifiable>",
+  "warnings": ["<any rule you almost broke or had to skip>"]
+}`;
+
+export const VN1ScriptResultSchema = z.object({
+  firstName: z.string().max(60),
+  wordCount: z.number().int().min(0).max(500),
+  script: z.string().min(10).max(2000),
+  personalisationDetail: z.string().max(400),
+  market: z.string().max(80),
+  warnings: z.array(z.string()).max(8).default([]),
+});
+export type VN1ScriptResult = z.infer<typeof VN1ScriptResultSchema>;
+
+export const buildVN1Script = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z.object({ profileText: z.string().min(10).max(20000) }).parse(data),
+  )
+  .handler(async ({ data }): Promise<{ ok: true; result: VN1ScriptResult } | { ok: false; error: string }> => {
+    try {
+      const text = await callWithFallback(
+        VN1_BUILDER_SYS,
+        `PROFILE:\n\n${data.profileText}\n\nReturn JSON only.`,
+        true,
+      );
+      let raw: unknown;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (!m) return { ok: false, error: "AI returned malformed output." };
+        raw = JSON.parse(m[0]);
+      }
+      const parsed = VN1ScriptResultSchema.parse(raw);
+      // Server-side sanity: strip any bracketed cues that slipped through.
+      parsed.script = parsed.script.replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "").replace(/\s{2,}/g, " ").trim();
+      parsed.wordCount = parsed.script.split(/\s+/).filter(Boolean).length;
+      return { ok: true, result: parsed };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  });
+
+/* =========================
+ * 4. Paste-a-thread analyser (no extension required)
+ * ========================= */
+
+const PASTED_THREAD_SYS = `${BTF_ANALYZER_SYSTEM}
+
+You will be given a RAW PASTED conversation thread or voice-note transcript between a setter (ME) and a LinkedIn prospect (THEM). Lines may be labelled "Me:" / "Them:" / "Prospect:" or just be a transcript of one VN. Infer who is speaking.
+
+Return JSON ONLY:
+{
+  "stage": "<one of: not_connected | connection_sent | accepted_no_vn | vn1_sent | replied_voice | replied_text | vn2_due | day7_followup_due | day12_text_due | objection_raised | ready_to_book | booked | ghost>",
+  "verdictLine": "<one of: ✅ SEND VN2 — … / ✅ SEND CALENDAR — … / ✅ BOOK — … / ⚠️ OBJECTION — … / ❌ WALK AWAY — … / 🔁 RE-ENGAGE — … / ⏳ WAIT — …>",
+  "greenFlags": ["..."],
+  "redFlags": ["..."],
+  "objection": "<none | time | already_have_system | cost | is_this_sales | not_interested | send_info | other>",
+  "nextMove": "<exact next action in plain language>",
+  "draftMessage": "<the verbatim message or VN script to send next, ≤150 words, no brackets, no placeholders. Empty string if the verdict is WALK AWAY or WAIT.>",
+  "reasoning": "<2-3 sentences explaining the call>",
+  "confidence": 0.0-1.0
+}`;
+
+export const PastedThreadResultSchema = z.object({
+  stage: z.string().max(60),
+  verdictLine: z.string().max(200),
+  greenFlags: z.array(z.string()).max(8).default([]),
+  redFlags: z.array(z.string()).max(8).default([]),
+  objection: z.string().max(40),
+  nextMove: z.string().max(280),
+  draftMessage: z.string().max(2000),
+  reasoning: z.string().max(600),
+  confidence: z.number().min(0).max(1),
+});
+export type PastedThreadResult = z.infer<typeof PastedThreadResultSchema>;
+
+export const analyzePastedThread = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z.object({ threadText: z.string().min(5).max(20000) }).parse(data),
+  )
+  .handler(async ({ data }): Promise<{ ok: true; result: PastedThreadResult } | { ok: false; error: string }> => {
+    try {
+      const text = await callWithFallback(
+        PASTED_THREAD_SYS,
+        `THREAD / TRANSCRIPT:\n\n${data.threadText}\n\nReturn JSON only.`,
+        true,
+      );
+      let raw: unknown;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (!m) return { ok: false, error: "AI returned malformed output." };
+        raw = JSON.parse(m[0]);
+      }
+      const parsed = PastedThreadResultSchema.parse(raw);
+      parsed.draftMessage = parsed.draftMessage.replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "").replace(/\s{2,}/g, " ").trim();
+      return { ok: true, result: parsed };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  });
