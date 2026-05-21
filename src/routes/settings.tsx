@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Upload, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { Download, Upload, AlertTriangle, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { type AiProvider } from "@/lib/btf/types";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
 import { toast } from "sonner";
-import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
