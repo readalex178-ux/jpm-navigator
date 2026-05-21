@@ -35,8 +35,6 @@ function SettingsPage() {
   const importJson = useStore((s) => s.importJson);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [objection, setObjection] = useState("");
-  const [obAnswer, setObAnswer] = useState("");
   const [busy, setBusy] = useState(false);
 
   const download = () => {
