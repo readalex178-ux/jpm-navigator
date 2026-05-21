@@ -1,64 +1,66 @@
-## Goal
+## Part 1 — Remove JPM Media logo/wordmark
 
-When the analyzer returns a positive verdict, the prospect should land in the pipeline automatically — no extra click on "+ Add as prospect" or "Link to prospect".
+In `src/components/AppSidebar.tsx` the sidebar header shows a flame logo with "BTF Setter OS" and a "JPM Media" subtitle. Action:
 
-Today both analyzers stop short of that:
-- `ProfileQualifierBox` shows a `+ Add as prospect` button only after a `SEND_VN` verdict — manual.
-- `AnalyzerStrip` (thread analysis) never creates or links a prospect, even when triage is `hot`/`warm` and qualification verdict is `qualified`.
+- Remove the "JPM Media" subtitle line.
+- Keep the flame mark + "BTF Setter OS" title (or drop the flame too — say the word).
 
-This plan wires "match → pipeline" in both places, idempotently.
+Quick grep confirms no other references to "JPM Media" in the UI; framework prompt text in `src/lib/ai/btfFramework.ts` mentions "JPM Media" in the BTF system prompt — that's internal AI context, not user-facing, so left alone unless you want it removed too.
 
-## What counts as a "match"
+## Part 2 — Full feature audit
 
-- **Profile qualifier**: `verdict === "SEND_VN"` (already the SEND signal).
-- **Thread analyzer**: `qualification.verdict === "qualified"` OR `triage === "hot"`, AND `triage !== "disqualify"` AND `nextAction !== "disqualify"`.
+### Routes shipped (10)
+```
+/                Dashboard           index.tsx          ✅ wired
+/prospects       Prospects list      prospects.tsx      ✅ wired, Analyze→LinkedIn handoff
+/prospects/$id   Prospect detail     prospects.$id.tsx  ✅ wired
+/pipeline        Kanban              pipeline.tsx       ✅ wired
+/outreach        Outreach hub        outreach.tsx       ✅ wired
+/linkedin        LinkedIn analyzer   linkedin.tsx       ✅ wired (636 lines — largest)
+/kpi             KPI tracker         kpi.tsx            ✅ wired
+/training        Roleplay/training   training.tsx       ✅ wired
+/settings        Settings            settings.tsx       ✅ wired
+```
 
-Anything else (MAYBE / warm-but-not-qualified / cold) stays as-is — no auto-add, manual button still available.
+### Core features confirmed present
+- **Prospect CRUD** — store + cards + drawer + detail page
+- **Pipeline kanban** with 12 stages (`Found → … → Closed/Cold`)
+- **KPI logging + commission strip** in sidebar
+- **Outreach scripts library** with logging
+- **Training/roleplay sessions** via AI assistants
+- **Chrome extension bridge** — `extension/` folder + `linkedinThreads`/`linkedinProfiles` in store + pairing code + connection badge in sidebar
+- **AI thread analyzer** (`AnalyzerStrip`) with cached history (`AnalyzerHistoryTimeline`)
+- **AI profile qualifier** (`ProfileQualifierBox`) with SEND_VN auto-add-to-pipeline
+- **Auto-link thread → prospect** when analysis is qualified/hot
+- **Cross-route handoff** (`sessionStorage` `btf:analyze`) from `/prospects` → `/linkedin`
+- **CSV export** (`src/lib/csvExport.ts`)
+- **Inbox triage dot** (`InboxTriageDot.tsx`)
+- **State persistence** via zustand `persist` (localStorage)
+- **Import/export JSON** in settings
 
-## Changes
+### Gaps / things that look missing or weak
 
-### 1. `src/components/linkedin/ProfileQualifierBox.tsx`
-- In `runWith`, after a successful result, if `verdict === "SEND_VN"`:
-  - Check existing prospects for a same-name match (case-insensitive on the first non-empty line) to avoid duplicates.
-  - If none, call `addProspect(...)` with the same payload the manual button uses, plus `stage: "Found"`.
-  - Toast: `"Added <name> to pipeline (Found)"`.
-- Keep the manual `+ Add as prospect` button visible for `MAYBE` verdicts only (skip it when we already auto-added).
+1. **No backend** — everything is localStorage. Lovable Cloud is connected (Supabase wired in `src/integrations/supabase/`) but no tables, no auth, no server functions are using it. Data lives only in this browser. Risk: clear cache = lose everything; no multi-device; no sharing.
+2. **No authentication** — no login/signup, no `_authenticated` layout. Anyone with the URL sees your data.
+3. **`AnalyzerHistoryTimeline.tsx` exists but unused?** — confirm it's actually rendered somewhere on `/linkedin`. If not, dead code or unwired feature.
+4. **`InboxTriageDot.tsx`** — confirm it's used in the inbox list on `/linkedin`. If not, same.
+5. **Daily KPI auto-aggregation from extension activity** — KPI looks manual-entry only. Extension scrapes threads/profiles but doesn't bump `vnSent` / `replies` / `connectionsSent`.
+6. **No commission calculator from closed deals** — `commissions` table exists but I'm not sure deals auto-flow when a prospect hits stage `Closed`.
+7. **Reminders / follow-up queue** — sequences exist in the framework prompt (Day 3, Day 7, Day 12) but no automated queue surfacing "VN2 due today" prospects.
+8. **No mobile considerations** — viewport shows 384px wide; sidebar+tables aren't obviously responsive.
+9. **No published deploy** — project URL is preview only.
 
-### 2. `src/routes/linkedin.tsx` — auto-create/link from thread analysis
-- Add a `useEffect` keyed on `[activeThread?.threadId, analysis]` that runs when:
-  - `analysis` exists and is a "match" per the rule above,
-  - `activeThread` exists,
-  - `threadProspectMap[activeThread.threadId]` is empty (not already linked).
-- Behaviour:
-  - Try to reuse an existing prospect whose `profileUrl === activeThread.participantProfileUrl` (or name match). If found → `linkThreadToProspect(threadId, prospect.id)`.
-  - Otherwise create a new prospect from `activeThread` + `activeProfile`:
-    - `name`: `activeProfile?.name ?? activeThread.participantName`
-    - `profileUrl`: `activeThread.participantProfileUrl`
-    - `platform: "linkedin"`
-    - `niche`: `analysis.market`
-    - `tier`: `analysis.predictedTier === "unknown" ? "DWY" : analysis.predictedTier`
-    - `bio`: `activeProfile?.headline ?? ""`
-    - `stage`: derive from `analysis.stage` / `nextAction`:
-      - `book_call` / `send_calendar_link` → `"Booked"` (or closest existing stage — confirm against `Stage` enum during impl)
-      - `voice_note_1` / `send_connection` → `"Found"`
-      - everything else qualified → `"Contacted"` (or whatever the current Stage list calls the "in convo" bucket)
-    - `bant`: copy `analysis.bantSuggestion`
-    - `qualScore`: `analysis.qualScoreSuggestion`
-  - Then `linkThreadToProspect(threadId, newProspect.id)`.
-  - Toast: `"Added <name> to pipeline · <stage>"`.
-- Guard with a local `useRef<Set<string>>` of threadIds we've already auto-handled this session, so re-analysis doesn't loop.
+### Suggested next moves (pick any)
+- A. Add Lovable Cloud auth + sync prospects/KPI/analyses to the database so data survives.
+- B. Wire the missing UI components (`AnalyzerHistoryTimeline`, `InboxTriageDot`) if not already on screen.
+- C. Build a "Today" queue: prospects with overdue next-touch based on stage + days since `lastTouchAt`.
+- D. Auto-bump KPI counters when extension reports new VN sent / reply received.
+- E. Auto-create a commission row when a prospect moves to `Closed`.
+- F. Mobile pass on sidebar + tables.
 
-### 3. Visual confirmation in `AnalyzerStrip`
-- No structural change. The existing `ProspectStateButton` next to the strip already shows the linked prospect, so once the effect fires, the user sees the prospect chip light up without doing anything.
+## What I'll do if you approve
 
-## Out of scope
+1. Remove "JPM Media" from `AppSidebar`.
+2. Verify `AnalyzerHistoryTimeline` and `InboxTriageDot` are actually rendered; wire them up if not.
 
-- No schema, no server function, no AI prompt changes.
-- No new pipeline stages — we map onto the existing `Stage` union in `src/lib/btf/types.ts`.
-- Cross-route handoff from `/prospects → /linkedin` is untouched.
-
-## One thing to confirm before I build
-
-The `Stage` enum values I'm mapping onto (`"Found"`, `"Contacted"`, `"Booked"`) — I'll read `src/lib/btf/types.ts` during implementation and use the exact strings that exist. If your pipeline calls the first column something else (e.g. `"New"` or `"Lead"`), the mapping uses that instead. No new stages will be invented.
-
-Approve and I'll implement.
+Everything else in the audit is informational — tell me which gaps (A–F or others) you want me to tackle and I'll plan those separately.
