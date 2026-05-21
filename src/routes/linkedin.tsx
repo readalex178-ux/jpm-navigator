@@ -225,7 +225,7 @@ function LinkedInPage() {
       tier: analysis.predictedTier === "unknown" ? "DWY" : analysis.predictedTier,
       bio: activeProfile?.headline ?? "",
       stage,
-      bant: analysis.bantSuggestion,
+      bant: analysis.bantSuggestion as import("@/lib/btf/types").BANT,
       qualScore: analysis.qualScoreSuggestion,
     });
     linkThread(tid, created.id);
