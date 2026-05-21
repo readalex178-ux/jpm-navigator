@@ -25,15 +25,16 @@ export function ProfileQualifierBox() {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<ProfileQualifierResult | null>(null);
 
-  const run = async () => {
-    if (text.trim().length < 10) {
+  const runWith = async (input: string) => {
+    const trimmed = input.trim();
+    if (trimmed.length < 10) {
       toast.error("Paste a profile first.");
       return;
     }
     setBusy(true);
     setRes(null);
     try {
-      const r = await fn({ data: { profileText: text.trim() } });
+      const r = await fn({ data: { profileText: trimmed } });
       if (r.ok) setRes(r.result);
       else toast.error(r.error);
     } catch (e) {
@@ -42,6 +43,24 @@ export function ProfileQualifierBox() {
       setBusy(false);
     }
   };
+
+  const run = () => runWith(text);
+
+  // External trigger: any caller can dispatch a window event with profile text
+  // (e.g. extension scrape of a LinkedIn profile, or "Analyze" button from /prospects).
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ text: string; autoRun?: boolean }>).detail;
+      if (!detail?.text) return;
+      setText(detail.text);
+      setRes(null);
+      if (detail.autoRun !== false) void runWith(detail.text);
+    };
+    window.addEventListener("btf:qualify-profile", handler);
+    return () => window.removeEventListener("btf:qualify-profile", handler);
+    // runWith closes over `fn` only, which is stable from useServerFn
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const copyVerdict = () => {
     if (!res) return;
