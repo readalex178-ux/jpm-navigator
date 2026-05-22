@@ -84,7 +84,7 @@ These are in your spec but I'm **not** building them now — flag them and we'll
 ## Order of execution
 
 1. Migration + auth (Phase 1a).
-2. Server fns + swap Zustand reads/writes to React Query (Phase 1b).
+2. Phase 1b DONE (write-through sync): attachSupabaseAuth wired; pullAll/pushAll server fns; useSupabaseSync hydrates store on login and pushes full snapshot 1.5s after any mutation. UI components keep using Zustand unchanged.
 3. localStorage importer in Settings (Phase 1c).
 4. Unified Inbox page + 3-suggestion AI (Phase 2).
 5. Automation audit + memory note (Phase 3).

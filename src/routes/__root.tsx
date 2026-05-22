@@ -14,6 +14,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { useHydrate } from "@/lib/useHydrate";
+import { useSupabaseSync } from "@/lib/sync/useSupabaseSync";
 import { useAuth } from "@/lib/auth/useAuth";
 import { LoginPage } from "@/components/auth/LoginPage";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,6 +131,11 @@ function AuthGate() {
     return <LoginPage />;
   }
 
+  return <AuthedShell />;
+}
+
+function AuthedShell() {
+  useSupabaseSync();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
