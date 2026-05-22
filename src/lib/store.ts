@@ -52,6 +52,20 @@ type State = {
   vnScripts: VNScript[];
   analyses: Record<string, CachedAnalysis>; // threadId -> latest analysis
   analysisHistory: Record<string, CachedAnalysis[]>; // threadId -> chronological history (oldest first)
+  prospectAnalyses: Record<string, ProspectAnalysisEntry[]>; // prospectId -> chronological
+};
+
+export type ProspectAnalysisEntry = {
+  id: string;
+  createdAt: string;
+  stageAtTime: string;
+  verdictLine: string;
+  suggestedStage: string;
+  nextMove: string;
+  draftMessage: string;
+  suggestedActivityType: string;
+  reasoning: string;
+  confidence: number;
 };
 
 type Actions = {
@@ -90,6 +104,9 @@ type Actions = {
   upsertAnalysis: (a: CachedAnalysis) => void;
   clearAnalysis: (threadId: string) => void;
 
+  addProspectAnalysis: (prospectId: string, entry: Omit<ProspectAnalysisEntry, "id" | "createdAt">) => void;
+  clearProspectAnalyses: (prospectId: string) => void;
+
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
 };
@@ -127,6 +144,7 @@ export const useStore = create<State & Actions>()(
       vnScripts: [],
       analyses: {},
       analysisHistory: {},
+      prospectAnalyses: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -263,6 +281,19 @@ export const useStore = create<State & Actions>()(
         delete nextHist[threadId];
         set({ analyses: next, analysisHistory: nextHist });
       },
+
+      addProspectAnalysis: (prospectId, entry) => {
+        const prev = get().prospectAnalyses[prospectId] ?? [];
+        const next = [...prev, { id: uid(), createdAt: now(), ...entry }].slice(-20);
+        set({ prospectAnalyses: { ...get().prospectAnalyses, [prospectId]: next } });
+      },
+      clearProspectAnalyses: (prospectId) => {
+        const next = { ...get().prospectAnalyses };
+        delete next[prospectId];
+        set({ prospectAnalyses: next });
+      },
+
+
 
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {

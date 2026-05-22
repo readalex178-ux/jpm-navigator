@@ -299,3 +299,95 @@ export const analyzePastedThread = createServerFn({ method: "POST" })
       return { ok: false, error: (e as Error).message };
     }
   });
+
+/* =========================
+ * 5. Conversation-aware next-move co-pilot
+ *    Reads the running conversation log for a prospect and decides what to send next.
+ * ========================= */
+
+const NEXT_MOVE_SYS = `${BTF_ANALYZER_SYSTEM}
+
+You are reading a running conversation between a setter (ME) and a prospect (THEM), plus the prospect's profile and buying signals. Decide the single best next move and write the exact message to send.
+
+Return JSON ONLY (no markdown):
+{
+  "verdictLine": "<one line starting with ✅ / ⚠️ / ❌ / 🔁 / ⏳ + a short verdict>",
+  "stage": "<one of: Found | Connected | VN1 Sent | Replied | VN2 Sent | Calendar Sent | Call Booked | No Show | Nurturing | Re-Engaged | Closed | Cold>",
+  "nextMove": "<the exact next action in plain English, one sentence>",
+  "draftMessage": "<the verbatim message to send next, ≤150 words, no brackets, no placeholders. Empty string if WAIT or WALK AWAY.>",
+  "suggestedActivityType": "<one of: VN | text | email | comment | call | note>",
+  "reasoning": "<2-3 sentences explaining the call, referencing the most recent prospect message>",
+  "confidence": 0.0-1.0
+}`;
+
+export const NextMoveResultSchema = z.object({
+  verdictLine: z.string().max(200),
+  stage: z.string().max(40),
+  nextMove: z.string().max(300),
+  draftMessage: z.string().max(2000),
+  suggestedActivityType: z.string().max(20),
+  reasoning: z.string().max(600),
+  confidence: z.number().min(0).max(1),
+});
+export type NextMoveResult = z.infer<typeof NextMoveResultSchema>;
+
+const ConvMessageSchema = z.object({
+  fromMe: z.boolean(),
+  type: z.string().max(20),
+  date: z.string().max(40),
+  text: z.string().max(4000),
+});
+
+export const nextMoveFromConversation = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        prospectName: z.string().min(1).max(120),
+        platform: z.string().max(40).optional(),
+        niche: z.string().max(200).optional(),
+        stage: z.string().max(40),
+        tier: z.string().max(20).optional(),
+        bio: z.string().max(4000).optional(),
+        signals: z.array(z.string()).max(20).optional(),
+        messages: z.array(ConvMessageSchema).max(60),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }): Promise<{ ok: true; result: NextMoveResult } | { ok: false; error: string }> => {
+    try {
+      const convo = data.messages
+        .slice(-30)
+        .map((m) => `[${m.date.slice(0, 16)}] ${m.fromMe ? "ME" : "THEM"} (${m.type}): ${m.text}`)
+        .join("\n");
+      const user = `PROSPECT: ${data.prospectName}
+Platform: ${data.platform ?? "—"}
+Niche: ${data.niche ?? "—"}
+Stage: ${data.stage}
+Target tier: ${data.tier ?? "—"}
+Buying signals: ${(data.signals ?? []).join(", ") || "none"}
+Bio: ${data.bio ?? "—"}
+
+CONVERSATION (chronological):
+${convo || "(no messages yet)"}
+
+Return JSON only.`;
+      const text = await callWithFallback(NEXT_MOVE_SYS, user, true);
+      let raw: unknown;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (!m) return { ok: false, error: "AI returned malformed output." };
+        raw = JSON.parse(m[0]);
+      }
+      const parsed = NextMoveResultSchema.parse(raw);
+      parsed.draftMessage = parsed.draftMessage
+        .replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      return { ok: true, result: parsed };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  });
+

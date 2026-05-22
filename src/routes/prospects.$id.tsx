@@ -1,6 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, Trash2, Sparkles, Loader2, Pencil } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  ArrowLeft,
+  ExternalLink,
+  Trash2,
+  Sparkles,
+  Loader2,
+  Pencil,
+  Mic,
+  Copy,
+  ArrowRight,
+} from "lucide-react";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { PageBody, PageHeader, Section } from "@/components/Page";
 import { Button } from "@/components/ui/button";
@@ -10,6 +21,8 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { ConversationLog, buildConversation } from "@/components/ConversationLog";
+import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
 import {
   STAGES,
   SIGNAL_LABELS,
@@ -21,16 +34,17 @@ import {
 } from "@/lib/btf/types";
 import { useStore, daysSince, todayStr } from "@/lib/store";
 import { chat, chatJson, AiNotConfiguredError } from "@/lib/ai/client";
+import { nextMoveFromConversation, type NextMoveResult } from "@/lib/ai/aiAssistants.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/prospects/$id")({
   head: () => ({
-    meta: [
-      { title: "Prospect — BTF Setter OS" },
-    ],
+    meta: [{ title: "Prospect — BTF Setter OS" }],
   }),
   component: ProspectDetail,
 });
+
+const ACTIVITY_TYPES: ActivityType[] = ["VN", "text", "email", "comment", "like", "call", "note"];
 
 function ProspectDetail() {
   const { id } = Route.useParams();
@@ -43,15 +57,29 @@ function ProspectDetail() {
   const logActivity = useStore((s) => s.logActivity);
   const logVN = useStore((s) => s.logVN);
   const deleteProspect = useStore((s) => s.deleteProspect);
+  const addProspectAnalysis = useStore((s) => s.addProspectAnalysis);
   const settings = useStore((s) => s.settings);
 
+  // Composer state
+  const [msgDirection, setMsgDirection] = useState<"them" | "me">("them");
+  const [msgType, setMsgType] = useState<ActivityType>("text");
+  const [msgText, setMsgText] = useState("");
+  const [transcribing, setTranscribing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Legacy composers (kept for backwards compatibility)
   const [actType, setActType] = useState<ActivityType>("VN");
   const [actNote, setActNote] = useState("");
   const [vnVar, setVnVar] = useState("");
   const [vnReply, setVnReply] = useState<ReplyType>("none");
+
+  // AI co-pilot state
+  const [coPilotResult, setCoPilotResult] = useState<NextMoveResult | null>(null);
   const [aiAction, setAiAction] = useState<string>("");
   const [aiBusy, setAiBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+
+  const callNextMove = useServerFn(nextMoveFromConversation);
 
   const stageDays = useMemo(
     () => (prospect ? daysSince(prospect.stageEnteredAt) : 0),
@@ -69,7 +97,83 @@ function ProspectDetail() {
     );
   }
 
-  const runAi = async (kind: "next" | "reply" | "score") => {
+  const saveMessage = () => {
+    const text = msgText.trim();
+    if (!text) return;
+    const date = new Date().toISOString();
+    const fromMe = msgDirection === "me";
+    logActivity(prospect.id, { date, type: msgType, notes: text, fromMe });
+    if (msgType === "VN" && fromMe) {
+      logVN(prospect.id, { date, variation: text.slice(0, 80), reply: "none" });
+    }
+    setMsgText("");
+    toast.success(fromMe ? "Logged your message" : "Logged their message");
+  };
+
+  const handleTranscribe = async (file: File) => {
+    setTranscribing(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+      const json = (await res.json()) as { ok: boolean; text?: string; error?: string };
+      if (!json.ok) throw new Error(json.error || "Transcription failed");
+      setMsgType("VN");
+      setMsgText((prev) => (prev ? `${prev}\n\n${json.text ?? ""}` : (json.text ?? "")));
+      toast.success("Transcribed");
+    } catch (e) {
+      toast.error(`Transcribe failed: ${(e as Error).message}`);
+    } finally {
+      setTranscribing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const runCoPilot = async () => {
+    setAiBusy(true);
+    setCoPilotResult(null);
+    try {
+      const conv = buildConversation(prospect.activities, prospect.vnLog);
+      const signals = Object.entries(prospect.signals)
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      const res = await callNextMove({
+        data: {
+          prospectName: prospect.name,
+          platform: prospect.platform,
+          niche: prospect.niche,
+          stage: prospect.stage,
+          tier: prospect.tier,
+          bio: prospect.bio,
+          signals,
+          messages: conv.map((m) => ({
+            fromMe: m.fromMe,
+            type: m.type,
+            date: m.date,
+            text: m.text,
+          })),
+        },
+      });
+      if (!res.ok) throw new Error(res.error);
+      setCoPilotResult(res.result);
+      addProspectAnalysis(prospect.id, {
+        stageAtTime: prospect.stage,
+        verdictLine: res.result.verdictLine,
+        suggestedStage: res.result.stage,
+        nextMove: res.result.nextMove,
+        draftMessage: res.result.draftMessage,
+        suggestedActivityType: res.result.suggestedActivityType,
+        reasoning: res.result.reasoning,
+        confidence: res.result.confidence,
+      });
+    } catch (e) {
+      toast.error(`AI error: ${(e as Error).message}`);
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const runLegacyAi = async (kind: "reply" | "score") => {
     setAiBusy(true);
     setAiAction("");
     try {
@@ -82,13 +186,9 @@ Target tier: ${prospect.tier}
 Bio: ${prospect.bio}
 Buying signals: ${Object.entries(prospect.signals).filter(([, v]) => v).map(([k]) => k).join(", ") || "none"}
 Recent activities:
-${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}: ${a.notes}`).join("\n") || "(none)"}`;
-
-      if (kind === "next") {
-        const out = await chat(settings, [{ role: "user", content: `${ctx}\n\nGive the exact next action and 2–3 talking points. Keep it under 120 words.` }]);
-        setAiAction(out);
-      } else if (kind === "reply") {
-        const last = prospect.activities[0]?.notes || "(no recent message)";
+${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromMe === false ? "THEM" : "ME"} ${a.type}: ${a.notes}`).join("\n") || "(none)"}`;
+      if (kind === "reply") {
+        const last = prospect.activities.find((a) => a.fromMe === false)?.notes || prospect.activities[0]?.notes || "(no recent message)";
         const out = await chat(settings, [{ role: "user", content: `${ctx}\n\nLast message from prospect: "${last}"\n\nWrite a paste-ready reply. Match their format. End with one question.` }]);
         setAiAction(out);
       } else {
@@ -111,6 +211,21 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
       setAiBusy(false);
     }
   };
+
+  const useDraftAsMessage = () => {
+    if (!coPilotResult?.draftMessage) return;
+    setMsgDirection("me");
+    const t = coPilotResult.suggestedActivityType?.toLowerCase();
+    if (t && (ACTIVITY_TYPES as string[]).includes(t)) {
+      setMsgType(t as ActivityType);
+    }
+    setMsgText(coPilotResult.draftMessage);
+    toast.message("Loaded into composer", { description: "Review and hit Log to record it." });
+  };
+
+  const replyableStages: Stage[] = ["Found", "Connected", "VN1 Sent", "VN2 Sent"];
+  const showReplyChip =
+    msgDirection === "them" && replyableStages.includes(prospect.stage);
 
   return (
     <>
@@ -135,21 +250,6 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
           variant="outline"
           size="sm"
           onClick={() => {
-            const map = useStore.getState().threadProspectMap;
-            const threadId = Object.entries(map).find(([, pid]) => pid === prospect.id)?.[0];
-            const payload = threadId
-              ? { threadId }
-              : { profileText: [prospect.name, prospect.niche, prospect.bio].filter(Boolean).join("\n") };
-            sessionStorage.setItem("btf:analyze", JSON.stringify(payload));
-            navigate({ to: "/linkedin" });
-          }}
-        >
-          <Sparkles className="mr-1 h-4 w-4" /> Analyze
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
             if (confirm("Delete this prospect?")) {
               deleteProspect(prospect.id);
               navigate({ to: "/prospects" });
@@ -162,27 +262,142 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
 
       <PageBody className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Section title="Conversation">
+            <ConversationLog activities={prospect.activities} vnLog={prospect.vnLog} />
+
+            <div className="mt-4 space-y-2 rounded-md border border-border bg-surface p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-md border border-border overflow-hidden">
+                  <button
+                    type="button"
+                    className={`px-3 py-1 text-xs uppercase tracking-widest ${msgDirection === "them" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
+                    onClick={() => setMsgDirection("them")}
+                  >From them</button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1 text-xs uppercase tracking-widest ${msgDirection === "me" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
+                    onClick={() => setMsgDirection("me")}
+                  >From me</button>
+                </div>
+                <Select value={msgType} onValueChange={(v) => setMsgType(v as ActivityType)}>
+                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ACTIVITY_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleTranscribe(f);
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={transcribing}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {transcribing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Mic className="mr-1 h-3 w-3" />}
+                  {transcribing ? "Transcribing…" : "Transcribe voice note"}
+                </Button>
+              </div>
+              <Textarea
+                rows={3}
+                value={msgText}
+                onChange={(e) => setMsgText(e.target.value)}
+                placeholder={msgDirection === "them" ? "Paste what they sent (text or VN transcript)…" : "What you sent / are about to send…"}
+              />
+              <div className="flex items-center justify-between gap-2">
+                {showReplyChip && (
+                  <button
+                    type="button"
+                    className="rounded-full border border-amber-400/60 px-2 py-1 text-[10px] uppercase tracking-widest text-amber-400 hover:bg-amber-400/10"
+                    onClick={() => moveStage(prospect.id, "Replied")}
+                  >Move to Replied</button>
+                )}
+                <div className="ml-auto">
+                  <Button size="sm" onClick={saveMessage} disabled={!msgText.trim()}>
+                    Log message
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Section>
+
           <Section
             title="AI Co-pilot"
             action={
               <div className="flex gap-1">
-                <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => runAi("next")}>
-                  {aiBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Next action
+                <Button size="sm" disabled={aiBusy} onClick={runCoPilot}>
+                  {aiBusy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+                  What do I send next?
                 </Button>
-                <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => runAi("reply")}>
-                  Reply
+                <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => runLegacyAi("reply")}>
+                  Quick reply
                 </Button>
-                <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => runAi("score")}>
+                <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => runLegacyAi("score")}>
                   Score
                 </Button>
               </div>
             }
           >
-            {aiAction ? (
+            {coPilotResult ? (
+              <div className="space-y-3">
+                <div className="rounded-md border border-border bg-surface p-3">
+                  <div className="mb-1 text-sm font-medium">{coPilotResult.verdictLine}</div>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <Badge variant="outline">{prospect.stage} → {coPilotResult.stage}</Badge>
+                    <span>conf {Math.round(coPilotResult.confidence * 100)}%</span>
+                    <span>·</span>
+                    <span>{coPilotResult.suggestedActivityType}</span>
+                  </div>
+                  <div className="mt-2 text-sm">{coPilotResult.nextMove}</div>
+                  {coPilotResult.reasoning && (
+                    <div className="mt-2 text-xs text-muted-foreground">{coPilotResult.reasoning}</div>
+                  )}
+                </div>
+                {coPilotResult.draftMessage && (
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Draft message</span>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          navigator.clipboard.writeText(coPilotResult.draftMessage);
+                          toast.success("Copied");
+                        }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={useDraftAsMessage}>
+                          <ArrowRight className="mr-1 h-3 w-3" /> Use as my next message
+                        </Button>
+                      </div>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm leading-relaxed">{coPilotResult.draftMessage}</pre>
+                  </div>
+                )}
+                {coPilotResult.stage && coPilotResult.stage !== prospect.stage && STAGES.includes(coPilotResult.stage as Stage) && (
+                  <Button size="sm" variant="outline" onClick={() => moveStage(prospect.id, coPilotResult.stage as Stage)}>
+                    Move to {coPilotResult.stage}
+                  </Button>
+                )}
+              </div>
+            ) : aiAction ? (
               <pre className="whitespace-pre-wrap rounded-md bg-surface p-3 text-sm leading-relaxed">{aiAction}</pre>
             ) : (
-              <div className="text-sm text-muted-foreground">Ask the co-pilot for the next move, a reply, or a fresh BANT score.</div>
+              <div className="text-sm text-muted-foreground">
+                Hit "What do I send next?" — the co-pilot reads the whole conversation above and writes the next message for you.
+              </div>
             )}
+
+            <div className="mt-4 border-t border-border pt-3">
+              <ProspectAnalyserHistory prospectId={prospect.id} />
+            </div>
           </Section>
 
           <Section title="Activity log">
@@ -190,7 +405,7 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
               <Select value={actType} onValueChange={(v) => setActType(v as ActivityType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(["VN", "text", "email", "comment", "like", "call", "note"] as ActivityType[]).map((t) => (
+                  {ACTIVITY_TYPES.map((t) => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectContent>
@@ -198,7 +413,7 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
               <Input value={actNote} onChange={(e) => setActNote(e.target.value)} placeholder="Notes (paste their message, etc.)" />
               <Button onClick={() => {
                 if (!actNote) return;
-                logActivity(prospect.id, { date: new Date().toISOString(), type: actType, notes: actNote });
+                logActivity(prospect.id, { date: new Date().toISOString(), type: actType, notes: actNote, fromMe: true });
                 setActNote("");
               }}>Log</Button>
             </div>
@@ -209,6 +424,9 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.type}
               {prospect.activities.map((a) => (
                 <li key={a.id} className="flex gap-3 py-2 text-sm">
                   <Badge variant="outline" className="h-fit text-[10px]">{a.type}</Badge>
+                  <Badge variant={a.fromMe === false ? "secondary" : "outline"} className="h-fit text-[10px]">
+                    {a.fromMe === false ? "Them" : "Me"}
+                  </Badge>
                   <div className="flex-1">
                     <div className="text-xs text-muted-foreground num">{a.date.slice(0, 10)}</div>
                     <div>{a.notes}</div>
