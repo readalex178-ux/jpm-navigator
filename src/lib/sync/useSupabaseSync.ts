@@ -32,6 +32,32 @@ export function useSupabaseSync() {
       try {
         const remote = await pullAll();
 
+        // Smart pull: if remote is empty but local has data, KEEP local
+        // and let the debounced push mirror it to cloud. Prevents wiping
+        // localStorage-only data on first login.
+        const remoteEmpty =
+          (remote.prospects?.length ?? 0) === 0 &&
+          (remote.kpi?.length ?? 0) === 0 &&
+          (remote.scripts?.length ?? 0) === 0 &&
+          (remote.training?.length ?? 0) === 0 &&
+          (remote.analyses?.length ?? 0) === 0;
+        const localState = useStore.getState();
+        const localHasData =
+          localState.prospects.length > 0 ||
+          localState.kpiDays.length > 0 ||
+          localState.scripts.length > 0 ||
+          localState.training.length > 0 ||
+          localState.vnScripts.length > 0 ||
+          Object.keys(localState.prospectAnalyses).length > 0;
+        if (remoteEmpty && localHasData) {
+          hydratedFromRemote.current = true;
+          toast.success("Local data detected — backing up to cloud…");
+          // bump a noop set to trigger the push subscription
+          useStore.setState({ ...localState });
+          isPulling.current = false;
+          return;
+        }
+
         const prospects = remote.prospects.map((p: any) => ({
           id: p.id,
           name: p.name,

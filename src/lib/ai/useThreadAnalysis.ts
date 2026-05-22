@@ -93,15 +93,11 @@ export function useThreadAnalysis(threadId: string | null | undefined) {
     [fn, thread, threadId, profile, prospect, setterName, cached, upsertAnalysis, setBant, setQualScore, updateProspect],
   );
 
-  // Auto-run when thread updates (debounced)
-  useEffect(() => {
-    if (!thread || !threadId) return;
-    if (isFresh) return;
-    const t = setTimeout(() => {
-      void run(false);
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [threadId, stamp, isFresh, thread, run]);
+  // NO AUTO-RUN. Per the no-automation rule (mem://constraints/no-automation),
+  // analyzers fire only on explicit click via `refresh()`.
+  // The previous debounced auto-run useEffect has been removed.
+  void stamp;
+  void isFresh;
 
   return { analysis: cached, loading, error, refresh: () => run(true), isFresh };
 }
