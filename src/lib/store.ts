@@ -104,6 +104,9 @@ type Actions = {
   upsertAnalysis: (a: CachedAnalysis) => void;
   clearAnalysis: (threadId: string) => void;
 
+  addProspectAnalysis: (prospectId: string, entry: Omit<ProspectAnalysisEntry, "id" | "createdAt">) => void;
+  clearProspectAnalyses: (prospectId: string) => void;
+
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
 };
