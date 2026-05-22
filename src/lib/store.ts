@@ -52,6 +52,20 @@ type State = {
   vnScripts: VNScript[];
   analyses: Record<string, CachedAnalysis>; // threadId -> latest analysis
   analysisHistory: Record<string, CachedAnalysis[]>; // threadId -> chronological history (oldest first)
+  prospectAnalyses: Record<string, ProspectAnalysisEntry[]>; // prospectId -> chronological
+};
+
+export type ProspectAnalysisEntry = {
+  id: string;
+  createdAt: string;
+  stageAtTime: string;
+  verdictLine: string;
+  suggestedStage: string;
+  nextMove: string;
+  draftMessage: string;
+  suggestedActivityType: string;
+  reasoning: string;
+  confidence: number;
 };
 
 type Actions = {
