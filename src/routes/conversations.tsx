@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { Page, Section } from "@/components/Page";
+import { PageBody, PageHeader, Section } from "@/components/Page";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { buildConversation } from "@/components/ConversationLog";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/conversations")({
   head: () => ({
