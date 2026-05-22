@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -7,12 +7,17 @@ import {
   Scripts,
   Link,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { useHydrate } from "@/lib/useHydrate";
+import { useAuth } from "@/lib/auth/useAuth";
+import { LoginPage } from "@/components/auth/LoginPage";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 function NotFoundComponent() {
   return (
@@ -89,27 +94,58 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useHydrate();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background text-foreground">
-          <AppSidebar />
-          <div className="flex min-h-screen flex-1 flex-col">
-            <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur">
-              <SidebarTrigger />
-              <div className="font-display text-sm font-semibold tracking-tight">
-                BTF Setter OS
-              </div>
-            </header>
-            <main className="flex-1 overflow-x-hidden">
-              <Outlet />
-            </main>
-          </div>
-        </div>
-        <Toaster theme="dark" />
-      </SidebarProvider>
+      <AuthGate />
+      <Toaster theme="dark" />
     </QueryClientProvider>
+  );
+}
+
+function AuthGate() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const auth = useAuth();
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      router.invalidate();
+      queryClient.invalidateQueries();
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [router, queryClient]);
+
+  useHydrate();
+
+  if (auth.status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (auth.status === "unauthed") {
+    return <LoginPage />;
+  }
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background text-foreground">
+        <AppSidebar />
+        <div className="flex min-h-screen flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur">
+            <SidebarTrigger />
+            <div className="font-display text-sm font-semibold tracking-tight">
+              BTF Setter OS
+            </div>
+          </header>
+          <main className="flex-1 overflow-x-hidden">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
