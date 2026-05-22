@@ -34,6 +34,7 @@ const groups = [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
       { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
       { title: "Prospects", url: "/prospects", icon: Users },
+      { title: "Conversations", url: "/conversations", icon: MessageSquare },
     ],
   },
   {
