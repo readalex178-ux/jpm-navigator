@@ -282,6 +282,19 @@ export const useStore = create<State & Actions>()(
         set({ analyses: next, analysisHistory: nextHist });
       },
 
+      addProspectAnalysis: (prospectId, entry) => {
+        const prev = get().prospectAnalyses[prospectId] ?? [];
+        const next = [...prev, { id: uid(), createdAt: now(), ...entry }].slice(-20);
+        set({ prospectAnalyses: { ...get().prospectAnalyses, [prospectId]: next } });
+      },
+      clearProspectAnalyses: (prospectId) => {
+        const next = { ...get().prospectAnalyses };
+        delete next[prospectId];
+        set({ prospectAnalyses: next });
+      },
+
+
+
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
         const { prospects, kpiDays, scripts, training, commissions, settings, vnScripts } = get();
