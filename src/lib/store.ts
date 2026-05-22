@@ -144,6 +144,7 @@ export const useStore = create<State & Actions>()(
       vnScripts: [],
       analyses: {},
       analysisHistory: {},
+      prospectAnalyses: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
