@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeThread, type AnalyzeResult } from "./linkedinAnalyzer.functions";
 import { useStore, daysSince } from "../store";
