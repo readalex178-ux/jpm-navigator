@@ -120,6 +120,17 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border p-0">
         {!collapsed && <CommissionStrip />}
+        <div className="border-t border-sidebar-border p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+            onClick={() => supabase.auth.signOut()}
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span>Sign out</span>}
+          </Button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
