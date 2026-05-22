@@ -10,7 +10,10 @@ import {
   Flame,
   Linkedin,
   Wrench,
+  LogOut,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
