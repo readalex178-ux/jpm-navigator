@@ -83,7 +83,14 @@ export const SIGNAL_LABELS: Record<keyof BuyingSignals, string> = {
 export type BANT = { need: 0 | 1 | 2; timeline: 0 | 1 | 2; authority: 0 | 1 | 2; budget: 0 | 1 | 2 };
 
 export type ActivityType = "VN" | "text" | "email" | "comment" | "like" | "call" | "note";
-export type Activity = { id: string; date: string; type: ActivityType; notes: string };
+export type Activity = {
+  id: string;
+  date: string;
+  type: ActivityType;
+  notes: string;
+  /** true = sent by me (setter), false = received from prospect. Defaults to true for legacy entries. */
+  fromMe?: boolean;
+};
 
 export type ReplyType = "VN" | "text" | "none";
 export type VNEntry = { id: string; date: string; variation: string; reply: ReplyType };
