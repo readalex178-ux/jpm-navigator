@@ -17,6 +17,7 @@ import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as KpiRouteImport } from './routes/kpi'
+import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as ConversationsRouteImport } from './routes/conversations'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
@@ -62,6 +63,11 @@ const KpiRoute = KpiRouteImport.update({
   path: '/kpi',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConversationsRoute = ConversationsRouteImport.update({
   id: '/conversations',
   path: '/conversations',
@@ -86,6 +92,7 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/conversations': typeof ConversationsRoute
+  '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/conversations': typeof ConversationsRoute
+  '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/conversations': typeof ConversationsRoute
+  '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/conversations'
+    | '/inbox'
     | '/kpi'
     | '/linkedin'
     | '/outreach'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/conversations'
+    | '/inbox'
     | '/kpi'
     | '/linkedin'
     | '/outreach'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/conversations'
+    | '/inbox'
     | '/kpi'
     | '/linkedin'
     | '/outreach'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConversationsRoute: typeof ConversationsRoute
+  InboxRoute: typeof InboxRoute
   KpiRoute: typeof KpiRoute
   LinkedinRoute: typeof LinkedinRoute
   OutreachRoute: typeof OutreachRoute
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KpiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/conversations': {
       id: '/conversations'
       path: '/conversations'
@@ -289,6 +309,7 @@ const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConversationsRoute: ConversationsRoute,
+  InboxRoute: InboxRoute,
   KpiRoute: KpiRoute,
   LinkedinRoute: LinkedinRoute,
   OutreachRoute: OutreachRoute,
