@@ -161,6 +161,28 @@ function SettingsPage() {
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="mr-1 h-4 w-4" /> Import JSON
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                try {
+                  const raw = localStorage.getItem("btf-setter-os:v1");
+                  if (!raw) {
+                    toast.error("No local backup found in this browser.");
+                    return;
+                  }
+                  const parsed = JSON.parse(raw) as { state?: Record<string, unknown> };
+                  const state = parsed.state ?? parsed;
+                  importJson(state as never);
+                  toast.success(
+                    "Local backup restored. Cloud sync will push it within a few seconds.",
+                  );
+                } catch (e) {
+                  toast.error(`Restore failed: ${(e as Error).message}`);
+                }
+              }}
+            >
+              <Upload className="mr-1 h-4 w-4" /> Re-import local backup → cloud
+            </Button>
             <input
               ref={fileRef}
               type="file"
@@ -170,7 +192,9 @@ function SettingsPage() {
             />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            All BTF Setter OS data lives in this browser. Export regularly.
+            Your data lives in Lovable Cloud and syncs across devices. Use{" "}
+            <span className="font-semibold">Re-import local backup</span> if you had data in this
+            browser before signing in.
           </p>
         </Section>
       </PageBody>
