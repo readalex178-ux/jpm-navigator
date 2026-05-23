@@ -51,13 +51,15 @@ function ToolsPage() {
       />
       <PageBody>
         <Tabs defaultValue="script">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="script">Script Builder</TabsTrigger>
-            <TabsTrigger value="thread">Thread Analyser</TabsTrigger>
-            <TabsTrigger value="objections">Objections</TabsTrigger>
-            <TabsTrigger value="prescreen">Pre-Screen</TabsTrigger>
-            <TabsTrigger value="warm">Warm Signal</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="inline-flex h-auto w-max gap-1 p-1">
+              <TabsTrigger value="script" className="whitespace-nowrap">VN Builder</TabsTrigger>
+              <TabsTrigger value="thread" className="whitespace-nowrap">Thread Analyser</TabsTrigger>
+              <TabsTrigger value="objections" className="whitespace-nowrap">Objections</TabsTrigger>
+              <TabsTrigger value="prescreen" className="whitespace-nowrap">Pre-Screen</TabsTrigger>
+              <TabsTrigger value="warm" className="whitespace-nowrap">Warm Signal</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="script" className="mt-4"><ScriptBuilderTab /></TabsContent>
           <TabsContent value="thread" className="mt-4"><ThreadAnalyserTab /></TabsContent>
@@ -70,7 +72,7 @@ function ToolsPage() {
   );
 }
 
-/* ===================== 1. Script Builder ===================== */
+/* ===================== 1. VN Builder ===================== */
 function ScriptBuilderTab() {
   const fn = useServerFn(buildVN1Script);
   const [text, setText] = useState("");
@@ -91,23 +93,26 @@ function ScriptBuilderTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Section title="Paste their LinkedIn profile">
+      <Section title="Profile input">
+        <p className="mb-2 text-xs text-muted-foreground">
+          Paste the prospect's LinkedIn profile — name, headline, about, and any recent posts. The more context, the sharper the opener.
+        </p>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Name, headline, about, recent activity — paste the full profile content."
+          placeholder="Paste full profile content here…"
           className="min-h-[260px] text-xs"
         />
         <div className="mt-2 flex justify-end">
           <Button onClick={run} disabled={busy}>
             {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-            Build VN1 Script
+            Generate voice note
           </Button>
         </div>
       </Section>
 
       <Section
-        title="Ready-to-record VN1"
+        title="Your voice-note opener"
         action={res && (
           <Button size="sm" variant="outline" onClick={() => copy(res.script, "Script copied")}>
             <Copy className="mr-1 h-3 w-3" /> Copy
@@ -116,7 +121,7 @@ function ScriptBuilderTab() {
       >
         {!res ? (
           <div className="rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-            Your VN1 will appear here — ≤150 words, no brackets, ready to read.
+            Your voice note will appear here — ≤150 words, no brackets, ready to record.
           </div>
         ) : (
           <div className="space-y-3 text-sm">
