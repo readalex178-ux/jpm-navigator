@@ -72,7 +72,7 @@ function ToolsPage() {
   );
 }
 
-/* ===================== 1. Script Builder ===================== */
+/* ===================== 1. VN Builder ===================== */
 function ScriptBuilderTab() {
   const fn = useServerFn(buildVN1Script);
   const [text, setText] = useState("");
@@ -93,23 +93,26 @@ function ScriptBuilderTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Section title="Paste their LinkedIn profile">
+      <Section title="Profile input">
+        <p className="mb-2 text-xs text-muted-foreground">
+          Paste the prospect's LinkedIn profile — name, headline, about, and any recent posts. The more context, the sharper the opener.
+        </p>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Name, headline, about, recent activity — paste the full profile content."
+          placeholder="Paste full profile content here…"
           className="min-h-[260px] text-xs"
         />
         <div className="mt-2 flex justify-end">
           <Button onClick={run} disabled={busy}>
             {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-            Build VN1 Script
+            Generate voice note
           </Button>
         </div>
       </Section>
 
       <Section
-        title="Ready-to-record VN1"
+        title="Your voice-note opener"
         action={res && (
           <Button size="sm" variant="outline" onClick={() => copy(res.script, "Script copied")}>
             <Copy className="mr-1 h-3 w-3" /> Copy
@@ -118,7 +121,7 @@ function ScriptBuilderTab() {
       >
         {!res ? (
           <div className="rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-            Your VN1 will appear here — ≤150 words, no brackets, ready to read.
+            Your voice note will appear here — ≤150 words, no brackets, ready to record.
           </div>
         ) : (
           <div className="space-y-3 text-sm">
