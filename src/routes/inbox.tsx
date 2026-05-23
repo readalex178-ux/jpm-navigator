@@ -256,7 +256,10 @@ function InboxPage() {
                     <li key={r.p.id}>
                       <button
                         type="button"
-                        onClick={() => setSelectedId(r.p.id)}
+                        onClick={() => {
+                          setSelectedId(r.p.id);
+                          setMobilePane("chat");
+                        }}
                         className={cn(
                           "flex w-full gap-2.5 p-2.5 text-left transition-colors hover:bg-muted/40",
                           active && "bg-muted/60",
