@@ -74,6 +74,10 @@ export function parseProspectsCsv(text: string): { rows: ParsedProspect[]; error
       const n = Number(v);
       return Number.isFinite(n) ? n : d;
     };
+    const bant012 = (v: string): 0 | 1 | 2 => {
+      const n = Math.max(0, Math.min(2, Math.round(numOr(v, 0))));
+      return (n as 0 | 1 | 2);
+    };
     rows.push({
       name,
       platform: (validPlatforms.has(platform as Platform) ? platform : "linkedin") as Platform,
@@ -85,12 +89,13 @@ export function parseProspectsCsv(text: string): { rows: ParsedProspect[]; error
       stage: (validStages.has(stage) ? stage : "Found") as Stage,
       qualScore: Math.max(0, Math.min(100, numOr(get(cols.qualScore), 0))),
       bant: {
-        need: numOr(get(cols.need), 0),
-        timeline: numOr(get(cols.timeline), 0),
-        authority: numOr(get(cols.authority), 0),
-        budget: numOr(get(cols.budget), 0),
+        need: bant012(get(cols.need)),
+        timeline: bant012(get(cols.timeline)),
+        authority: bant012(get(cols.authority)),
+        budget: bant012(get(cols.budget)),
       },
     });
+
   }
   return { rows, errors };
 }
