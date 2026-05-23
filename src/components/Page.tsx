@@ -14,7 +14,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "sticky top-12 z-20 flex flex-col gap-3 border-b border-border bg-background/85 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5",
+        "sticky top-14 z-20 flex flex-col gap-3 border-b border-border bg-background/85 px-4 py-4 backdrop-blur sm:top-16 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5",
         className,
       )}
     >
