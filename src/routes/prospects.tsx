@@ -26,7 +26,9 @@ export const Route = createFileRoute("/prospects")({
 
 function ProspectsPage() {
   const prospects = useStore((s) => s.prospects);
+  const addProspect = useStore((s) => s.addProspect);
   const navigate = useNavigate();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = prospects.find((p) => p.id === editingId) ?? null;
@@ -35,6 +37,37 @@ function ProspectsPage() {
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [stage, setStage] = useState<Stage | "all">("all");
   const [tier, setTier] = useState<Tier | "all">("all");
+
+  const handleImport = async (file: File) => {
+    try {
+      const text = await file.text();
+      const { rows, errors } = parseProspectsCsv(text);
+      if (!rows.length) {
+        toast.error(errors[0] ?? "No rows found.");
+        return;
+      }
+      const existing = new Set(
+        prospects.map((p) => `${p.name.toLowerCase()}|${(p.profileUrl ?? "").toLowerCase()}`),
+      );
+      let added = 0;
+      let skipped = 0;
+      for (const r of rows) {
+        const key = `${r.name.toLowerCase()}|${(r.profileUrl ?? "").toLowerCase()}`;
+        if (existing.has(key)) { skipped++; continue; }
+        addProspect(r);
+        existing.add(key);
+        added++;
+      }
+      toast.success(
+        `Imported ${added} prospect${added === 1 ? "" : "s"}` +
+          (skipped ? ` · ${skipped} duplicate${skipped === 1 ? "" : "s"} skipped` : "") +
+          (errors.length ? ` · ${errors.length} row issue${errors.length === 1 ? "" : "s"}` : ""),
+      );
+    } catch (e) {
+      toast.error("Could not read file.");
+    }
+  };
+
 
   const filtered = useMemo(() => {
     return prospects.filter((p) => {
