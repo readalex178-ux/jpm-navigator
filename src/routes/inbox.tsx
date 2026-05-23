@@ -177,7 +177,6 @@ function InboxPage() {
         {([
           ["list", "Threads"],
           ["chat", "Chat"],
-          ["ai", "AI"],
         ] as const).map(([k, label]) => (
           <button
             key={k}
@@ -343,6 +342,67 @@ function InboxPage() {
                 <ConversationLog activities={selected.activities} vnLog={selected.vnLog} />
               </ScrollArea>
               <div className="space-y-2 border-t border-border p-3">
+                {/* Inline AI suggestions — right above the composer */}
+                <div className="rounded-md border border-border bg-surface/60 p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold">AI suggestions</span>
+                      {suggestions && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {suggestions.length} drafts
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={suggestions ? "outline" : "default"}
+                      className="h-7 text-xs"
+                      onClick={runSuggest}
+                      disabled={aiBusy}
+                    >
+                      {aiBusy ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-1 h-3 w-3" />
+                      )}
+                      {suggestions ? "Regenerate" : "Suggest 3 replies"}
+                    </Button>
+                  </div>
+                  {suggestions && (
+                    <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">
+                      {suggestions.map((s, i) => (
+                        <div key={i} className="rounded border border-border bg-card p-2 text-xs">
+                          <div className="mb-1 flex items-center gap-1.5">
+                            <Badge className="h-fit px-1 py-0 text-[9px]">{s.angle}</Badge>
+                            <Badge variant="outline" className="h-fit px-1 py-0 text-[9px]">
+                              {s.type}
+                            </Badge>
+                          </div>
+                          <div className="whitespace-pre-wrap leading-relaxed">{s.content}</div>
+                          <div className="mt-1.5 flex gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-[10px]"
+                              onClick={() => copySug(s.content)}
+                            >
+                              <Copy className="mr-1 h-2.5 w-2.5" /> Copy
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-6 px-2 text-[10px]"
+                              onClick={() => insertSug(s)}
+                            >
+                              <ArrowDownToLine className="mr-1 h-2.5 w-2.5" /> Use
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex flex-wrap gap-1.5">
                   <Select value={direction} onValueChange={(v) => setDirection(v as "me" | "them")}>
                     <SelectTrigger className="h-7 w-28 text-xs">
@@ -371,9 +431,7 @@ function InboxPage() {
                   onChange={(e) => setText(e.target.value)}
                   rows={3}
                   placeholder={
-                    direction === "me"
-                      ? "Paste what you sent…"
-                      : "Paste what they sent…"
+                    direction === "me" ? "Paste what you sent…" : "Paste what they sent…"
                   }
                   className="text-sm"
                 />
