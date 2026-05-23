@@ -141,13 +141,13 @@ function AuthedShell() {
       <div className="flex min-h-screen w-full bg-background text-foreground">
         <AppSidebar />
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur sm:h-16">
             <SidebarTrigger />
             <div className="font-display text-sm font-semibold tracking-tight">
               BTF Setter OS
             </div>
           </header>
-          <main className="flex-1 overflow-x-hidden">
+          <main className="flex-1 overflow-x-hidden pt-2 sm:pt-4">
             <Outlet />
           </main>
         </div>
