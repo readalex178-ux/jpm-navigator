@@ -52,6 +52,7 @@ function InboxPage() {
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [platformFilter, setPlatformFilter] = useState<string>("all");
+  const [mobilePane, setMobilePane] = useState<"list" | "chat" | "ai">("list");
 
   // Composer
   const [direction, setDirection] = useState<"them" | "me">("them");
