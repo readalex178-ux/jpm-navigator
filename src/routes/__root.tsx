@@ -147,7 +147,7 @@ function AuthedShell() {
               BTF Setter OS
             </div>
           </header>
-          <main className="flex-1 overflow-x-hidden pt-2 sm:pt-4">
+          <main className="flex-1 overflow-x-hidden">
             <Outlet />
           </main>
         </div>
