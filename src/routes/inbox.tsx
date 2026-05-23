@@ -391,7 +391,12 @@ function InboxPage() {
         </div>
 
         {/* AI co-pilot */}
-        <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+        <div
+          className={cn(
+            "min-h-0 flex-col rounded-lg border border-border bg-card lg:flex",
+            mobilePane === "ai" ? "flex" : "hidden",
+          )}
+        >
           <div className="flex items-center justify-between border-b border-border p-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
