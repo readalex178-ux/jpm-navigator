@@ -82,6 +82,20 @@ function ProspectsPage() {
   return (
     <>
       <PageHeader title="Prospects" subtitle={`${prospects.length} total`}>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleImport(f);
+            e.target.value = "";
+          }}
+        />
+        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+          <Upload className="mr-1 h-4 w-4" /> Import CSV
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -97,6 +111,7 @@ function ProspectsPage() {
           <Plus className="mr-1 h-4 w-4" /> Add
         </Button>
       </PageHeader>
+
 
       <PageBody className="space-y-4">
         <div className="flex flex-wrap gap-2">
