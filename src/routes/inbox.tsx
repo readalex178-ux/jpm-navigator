@@ -306,7 +306,12 @@ function InboxPage() {
         </div>
 
         {/* Active chat */}
-        <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+        <div
+          className={cn(
+            "min-h-0 flex-col rounded-lg border border-border bg-card lg:flex",
+            mobilePane === "chat" ? "flex" : "hidden",
+          )}
+        >
           {!selected ? (
             <div className="grid flex-1 place-items-center text-sm text-muted-foreground">
               Select a conversation
