@@ -32,7 +32,16 @@ export function PageHeader({
 }
 
 export function PageBody({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("mx-auto w-full max-w-7xl p-4 sm:p-8", className)}>{children}</div>;
+  return (
+    <div
+      className={cn(
+        "mx-auto w-full max-w-7xl px-4 pb-24 pt-6 sm:px-8 sm:pb-28 sm:pt-8",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function StatCard({
