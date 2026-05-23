@@ -1,16 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { PageBody, PageHeader } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Download } from "lucide-react";
+import { Plus, Search, Download, Upload } from "lucide-react";
 import { ProspectCard } from "@/components/ProspectCard";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { useStore } from "@/lib/store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PLATFORMS, STAGES, type Platform, type Stage, type Tier } from "@/lib/btf/types";
 import { prospectsToCsv, downloadCsv } from "@/lib/csvExport";
+import { parseProspectsCsv } from "@/lib/csvImport";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/prospects")({
   head: () => ({
@@ -24,7 +26,9 @@ export const Route = createFileRoute("/prospects")({
 
 function ProspectsPage() {
   const prospects = useStore((s) => s.prospects);
+  const addProspect = useStore((s) => s.addProspect);
   const navigate = useNavigate();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = prospects.find((p) => p.id === editingId) ?? null;
@@ -33,6 +37,37 @@ function ProspectsPage() {
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [stage, setStage] = useState<Stage | "all">("all");
   const [tier, setTier] = useState<Tier | "all">("all");
+
+  const handleImport = async (file: File) => {
+    try {
+      const text = await file.text();
+      const { rows, errors } = parseProspectsCsv(text);
+      if (!rows.length) {
+        toast.error(errors[0] ?? "No rows found.");
+        return;
+      }
+      const existing = new Set(
+        prospects.map((p) => `${p.name.toLowerCase()}|${(p.profileUrl ?? "").toLowerCase()}`),
+      );
+      let added = 0;
+      let skipped = 0;
+      for (const r of rows) {
+        const key = `${r.name.toLowerCase()}|${(r.profileUrl ?? "").toLowerCase()}`;
+        if (existing.has(key)) { skipped++; continue; }
+        addProspect(r);
+        existing.add(key);
+        added++;
+      }
+      toast.success(
+        `Imported ${added} prospect${added === 1 ? "" : "s"}` +
+          (skipped ? ` · ${skipped} duplicate${skipped === 1 ? "" : "s"} skipped` : "") +
+          (errors.length ? ` · ${errors.length} row issue${errors.length === 1 ? "" : "s"}` : ""),
+      );
+    } catch (e) {
+      toast.error("Could not read file.");
+    }
+  };
+
 
   const filtered = useMemo(() => {
     return prospects.filter((p) => {
@@ -47,6 +82,20 @@ function ProspectsPage() {
   return (
     <>
       <PageHeader title="Prospects" subtitle={`${prospects.length} total`}>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleImport(f);
+            e.target.value = "";
+          }}
+        />
+        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+          <Upload className="mr-1 h-4 w-4" /> Import CSV
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -62,6 +111,7 @@ function ProspectsPage() {
           <Plus className="mr-1 h-4 w-4" /> Add
         </Button>
       </PageHeader>
+
 
       <PageBody className="space-y-4">
         <div className="flex flex-wrap gap-2">
