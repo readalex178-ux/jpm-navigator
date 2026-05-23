@@ -177,7 +177,6 @@ function InboxPage() {
         {([
           ["list", "Threads"],
           ["chat", "Chat"],
-          ["ai", "AI"],
         ] as const).map(([k, label]) => (
           <button
             key={k}
