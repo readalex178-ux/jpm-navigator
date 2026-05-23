@@ -39,14 +39,13 @@ const groups = [
       { title: "Inbox", url: "/inbox", icon: Inbox },
       { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
       { title: "Prospects", url: "/prospects", icon: Users },
-      { title: "Conversations", url: "/conversations", icon: MessageSquare },
     ],
   },
   {
     label: "Outreach",
     items: [
       { title: "LinkedIn", url: "/linkedin", icon: Linkedin },
-      { title: "Scripts", url: "/outreach", icon: MessageSquare },
+      { title: "Templates", url: "/outreach", icon: MessageSquare },
       { title: "Tools", url: "/tools", icon: Wrench },
     ],
   },

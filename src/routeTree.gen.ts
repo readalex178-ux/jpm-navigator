@@ -18,7 +18,6 @@ import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as KpiRouteImport } from './routes/kpi'
 import { Route as InboxRouteImport } from './routes/inbox'
-import { Route as ConversationsRouteImport } from './routes/conversations'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
@@ -68,11 +67,6 @@ const InboxRoute = InboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConversationsRoute = ConversationsRouteImport.update({
-  id: '/conversations',
-  path: '/conversations',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -91,7 +85,6 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/conversations': typeof ConversationsRoute
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
@@ -106,7 +99,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/conversations': typeof ConversationsRoute
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
@@ -122,7 +114,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/conversations': typeof ConversationsRoute
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
@@ -139,7 +130,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/conversations'
     | '/inbox'
     | '/kpi'
     | '/linkedin'
@@ -154,7 +144,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/conversations'
     | '/inbox'
     | '/kpi'
     | '/linkedin'
@@ -169,7 +158,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/conversations'
     | '/inbox'
     | '/kpi'
     | '/linkedin'
@@ -185,7 +173,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ConversationsRoute: typeof ConversationsRoute
   InboxRoute: typeof InboxRoute
   KpiRoute: typeof KpiRoute
   LinkedinRoute: typeof LinkedinRoute
@@ -263,13 +250,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/conversations': {
-      id: '/conversations'
-      path: '/conversations'
-      fullPath: '/conversations'
-      preLoaderRoute: typeof ConversationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -308,7 +288,6 @@ const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ConversationsRoute: ConversationsRoute,
   InboxRoute: InboxRoute,
   KpiRoute: KpiRoute,
   LinkedinRoute: LinkedinRoute,
@@ -323,13 +302,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
