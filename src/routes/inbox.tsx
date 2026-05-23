@@ -52,6 +52,7 @@ function InboxPage() {
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [platformFilter, setPlatformFilter] = useState<string>("all");
+  const [mobilePane, setMobilePane] = useState<"list" | "chat" | "ai">("list");
 
   // Composer
   const [direction, setDirection] = useState<"them" | "me">("them");
@@ -171,9 +172,37 @@ function InboxPage() {
         subtitle="Every conversation in one workspace. AI suggests — you send."
       />
 
+      {/* Mobile pane switcher */}
+      <div className="flex gap-1 px-4 pb-2 lg:hidden">
+        {([
+          ["list", "Threads"],
+          ["chat", "Chat"],
+          ["ai", "AI"],
+        ] as const).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setMobilePane(k)}
+            className={cn(
+              "flex-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors",
+              mobilePane === k
+                ? "border-primary bg-primary/10 text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid flex-1 min-h-0 gap-3 px-4 pb-4 lg:grid-cols-[320px_1fr_360px]">
         {/* Conversation list */}
-        <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+        <div
+          className={cn(
+            "min-h-0 flex-col rounded-lg border border-border bg-card lg:flex",
+            mobilePane === "list" ? "flex" : "hidden",
+          )}
+        >
           <div className="space-y-2 border-b border-border p-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -227,7 +256,10 @@ function InboxPage() {
                     <li key={r.p.id}>
                       <button
                         type="button"
-                        onClick={() => setSelectedId(r.p.id)}
+                        onClick={() => {
+                          setSelectedId(r.p.id);
+                          setMobilePane("chat");
+                        }}
                         className={cn(
                           "flex w-full gap-2.5 p-2.5 text-left transition-colors hover:bg-muted/40",
                           active && "bg-muted/60",
@@ -274,7 +306,12 @@ function InboxPage() {
         </div>
 
         {/* Active chat */}
-        <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+        <div
+          className={cn(
+            "min-h-0 flex-col rounded-lg border border-border bg-card lg:flex",
+            mobilePane === "chat" ? "flex" : "hidden",
+          )}
+        >
           {!selected ? (
             <div className="grid flex-1 place-items-center text-sm text-muted-foreground">
               Select a conversation
@@ -354,7 +391,12 @@ function InboxPage() {
         </div>
 
         {/* AI co-pilot */}
-        <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card">
+        <div
+          className={cn(
+            "min-h-0 flex-col rounded-lg border border-border bg-card lg:flex",
+            mobilePane === "ai" ? "flex" : "hidden",
+          )}
+        >
           <div className="flex items-center justify-between border-b border-border p-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
