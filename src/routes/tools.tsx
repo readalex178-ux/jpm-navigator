@@ -51,13 +51,15 @@ function ToolsPage() {
       />
       <PageBody>
         <Tabs defaultValue="script">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="script">Script Builder</TabsTrigger>
-            <TabsTrigger value="thread">Thread Analyser</TabsTrigger>
-            <TabsTrigger value="objections">Objections</TabsTrigger>
-            <TabsTrigger value="prescreen">Pre-Screen</TabsTrigger>
-            <TabsTrigger value="warm">Warm Signal</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="inline-flex h-auto w-max gap-1 p-1">
+              <TabsTrigger value="script" className="whitespace-nowrap">VN Builder</TabsTrigger>
+              <TabsTrigger value="thread" className="whitespace-nowrap">Thread Analyser</TabsTrigger>
+              <TabsTrigger value="objections" className="whitespace-nowrap">Objections</TabsTrigger>
+              <TabsTrigger value="prescreen" className="whitespace-nowrap">Pre-Screen</TabsTrigger>
+              <TabsTrigger value="warm" className="whitespace-nowrap">Warm Signal</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="script" className="mt-4"><ScriptBuilderTab /></TabsContent>
           <TabsContent value="thread" className="mt-4"><ThreadAnalyserTab /></TabsContent>
