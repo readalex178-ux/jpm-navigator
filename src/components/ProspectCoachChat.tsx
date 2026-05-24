@@ -343,7 +343,7 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
         <div className="relative">
           <Textarea
             rows={2}
-            value={input + (interim ? (input ? " " : "") + interim : "")}
+            value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               listening
