@@ -17,7 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import { useStore, daysSince, todayStr } from "@/lib/store";
-import { listenFromExtension, postToExtension, generatePairingCode } from "@/lib/extension/bridge";
+import { postToExtension } from "@/lib/extension/bridge";
 import { ACTION_META, buildPrompt, type LinkedinAction } from "@/lib/ai/linkedinPrompts";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
 import { useThreadAnalysis } from "@/lib/ai/useThreadAnalysis";
@@ -68,10 +68,6 @@ function LinkedInPage() {
   const threadProspectMap = useStore((s) => s.threadProspectMap);
   const pairingCode = useStore((s) => s.pairingCode);
   const extConnected = useStore((s) => s.extensionConnected);
-  const setPairingCode = useStore((s) => s.setPairingCode);
-  const setExtensionConnected = useStore((s) => s.setExtensionConnected);
-  const upsertThread = useStore((s) => s.upsertLinkedinThread);
-  const upsertProfile = useStore((s) => s.upsertLinkedinProfile);
   const linkThread = useStore((s) => s.linkThreadToProspect);
   const addProspect = useStore((s) => s.addProspect);
   const logActivity = useStore((s) => s.logActivity);
@@ -83,55 +79,6 @@ function LinkedInPage() {
   const [action, setAction] = useState<LinkedinAction>("reply");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-
-  // Ensure pairing code exists on mount
-  useEffect(() => {
-    if (!pairingCode) setPairingCode(generatePairingCode());
-  }, [pairingCode, setPairingCode]);
-
-  // Listen to extension bridge
-  useEffect(() => {
-    const off = listenFromExtension((e) => {
-      if (e.kind === "ext:hello") {
-        setExtensionConnected(true);
-        if (e.pairingCode && e.pairingCode === pairingCode) {
-          setExtensionConnected(true);
-        }
-      } else if (e.kind === "ext:thread") {
-        if (e.pairingCode && e.pairingCode !== pairingCode) return;
-        setExtensionConnected(true);
-        upsertThread(e.thread);
-        // Auto-select the freshly scraped thread so the AnalyzerStrip fires immediately
-        setActiveThreadId(e.thread.threadId);
-      } else if (e.kind === "ext:profile") {
-        if (e.pairingCode && e.pairingCode !== pairingCode) return;
-        setExtensionConnected(true);
-        upsertProfile(e.profile);
-        // If we don't already have a thread with this person, push the profile
-        // into the paste-a-profile qualifier so the user gets an instant verdict.
-        const hasThread = Object.values(useStore.getState().linkedinThreads).some(
-          (t) => t.participantProfileUrl === e.profile.profileUrl,
-        );
-        if (!hasThread) {
-          const text = [
-            e.profile.name,
-            e.profile.headline,
-            e.profile.currentRole,
-            e.profile.location,
-            e.profile.about,
-            ...(e.profile.recentActivity ?? []),
-          ]
-            .filter(Boolean)
-            .join("\n");
-          window.dispatchEvent(
-            new CustomEvent("btf:qualify-profile", { detail: { text, autoRun: true } }),
-          );
-          toast.success(`Qualifying ${e.profile.name}…`);
-        }
-      }
-    });
-    return off;
-  }, [pairingCode, setExtensionConnected, upsertThread, upsertProfile]);
 
   // Cross-route handoff: /prospects "Analyze" button drops a target in sessionStorage.
   useEffect(() => {
@@ -569,12 +516,12 @@ function ExtensionStatus({
         )}
         title={
           connected
-            ? "Open any LinkedIn DM or profile — the analyzer will auto-run."
-            : "Install the extension and enter the pair code to start mirroring."
+            ? "The extension is live and pushing LinkedIn profile/thread data into the app."
+            : "Install the extension, pair it, then open a LinkedIn profile or DM thread."
         }
       >
         {connected ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-        {connected ? "Extension connected — auto-analyze on" : "Extension not paired"}
+        {connected ? "Extension connected" : "Extension not paired"}
       </Badge>
       <Badge variant="outline" className="font-mono text-[10px] tracking-widest">
         Pair code: {code || "—"}
