@@ -47,13 +47,7 @@ async function broadcastToApps(event) {
   }
 
   // 2. Broadcast to all matching tabs (frame 0 only — top-level tabs).
-  const tabs = await chrome.tabs.query({
-    url: [
-      "https://*.lovable.app/*",
-      "https://*.lovableproject.com/*",
-      "http://localhost/*",
-    ],
-  });
+  const tabs = await chrome.tabs.query({});
   await Promise.all(
     tabs.map(async (tab) => {
       if (!tab.id) return;
@@ -74,13 +68,7 @@ async function broadcastToApps(event) {
 }
 
 async function ensureAppBridge() {
-  const tabs = await chrome.tabs.query({
-    url: [
-      "https://*.lovable.app/*",
-      "https://*.lovableproject.com/*",
-      "http://localhost/*",
-    ],
-  });
+  const tabs = await chrome.tabs.query({});
 
   await Promise.all(
     tabs.map(async (tab) => {
