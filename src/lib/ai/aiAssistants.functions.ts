@@ -56,6 +56,15 @@ async function callWithFallback(system: string, user: string, json = false): Pro
 export const ProfileQualifierResultSchema = z.object({
   verdict: z.enum(["SEND_VN", "SKIP", "MAYBE"]),
   verdictLine: z.string().max(200),
+  score: z.number().int().min(0).max(100).default(0),
+  fit: z.enum(["STRONG", "DECENT", "WEAK", "AVOID"]).default("WEAK"),
+  summary: z.string().max(600).default(""),
+  priorityMarket: z
+    .object({
+      match: z.boolean().default(false),
+      name: z.string().max(60).default(""),
+    })
+    .default({ match: false, name: "" }),
   icpMatch: z.enum(["green", "yellow", "red"]),
   market: z.string().max(60),
   predictedTier: z.enum(["DIY", "DWY", "DFY", "unknown"]),
@@ -102,12 +111,45 @@ export type ProfileQualifierResult = z.infer<typeof ProfileQualifierResultSchema
 
 const PROFILE_QUALIFIER_SYS = `${BTF_ANALYZER_SYSTEM}
 
-You will be given RAW PASTED CONTENT from a LinkedIn (or other) profile — not a conversation thread. Your job: decide if this person is worth a connection request + VN1 right now, AND extract clean profile fields + detect BTF buying signals.
+You will be given RAW PASTED CONTENT from a LinkedIn profile. You are a BTF Setter qualifying prospects for The Conversation Engine (DIY $997 / DWY $2,997 / DFY $11,997).
 
-Return ONLY valid JSON matching this schema (no markdown):
+TARGET — ONE person only: the Under-Monetised Expert. A coach, consultant, freelancer or founder-led service business with a real offer and real results, but no consistent client-acquisition system.
+
+PRIORITY MARKETS (best reply rates — score higher): AI Consultants, AI Educators, Community Builders, Fractional Executives. The "trust matters before someone buys" angle hits hardest here.
+
+QUALIFYING CHECK — all 4 must pass for a SEND:
+1. Decision maker — owner / founder / CEO / solo operator. NOT an ops manager unless it's a larger enterprise. Look for someone who wants to work ON the business, not IN it.
+2. Real offer — service, coaching or program (not a product/e-com SKU).
+3. Earning something — real results, client wins, case studies (not a total beginner).
+4. Wants more clients — motivated, pain signals present.
+
+GREEN FLAGS: coach/consultant in bio/headline, posts about expertise, sells $500-$20k+ services, 1-10 employees or solo, English-speaking (US/CA/UK/AU/NZ), posted in last 30 days, no visible client-acquisition system, "I help [X]" bio, featured offer, services page, booking link/Linktree.
+
+RED FLAGS / AVOID: e-commerce or product business, pure job seeker (employee mindset), MLM/network marketing, already running strong outbound, <500 followers AND inactive, non-English / outside target regions, B2C only (fitness clients, students).
+
+BUYING SIGNALS to weight heavily: featured section with paid offer, services / "Open to" flag, booking link or Linktree, "referrals only" / "word of mouth", "slow month" / "inconsistent income" / "need more clients" / "looking to scale", 1-2%+ engagement, recent activity, no outbound system visible.
+
+KEYWORDS to detect:
+- Titles/bio: Business Coach, Life Coach, Executive Coach, Marketing Consultant, Sales Consultant, Fractional CMO, Fractional CFO, Advisor, Founder, Speaker, AI Consultant, AI Educator, Community Builder.
+- Content: "I help [niche]", "my clients", "case study", "helped a client", "results", "client win", "course launch", "open to work with".
+- Pain: "referrals only", "word of mouth", "slow month", "struggling to get clients", "inconsistent income", "need more clients", "want to scale", "grow my business".
+
+SCORING (0-100):
+- 80+  STRONG fit, DFY potential
+- 60-79 DECENT, likely DIY/DWY
+- 40-59 WEAK, don't prioritise
+- <40   AVOID
+
+VERDICT RULE: SEND_VN only if all 4 qualifiers pass (score ≥60). Otherwise SKIP. Use MAYBE sparingly when 3/4 pass and signals are strong.
+
+Return ONLY valid JSON (no markdown), in this shape:
 {
   "verdict": "SEND_VN" | "SKIP" | "MAYBE",
-  "verdictLine": "<one line starting with ✅ SEND VN — …  /  ❌ SKIP — …  /  ⚠️ MAYBE — …>",
+  "verdictLine": "<MUST start with ✅ SEND VN — … or ❌ SKIP — … or ⚠️ MAYBE — …  one line, the first thing the user sees>",
+  "score": <0-100 integer>,
+  "fit": "STRONG" | "DECENT" | "WEAK" | "AVOID",
+  "summary": "<2-3 sentences: who they are + why they do or don't fit>",
+  "priorityMarket": { "match": <bool>, "name": "<AI Consultant | AI Educator | Community Builder | Fractional Executive | ''>" },
   "icpMatch": "green" | "yellow" | "red",
   "market": "<short market label>",
   "predictedTier": "DIY" | "DWY" | "DFY" | "unknown",
@@ -119,27 +161,27 @@ Return ONLY valid JSON matching this schema (no markdown):
     "wantsMore": 1 | 0 | -1
   },
   "extracted": {
-    "fullName": "<their real full name as it appears on the profile — strip pronouns, titles, emojis, follower counts, 'he/him', '· 3rd', degree badges>",
+    "fullName": "<real full name — strip pronouns, titles, emojis, follower counts, 'he/him', '· 3rd', degree badges>",
     "headline": "<their LinkedIn headline / tagline, one line>",
     "bio": "<their About / summary cleaned up, ≤1200 chars. If no About, use headline + role.>"
   },
   "buyingSignals": {
-    "featuredOffer": <true if featured section / link-in-bio / pinned post advertises a paid offer>,
-    "bookingLinkInBio": <true if a calendly / booking / 'DM me' / 'book a call' link is visible>,
-    "referralsOnly": <true if they say clients come from referrals or word of mouth only>,
-    "slowMonth": <true if posts mention slow month, quiet pipeline, dry spell, needs leads>,
-    "wantsToScale": <true if posts/about mention scaling, growing, hiring, hitting a ceiling>,
-    "noOutboundSystem": <true if no sign of outbound (no SDR, agency, paid ads — inbound/content only)>,
-    "decisionMakerConfirmed": <true if founder/owner/CEO/solo operator — can say yes without asking>
+    "featuredOffer": <bool>,
+    "bookingLinkInBio": <bool>,
+    "referralsOnly": <bool>,
+    "slowMonth": <bool>,
+    "wantsToScale": <bool>,
+    "noOutboundSystem": <bool>,
+    "decisionMakerConfirmed": <bool>
   },
-  "greenFlags": ["..."],
-  "redFlags": ["..."],
+  "greenFlags": ["short detected green flags"],
+  "redFlags": ["short detected red flags"],
   "personalisationHook": "<one specific real detail from their profile>",
   "suggestedFirstLine": "<the opening sentence of the VN1 referencing the hook>",
   "confidence": 0.0-1.0
 }
 
-Be strict about buyingSignals: only mark true with concrete evidence in the pasted text. When unsure, false.`;
+Be strict: only mark buyingSignals true with concrete evidence. Lead with the verdict — no fluff.`;
 
 export const qualifyProfile = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
