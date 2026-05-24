@@ -84,6 +84,7 @@ type Actions = {
   setSignals: (id: string, s: BuyingSignals) => void;
   setBant: (id: string, b: BANT) => void;
   setQualScore: (id: string, score: number) => void;
+  setFollowUp: (id: string, at: string | null, reason?: string | null) => void;
 
   upsertKpiDay: (patch: Partial<KpiDay> & { date: string }) => void;
   getKpiDay: (date: string) => KpiDay;

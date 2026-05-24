@@ -113,6 +113,10 @@ export type Prospect = {
   createdAt: string;
   stageEnteredAt: string;
   lastTouchAt: string;
+  /** When the setter (or AI, if confirmed) plans to follow up next. */
+  followUpAt?: string;
+  /** Short note explaining the follow-up reason. */
+  followUpReason?: string;
 };
 
 export type KpiDay = {
