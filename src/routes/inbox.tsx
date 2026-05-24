@@ -363,7 +363,7 @@ function InboxPage() {
                 </div>
               </div>
               <ScrollArea className="flex-1 p-3">
-                <ConversationLog activities={selected.activities} vnLog={selected.vnLog} />
+                <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
               </ScrollArea>
               <div className="space-y-2 border-t border-border p-3">
                 {/* Inline AI suggestions — right above the composer */}
