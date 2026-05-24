@@ -188,6 +188,20 @@ function InboxPage() {
     setText(s.content);
     toast.success("Loaded into composer. Edit, then click Log when you've sent it.");
   };
+  const copyAndLogSug = (s: SuggestRepliesResult["suggestions"][number]) => {
+    if (!selected) return;
+    navigator.clipboard.writeText(s.content);
+    const date = new Date().toISOString();
+    const sugType = (s.type as ActivityType) ?? "text";
+    logActivity(selected.id, { date, type: sugType, notes: s.content, fromMe: true });
+    if (sugType === "VN") {
+      logVN(selected.id, { date, variation: s.content.slice(0, 80), reply: "none" });
+      const today = getKpiDay(todayStr());
+      upsertKpiDay({ date: todayStr(), vnSent: today.vnSent + 1 });
+    }
+    toast.success("Copied & logged — paste into the platform to send.");
+  };
+
 
   return (
     <div className="flex h-[calc(100vh-2rem)] flex-col">
