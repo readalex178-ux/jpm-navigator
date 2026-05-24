@@ -188,6 +188,36 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       return;
     }
 
+    if (msg.kind === "force:sync-active-profile") {
+      if (!state.pairingCode) {
+        sendResponse({ ok: false, error: "Pair the extension with the app first." });
+        return;
+      }
+      const tab = await getActiveLinkedinTab();
+      if (!tab?.id) {
+        sendResponse({ ok: false, error: "Open a LinkedIn profile in the active tab first." });
+        return;
+      }
+      let context;
+      try {
+        context = await chrome.tabs.sendMessage(tab.id, { kind: "inspect:page-force" });
+      } catch {
+        sendResponse({ ok: false, error: "Could not reach LinkedIn. Refresh the tab and try again." });
+        return;
+      }
+      if (!context || context.pageType !== "profile" || !context.profile) {
+        sendResponse({ ok: false, error: "Open a LinkedIn profile page (/in/...) before syncing." });
+        return;
+      }
+      await broadcastToApps({
+        kind: "ext:profile",
+        pairingCode: state.pairingCode,
+        profile: context.profile,
+      });
+      sendResponse({ ok: true, profile: context.profile, fallback: !!context.fallback });
+      return;
+    }
+
     if (msg.kind === "send:profile-to-app") {
       if (!state.pairingCode) {
         sendResponse({ ok: false, error: "Pair the extension with the app first." });

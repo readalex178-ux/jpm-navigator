@@ -207,7 +207,8 @@
 
   // Insert text into active reply box on demand
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg && msg.kind === "inspect:page") {
+    if (msg && (msg.kind === "inspect:page" || msg.kind === "inspect:page-force")) {
+      const force = msg.kind === "inspect:page-force";
       const profile = scrapeOpenProfile();
       const thread = scrapeOpenThread();
       if (profile) {
@@ -219,6 +220,29 @@
       }
       if (thread) {
         return Promise.resolve({ pageType: "messaging", thread, url: location.href });
+      }
+      // Forced fallback: on a /in/ URL but selectors failed — return a minimal
+      // profile from <h1> / <title> / URL so the user can still push it.
+      if (force && location.pathname.startsWith("/in/")) {
+        const h1 = document.querySelector("h1");
+        const rawName = clean(h1?.textContent || document.title.split("|")[0] || "LinkedIn profile");
+        const headlineGuess = clean(
+          document.title.replace(rawName, "").replace(/\|/g, "").replace(/LinkedIn/gi, "").trim(),
+        );
+        const fallback = buildProfilePayload({
+          profileUrl: location.origin + location.pathname,
+          name: rawName,
+          headline: headlineGuess || undefined,
+          currentRole: headlineGuess || undefined,
+          recentActivity: [],
+          scrapedAt: new Date().toISOString(),
+        });
+        return Promise.resolve({
+          pageType: "profile",
+          profile: fallback,
+          url: location.href,
+          fallback: true,
+        });
       }
       return Promise.resolve({ pageType: "unsupported", url: location.href });
     }
