@@ -198,6 +198,39 @@ export function ProfileQualifierBox() {
             Wants more {FLAG(res.qualification.wantsMore)}
           </div>
 
+          {res.extracted && (res.extracted.fullName || res.extracted.headline) && (
+            <div className="rounded bg-surface p-2">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Extracted</div>
+              {res.extracted.fullName && <div><strong>{res.extracted.fullName}</strong></div>}
+              {res.extracted.headline && <div className="text-muted-foreground">{res.extracted.headline}</div>}
+            </div>
+          )}
+
+          {res.buyingSignals && (
+            <div className="rounded bg-surface p-2">
+              <div className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                Buying signals
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(Object.keys(SIGNAL_LABELS) as Array<keyof typeof SIGNAL_LABELS>).map((k) => {
+                  const on = Boolean(res.buyingSignals?.[k]);
+                  return (
+                    <Badge
+                      key={k}
+                      variant="outline"
+                      className={cn(
+                        "text-[10px]",
+                        on ? "border-success text-success" : "border-muted text-muted-foreground opacity-60",
+                      )}
+                    >
+                      {on ? "✓" : "·"} {SIGNAL_LABELS[k]}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-1 sm:grid-cols-2">
             <div>
               <div className="text-[10px] uppercase tracking-widest text-success">Green</div>
