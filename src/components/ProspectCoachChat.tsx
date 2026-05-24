@@ -78,6 +78,15 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
     };
   }, [prospect]);
 
+  // Trigger phrases where the user explicitly tells the coach to schedule a
+  // follow-up — we auto-apply the AI's suggested date in parallel with the
+  // chat reply (no confirm chip). Voice/typed user action = explicit consent.
+  const FOLLOWUP_TRIGGERS = useMemo(
+    () =>
+      /\b(left (me )?on read|on read|ghost(ed|ing)?|no reply|hasn[' ]?t replied|haven[' ]?t replied|didn[' ]?t reply|ignored (me )?|no response|went silent|cold|disappeared|left me hanging)\b/i,
+    [],
+  );
+
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
@@ -85,16 +94,38 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
     setMessages(next);
     setInput("");
     setBusy(true);
+
+    const autoFollowUp = FOLLOWUP_TRIGGERS.test(trimmed);
+
     try {
-      const res = await chatFn({ data: { context: ctx, messages: next } });
-      if (!res.ok) {
-        toast.error(res.error);
+      // Run chat + (optional) follow-up suggestion in parallel
+      const [chatRes, fuRes] = await Promise.all([
+        chatFn({ data: { context: ctx, messages: next } }),
+        autoFollowUp
+          ? suggestFn({ data: { context: ctx } }).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      if (!chatRes.ok) {
+        toast.error(chatRes.error);
         return;
       }
-      setMessages([...next, { role: "assistant", content: res.content }]);
+      setMessages([...next, { role: "assistant", content: chatRes.content }]);
       requestAnimationFrame(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
       });
+
+      // Auto-apply follow-up — no confirm needed, user explicitly asked
+      if (autoFollowUp && fuRes && fuRes.ok) {
+        setFollowUp(prospect.id, fuRes.followUpAt, fuRes.reason);
+        toast.success(
+          `Follow-up set · ${new Date(fuRes.followUpAt).toLocaleString([], {
+            weekday: "short",
+            hour: "numeric",
+            minute: "2-digit",
+          })}`,
+        );
+      }
     } catch (e) {
       toast.error(`Coach error: ${(e as Error).message}`);
     } finally {
