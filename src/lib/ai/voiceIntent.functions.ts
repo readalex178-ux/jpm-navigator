@@ -27,9 +27,7 @@ export const VoiceIntentSchema = z.object({
   action: z
     .enum(["move_stage", "add_note", "log_activity", "set_tier", "open"])
     .optional(),
-  stage: z
-    .enum(["Found", "Cold", "Connected", "Replied", "VN1", "VN2", "Booked", "Lost"])
-    .optional(),
+  stage: z.string().max(40).optional(),
   tier: z.enum(["DIY", "DWY", "DFY"]).optional(),
   activityType: z.enum(["VN", "text", "comment", "call", "note"]).optional(),
   text: z.string().optional(),
@@ -43,7 +41,7 @@ export type VoiceIntent = z.infer<typeof VoiceIntentSchema>;
 const SYS = `You convert a BTF Setter's voice command into a JSON intent.
 
 Routes available: ${ROUTES.join(", ")}
-Stages: Found, Cold, Connected, Replied, VN1, VN2, Booked, Lost
+Stages: Found, Connected, VN1 Sent, Replied, VN2 Sent, Calendar Sent, Call Booked, No Show, Nurturing, Re-Engaged, Closed, Cold
 Tiers: DIY, DWY, DFY
 Activity types: VN, text, comment, call, note
 
