@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter } from "lucide-react";
@@ -35,6 +35,9 @@ export const Route = createFileRoute("/inbox")({
           "Every DM in one workspace with an AI co-pilot suggesting replies. You always send manually.",
       },
     ],
+  }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    prospect: typeof search.prospect === "string" ? search.prospect : undefined,
   }),
   component: InboxPage,
 });
