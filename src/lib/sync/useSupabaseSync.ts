@@ -284,4 +284,55 @@ export function useSupabaseSync() {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
   }, [auth.status]);
+
+  // REALTIME: live-update kpiDays from remote changes (multi-device / extension writes)
+  useEffect(() => {
+    if (auth.status !== "authed" || !auth.user) return;
+    const userId = auth.user.id;
+
+    const mapRow = (k: any) => ({
+      date: k.date,
+      vnSent: k.vn_sent ?? 0,
+      connectionsSent: k.connections_sent ?? 0,
+      connectionsAccepted: k.connections_accepted ?? 0,
+      replies: k.replies ?? 0,
+      activeConvos: k.active_convos ?? 0,
+      calendarsSent: k.calendars_sent ?? 0,
+      booked: k.booked ?? 0,
+      shows: k.shows ?? 0,
+      hours: Number(k.hours ?? 0),
+      byPlatform: k.by_platform ?? {},
+    });
+
+    const channel = supabase
+      .channel(`kpi-rt-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "kpi_entries", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          // Suppress echoes of our own push
+          if (isPulling.current) return;
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+
+          useStore.setState((state) => {
+            const days = [...state.kpiDays];
+            if (payload.eventType === "DELETE") {
+              return { kpiDays: days.filter((d) => d.date !== oldRow?.date) };
+            }
+            if (!newRow?.date) return {};
+            const mapped = mapRow(newRow);
+            const idx = days.findIndex((d) => d.date === mapped.date);
+            if (idx >= 0) days[idx] = mapped;
+            else days.push(mapped);
+            return { kpiDays: days };
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [auth.status, auth.user]);
 }
