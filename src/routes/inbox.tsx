@@ -36,19 +36,23 @@ export const Route = createFileRoute("/inbox")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    prospect: typeof search.prospect === "string" ? search.prospect : undefined,
+  }),
   component: InboxPage,
 });
 
 const ACTIVITY_TYPES: ActivityType[] = ["VN", "text", "email", "comment", "call", "note"];
 
 function InboxPage() {
+  const search = Route.useSearch();
   const prospects = useStore((s) => s.prospects);
   const logActivity = useStore((s) => s.logActivity);
   const logVN = useStore((s) => s.logVN);
   const upsertKpiDay = useStore((s) => s.upsertKpiDay);
   const getKpiDay = useStore((s) => s.getKpiDay);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(search.prospect ?? null);
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [platformFilter, setPlatformFilter] = useState<string>("all");

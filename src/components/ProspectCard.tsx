@@ -26,6 +26,7 @@ export function ProspectCard({
   onClick,
   onEdit,
   onAnalyze,
+  onInbox,
 }: {
   prospect: Prospect;
   selected?: boolean;
@@ -33,6 +34,7 @@ export function ProspectCard({
   onClick?: () => void;
   onEdit?: () => void;
   onAnalyze?: () => void;
+  onInbox?: () => void;
 }) {
   const days = daysSince(prospect.lastTouchAt);
   const stageLimit = STAGE_AGE_LIMIT[prospect.stage];
@@ -45,7 +47,16 @@ export function ProspectCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <FlagDot prospect={prospect} />
-            <span className="truncate font-display font-semibold">{prospect.name}</span>
+            <span
+              className="truncate font-display font-semibold cursor-pointer select-none"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onInbox?.();
+              }}
+              title="Double-click name to open conversation"
+            >
+              {prospect.name}
+            </span>
           </div>
           <div className="mt-1 truncate text-xs text-muted-foreground">
             {platformEmoji(prospect.platform)} {prospect.niche || "—"}
