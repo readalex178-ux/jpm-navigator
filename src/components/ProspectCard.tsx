@@ -21,11 +21,15 @@ export function FlagDot({ prospect }: { prospect: Prospect }) {
 
 export function ProspectCard({
   prospect,
+  selected,
+  onToggleSelect,
   onClick,
   onEdit,
   onAnalyze,
 }: {
   prospect: Prospect;
+  selected?: boolean;
+  onToggleSelect?: () => void;
   onClick?: () => void;
   onEdit?: () => void;
   onAnalyze?: () => void;
