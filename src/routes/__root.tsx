@@ -185,7 +185,7 @@ function useExtensionBridge() {
   useEffect(() => {
     const off = listenFromExtension((e) => {
       if (e.kind === "ext:hello") {
-        if (!e.pairingCode || e.pairingCode === pairingCode) {
+        if (e.pairingCode && e.pairingCode === pairingCode) {
           setExtensionConnected(true);
           postToExtension({ kind: "app:ack", pairingCode });
         }
@@ -231,4 +231,15 @@ function useExtensionBridge() {
 
     return off;
   }, [pairingCode, setExtensionConnected, setPendingProfileQualification, upsertProfile, upsertThread]);
+
+  useEffect(() => {
+    if (!hydrated || !pairingCode) return;
+
+    setExtensionConnected(false);
+    const timeout = window.setTimeout(() => {
+      postToExtension({ kind: "app:ack", pairingCode });
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
+  }, [hydrated, pairingCode, setExtensionConnected]);
 }
