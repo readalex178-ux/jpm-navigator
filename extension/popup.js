@@ -178,6 +178,14 @@ async function refreshStatus() {
   updatePairingUI(status || {});
 }
 
+function refreshStatusSoon(delay = 400) {
+  window.setTimeout(() => {
+    refreshStatus().catch(() => {
+      pairingStatusEl.textContent = "Could not confirm app status yet. Try Refresh once.";
+    });
+  }, delay);
+}
+
 async function inspectActivePage() {
   setButtonBusy(refreshBtn, "Checking…", true);
   try {
@@ -199,6 +207,8 @@ saveBtn.addEventListener("click", async () => {
     const resp = await sendMessage({ kind: "save:pairing", code });
     if (resp?.ok) {
       await refreshStatus();
+      refreshStatusSoon();
+      refreshStatusSoon(1200);
     }
   } finally {
     setButtonBusy(saveBtn, "Pairing…", false);

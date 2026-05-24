@@ -5,8 +5,11 @@
 
 (() => {
   "use strict";
+  if (window.__btfAppBridgeMounted) return;
+  window.__btfAppBridgeMounted = true;
+
   const NS = "btf-setter-os";
-  const VERSION = "1.1.0";
+  const VERSION = "1.1.1";
 
   const ackApp = (pairingCode = "") => {
     chrome.runtime.sendMessage({
@@ -31,6 +34,10 @@
     const e = d.event;
     if (e.kind === "app:insert") {
       chrome.runtime.sendMessage({ kind: "app:insert", text: e.text, threadId: e.threadId });
+      return;
+    }
+    if (e.kind === "app:ack") {
+      ackApp(e.pairingCode || "");
     }
   });
 

@@ -16,7 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useHydrate } from "@/lib/useHydrate";
 import { useSupabaseSync } from "@/lib/sync/useSupabaseSync";
 import { useAuth } from "@/lib/auth/useAuth";
-import { listenFromExtension, generatePairingCode } from "@/lib/extension/bridge";
+import { listenFromExtension, generatePairingCode, postToExtension } from "@/lib/extension/bridge";
 import { useStore } from "@/lib/store";
 import { LoginPage } from "@/components/auth/LoginPage";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,6 +177,7 @@ function useExtensionBridge() {
       if (e.kind === "ext:hello") {
         if (!e.pairingCode || e.pairingCode === pairingCode) {
           setExtensionConnected(true);
+          postToExtension({ kind: "app:ack", pairingCode });
         }
         return;
       }
@@ -185,12 +186,14 @@ function useExtensionBridge() {
 
       if (e.kind === "ext:thread") {
         setExtensionConnected(true);
+        postToExtension({ kind: "app:ack", pairingCode });
         upsertThread(e.thread);
         return;
       }
 
       if (e.kind === "ext:profile") {
         setExtensionConnected(true);
+        postToExtension({ kind: "app:ack", pairingCode });
         upsertProfile(e.profile);
         const text = (
           e.profile.profileText ??

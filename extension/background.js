@@ -2,7 +2,7 @@
 // Holds pairing state, talks to the active LinkedIn tab, and forwards manual
 // profile sends to the BTF app via the app-bridge content script.
 
-const VERSION = "1.1.0";
+const VERSION = "1.1.1";
 const APP_ACK_TTL_MS = 60_000;
 
 async function getState() {
@@ -35,6 +35,30 @@ async function broadcastToApps(event) {
         await chrome.tabs.sendMessage(tab.id, { kind: "to-app", event });
       } catch {
         // Ignore tabs that do not currently have the app bridge attached.
+      }
+    }),
+  );
+}
+
+async function ensureAppBridge() {
+  const tabs = await chrome.tabs.query({
+    url: [
+      "https://*.lovable.app/*",
+      "https://*.lovableproject.com/*",
+      "http://localhost/*",
+    ],
+  });
+
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (!tab.id) return;
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["app-bridge.js"],
+        });
+      } catch {
+        // Ignore tabs where injection is blocked or already present.
       }
     }),
   );
@@ -104,6 +128,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     if (msg.kind === "save:pairing") {
       const code = (msg.code || "").trim().toUpperCase();
+      await ensureAppBridge();
       await chrome.storage.local.set({
         pairingCode: code,
         lastAppAckAt: 0,
