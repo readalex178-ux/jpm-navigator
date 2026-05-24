@@ -60,6 +60,7 @@ function ProspectsPage() {
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [stage, setStage] = useState<Stage | "all">("all");
   const [tier, setTier] = useState<Tier | "all">("all");
+  const [sort, setSort] = useState<SortOption>("newest");
 
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
