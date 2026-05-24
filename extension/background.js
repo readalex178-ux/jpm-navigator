@@ -5,6 +5,17 @@
 const VERSION = "1.1.3";
 const APP_ACK_TTL_MS = 60_000;
 
+async function ensureLinkedInContentScript(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content.js"],
+    });
+  } catch {
+    // Ignore if already injected or blocked; sendMessage below will still tell us if it failed.
+  }
+}
+
 async function getState() {
   const data = await chrome.storage.local.get([
     "pairingCode",
@@ -100,6 +111,7 @@ async function inspectActiveLinkedinPage() {
   }
 
   try {
+    await ensureLinkedInContentScript(tab.id);
     const context = await chrome.tabs.sendMessage(tab.id, { kind: "inspect:page" });
     if (!context) {
       return { ok: false, error: "Could not inspect this page. Refresh LinkedIn once and try again." };
@@ -200,13 +212,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       }
       let context;
       try {
+        await ensureLinkedInContentScript(tab.id);
         context = await chrome.tabs.sendMessage(tab.id, { kind: "inspect:page-force" });
       } catch {
         sendResponse({ ok: false, error: "Could not reach LinkedIn. Refresh the tab and try again." });
         return;
       }
       if (!context || context.pageType !== "profile" || !context.profile) {
-        sendResponse({ ok: false, error: "Open a LinkedIn profile page (/in/...) before syncing." });
+        sendResponse({ ok: false, error: "Open a LinkedIn person profile page before syncing." });
         return;
       }
       await broadcastToApps({
