@@ -186,7 +186,6 @@ function useExtensionBridge() {
       if (e.kind === "ext:thread") {
         setExtensionConnected(true);
         upsertThread(e.thread);
-        toast.success(`LinkedIn thread synced: ${e.thread.participantName}`);
         return;
       }
 
