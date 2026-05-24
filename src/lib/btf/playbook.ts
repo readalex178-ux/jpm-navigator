@@ -1,6 +1,25 @@
-// BTF playbook constants — canonical objection / re-engagement / warm-signal / pre-screen copy.
-// Single source of truth for the Objection Handler, Re-engagement Alerts, Warm Signal Alert,
-// and Pre-Screen Call Assistant features.
+// BTF playbook constants — single source of truth for every script, rule,
+// sequence, market variation, KPI target, and objection handler in the
+// Behind the Funnel Setter Hub. Verbatim content from the internal BTF
+// Setter Hub reference doc by JPM Media.
+
+/** Locked at 19 across every script. Do NOT change. */
+export const CLIENT_COUNT = 19;
+
+/** Non-negotiable rules — applied across every VN/text the app suggests, drafts or audits. */
+export const BTF_NON_NEGOTIABLES: { rule: string; detail: string }[] = [
+  { rule: "Voice first — always.", detail: "First DM after connecting is ALWAYS a voice note. VN before text, every time." },
+  { rule: "Never pitch the offer in VN1.", detail: "No product name, no podcast mention, no pricing. Curiosity only." },
+  { rule: "Never ask for a call in VN1.", detail: "Soft close only: 'open to hearing how it works?' — not 'book a call'." },
+  { rule: "Client count is always 19.", detail: "Every script references 19 founders / service providers. Do not change this number." },
+  { rule: "Never two VNs in a row if they're texting back.", detail: "Send one more VN after their first text — if they text again, match and switch to text." },
+  { rule: "Never leave a reply dry.", detail: "Every reply gets a reply. Nothing falls through the cracks." },
+  { rule: "One question per message — always.", detail: "Two questions = silence." },
+  { rule: "Always have a next step.", detail: "Never leave an exchange open-ended." },
+  { rule: "Personalise every send.", detail: "60 seconds of research pays every time. No exceptions." },
+  { rule: "Max 150 words on any VN.", detail: "Hard stop — LinkedIn VN feature has a 60-second timer." },
+];
+
 
 export type ObjectionId =
   | "no_time"
