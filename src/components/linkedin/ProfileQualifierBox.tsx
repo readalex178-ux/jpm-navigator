@@ -44,8 +44,14 @@ export function ProfileQualifierBox() {
       if (r.ok) {
         setRes(r.result);
         if (r.result.verdict === "SEND_VN") {
-          const nameLine =
+          const extractedName = r.result.extracted?.fullName?.trim();
+          const fallbackName =
             trimmed.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+          const nameLine = extractedName && extractedName.length > 1 ? extractedName : fallbackName;
+          const bioText =
+            r.result.extracted?.bio?.trim() ||
+            r.result.extracted?.headline?.trim() ||
+            trimmed.slice(0, 800);
           const url = profileUrl.trim();
           const dup = prospects.find(
             (p) =>
@@ -57,10 +63,11 @@ export function ProfileQualifierBox() {
               name: nameLine,
               profileUrl: url,
               platform: "linkedin",
-              bio: trimmed.slice(0, 800),
+              bio: bioText,
               niche: r.result.market,
               tier: r.result.predictedTier === "unknown" ? "DWY" : r.result.predictedTier,
               stage: "Found",
+              signals: { ...EMPTY_SIGNALS, ...(r.result.buyingSignals ?? {}) } as BuyingSignals,
             });
             setAutoAdded(true);
             toast.success(`Added ${created.name} to pipeline (Found)`);
