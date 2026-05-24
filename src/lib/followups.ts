@@ -26,6 +26,9 @@ export function getDueFollowUps(
   const nowMs = now.getTime();
   const out: DueFollowUp[] = [];
   for (const p of prospects) {
+    // "Found" = haven't connected yet. No follow-up nags until a real
+    // connection exists (user moves them out of Found).
+    if (p.stage === "Found") continue;
     if (p.followUpAt) {
       const dueMs = new Date(p.followUpAt).getTime();
       if (!Number.isNaN(dueMs) && dueMs <= nowMs) {
