@@ -185,12 +185,22 @@ function InboxPage() {
     if (!selected || !text.trim()) return;
     const fromMe = direction === "me";
     const date = new Date().toISOString();
-    logActivity(selected.id, { date, type, notes: text.trim(), fromMe });
-    if (type === "VN" && fromMe) {
-      logVN(selected.id, { date, variation: text.trim().slice(0, 80), reply: "none" });
+    const content = text.trim();
+    logActivity(selected.id, { date, type, notes: content, fromMe });
+    const isVn = type === "VN" && fromMe;
+    if (isVn) {
+      logVN(selected.id, { date, variation: content.slice(0, 80), reply: "none" });
       const today = getKpiDay(todayStr());
       upsertKpiDay({ date: todayStr(), vnSent: today.vnSent + 1 });
     }
+    void syncToSupabase({
+      prospectId: selected.id,
+      fromMe,
+      type,
+      text: content,
+      date,
+      variation: isVn ? content.slice(0, 80) : undefined,
+    });
     setText("");
     toast.success(fromMe ? "Logged your message" : "Logged their message");
   };
