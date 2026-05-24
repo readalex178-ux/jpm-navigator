@@ -42,15 +42,22 @@ export function ProspectCard({
   return (
     <div
       className={cn(
-        "group relative rounded-lg border bg-card transition-colors hover:bg-surface-elevated",
-        overdue ? "border-destructive/60" : "border-border",
+        "group relative rounded-lg border bg-card transition-colors",
+        selected ? "border-primary bg-primary/5" : "hover:bg-surface-elevated",
+        overdue && !selected ? "border-destructive/60" : !selected ? "border-border" : "",
       )}
+      onClick={onToggleSelect ? (e) => { e.stopPropagation(); onToggleSelect(); } : undefined}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        className="block w-full p-4 text-left"
-      >
+      {onToggleSelect ? (
+        <div className="absolute left-2 top-2 z-10">
+          <Checkbox checked={!!selected} onCheckedChange={onToggleSelect} />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onClick}
+          className="block w-full p-4 text-left"
+        >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
