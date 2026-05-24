@@ -91,7 +91,11 @@ export const parseVoiceIntent = createServerFn({ method: "POST" })
           temperature: 0.1,
         }),
       });
-      if (!res.ok) return { ok: false, error: `AI gateway ${res.status}` };
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        console.error(`[voiceIntent] upstream ${res.status}: ${txt.slice(0, 500)}`);
+        return { ok: false, error: "AI service temporarily unavailable." };
+      }
       const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const content = json.choices?.[0]?.message?.content?.trim() ?? "";
       let raw: unknown;
@@ -107,6 +111,8 @@ export const parseVoiceIntent = createServerFn({ method: "POST" })
       if (intent.kind === "dictate" && !intent.transcript) intent.transcript = data.transcript;
       return { ok: true, intent };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      console.error("[voiceIntent] failed", e);
+      return { ok: false, error: "AI service temporarily unavailable." };
     }
+
   });
