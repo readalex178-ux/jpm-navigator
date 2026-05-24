@@ -162,9 +162,9 @@ export const useStore = create<State & Actions>()(
           signals: p.signals ?? { ...EMPTY_SIGNALS },
           activities: p.activities ?? [],
           vnLog: p.vnLog ?? [],
-          createdAt: now(),
-          stageEnteredAt: now(),
-          lastTouchAt: now(),
+          createdAt: p.createdAt ?? now(),
+          stageEnteredAt: p.stageEnteredAt ?? p.createdAt ?? now(),
+          lastTouchAt: p.lastTouchAt ?? p.createdAt ?? now(),
         };
         set({ prospects: [prospect, ...get().prospects] });
         return prospect;
