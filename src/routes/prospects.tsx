@@ -255,6 +255,17 @@ function ProspectsPage() {
               <SelectItem value="DFY">DFY</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="w-[150px]">
+              <ArrowUpDown className="mr-1 h-4 w-4 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortOption[]).map((k) => (
+                <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {filtered.length === 0 ? (
