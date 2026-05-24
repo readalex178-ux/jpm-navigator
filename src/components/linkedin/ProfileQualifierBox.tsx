@@ -200,7 +200,24 @@ export function ProfileQualifierBox() {
             {res.verdictLine}
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="outline" className="font-mono">SCORE {res.score}/100</Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                res.fit === "STRONG" && "border-success text-success",
+                res.fit === "DECENT" && "border-amber-400 text-amber-500",
+                res.fit === "WEAK" && "border-muted-foreground text-muted-foreground",
+                res.fit === "AVOID" && "border-destructive text-destructive",
+              )}
+            >
+              FIT: {res.fit}
+            </Badge>
+            {res.priorityMarket?.match && (
+              <Badge variant="outline" className="border-success text-success">
+                ★ Priority: {res.priorityMarket.name}
+              </Badge>
+            )}
             <Badge variant="outline" className={cn("uppercase", ICP_COLOR[res.icpMatch])}>
               ICP {res.icpMatch}
             </Badge>
@@ -208,6 +225,13 @@ export function ProfileQualifierBox() {
             <Badge variant="outline">Tier: {res.predictedTier}</Badge>
             <Badge variant="outline">Conf {Math.round(res.confidence * 100)}%</Badge>
           </div>
+
+          {res.summary && (
+            <div className="rounded bg-surface p-2">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Summary</div>
+              <div>{res.summary}</div>
+            </div>
+          )}
 
           <div>
             <span className="text-muted-foreground">4 qualifiers:</span>{" "}
