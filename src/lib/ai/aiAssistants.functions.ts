@@ -207,7 +207,7 @@ export const qualifyProfile = createServerFn({ method: "POST" })
       }
       return { ok: true, result: ProfileQualifierResultSchema.parse(raw) };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }
   });
 
@@ -251,7 +251,7 @@ ${data.history ? `PRIOR ANALYZER NOTES:\n${data.history}` : ""}`;
       const text = await callWithFallback(sys, user, false);
       return { ok: true, summary: text.trim() };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }
   });
 
@@ -322,7 +322,7 @@ export const buildVN1Script = createServerFn({ method: "POST" })
       parsed.wordCount = parsed.script.split(/\s+/).filter(Boolean).length;
       return { ok: true, result: parsed };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }
   });
 
@@ -384,7 +384,7 @@ export const analyzePastedThread = createServerFn({ method: "POST" })
       parsed.draftMessage = parsed.draftMessage.replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "").replace(/\s{2,}/g, " ").trim();
       return { ok: true, result: parsed };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }
   });
 
@@ -476,7 +476,7 @@ Return JSON only.`;
         .trim();
       return { ok: true, result: parsed };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }
   });
 
