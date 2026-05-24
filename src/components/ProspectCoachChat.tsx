@@ -40,6 +40,15 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   >(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // ---- Voice dictation (Web Speech API) ----
+  const recogRef = useRef<any>(null);
+  const autoSendRef = useRef(false);
+  const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");
+  const speechSupported =
+    typeof window !== "undefined" &&
+    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
   const chatFn = useServerFn(prospectCoachChat);
   const suggestFn = useServerFn(suggestFollowUp);
 
