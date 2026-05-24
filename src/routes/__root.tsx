@@ -16,9 +16,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { useHydrate } from "@/lib/useHydrate";
 import { useSupabaseSync } from "@/lib/sync/useSupabaseSync";
 import { useAuth } from "@/lib/auth/useAuth";
+import { listenFromExtension, generatePairingCode } from "@/lib/extension/bridge";
+import { useStore } from "@/lib/store";
 import { LoginPage } from "@/components/auth/LoginPage";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 function NotFoundComponent() {
   return (
@@ -136,6 +139,7 @@ function AuthGate() {
 
 function AuthedShell() {
   useSupabaseSync();
+  useExtensionBridge();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -154,4 +158,61 @@ function AuthedShell() {
       </div>
     </SidebarProvider>
   );
+}
+
+function useExtensionBridge() {
+  const pairingCode = useStore((s) => s.pairingCode);
+  const setPairingCode = useStore((s) => s.setPairingCode);
+  const setExtensionConnected = useStore((s) => s.setExtensionConnected);
+  const upsertThread = useStore((s) => s.upsertLinkedinThread);
+  const upsertProfile = useStore((s) => s.upsertLinkedinProfile);
+  const setPendingProfileQualification = useStore((s) => s.setPendingProfileQualification);
+
+  useEffect(() => {
+    if (!pairingCode) setPairingCode(generatePairingCode());
+  }, [pairingCode, setPairingCode]);
+
+  useEffect(() => {
+    const off = listenFromExtension((e) => {
+      if (e.kind === "ext:hello") {
+        if (!e.pairingCode || e.pairingCode === pairingCode) {
+          setExtensionConnected(true);
+        }
+        return;
+      }
+
+      if (e.pairingCode && e.pairingCode !== pairingCode) return;
+
+      if (e.kind === "ext:thread") {
+        setExtensionConnected(true);
+        upsertThread(e.thread);
+        return;
+      }
+
+      if (e.kind === "ext:profile") {
+        setExtensionConnected(true);
+        upsertProfile(e.profile);
+        const text = [
+          e.profile.name,
+          e.profile.headline,
+          e.profile.currentRole,
+          e.profile.location,
+          e.profile.about,
+          ...(e.profile.recentActivity ?? []),
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        setPendingProfileQualification({
+          text,
+          profileUrl: e.profile.profileUrl,
+          name: e.profile.name,
+          capturedAt: new Date().toISOString(),
+        });
+        toast.success(`LinkedIn profile captured: ${e.profile.name}`);
+      }
+    });
+
+    return off;
+  }, [pairingCode, setExtensionConnected, setPendingProfileQualification, upsertProfile, upsertThread]);
 }

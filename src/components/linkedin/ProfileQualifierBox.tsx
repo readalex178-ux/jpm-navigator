@@ -24,6 +24,8 @@ export function ProfileQualifierBox() {
   const fn = useServerFn(qualifyProfile);
   const addProspect = useStore((s) => s.addProspect);
   const prospects = useStore((s) => s.prospects);
+  const pendingProfileQualification = useStore((s) => s.pendingProfileQualification);
+  const clearPendingProfileQualification = useStore((s) => s.clearPendingProfileQualification);
   const [text, setText] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -102,6 +104,23 @@ export function ProfileQualifierBox() {
     return () => window.removeEventListener("btf:qualify-profile", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!pendingProfileQualification?.text) return;
+    const hasThread = Object.values(useStore.getState().linkedinThreads).some(
+      (t) => t.participantProfileUrl === pendingProfileQualification.profileUrl,
+    );
+    if (hasThread) {
+      clearPendingProfileQualification();
+      return;
+    }
+
+    setText(pendingProfileQualification.text);
+    setProfileUrl(pendingProfileQualification.profileUrl);
+    setRes(null);
+    toast.success(`Profile captured: ${pendingProfileQualification.name}`);
+    clearPendingProfileQualification();
+  }, [clearPendingProfileQualification, pendingProfileQualification]);
 
   const copyVerdict = () => {
     if (!res) return;

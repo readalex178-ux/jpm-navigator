@@ -46,6 +46,12 @@ type State = {
   pairingCode: string;
   extensionConnected: boolean;
   extensionLastSeen: string | null;
+  pendingProfileQualification: {
+    text: string;
+    profileUrl: string;
+    name: string;
+    capturedAt: string;
+  } | null;
   linkedinThreads: Record<string, ScrapedThread>;
   linkedinProfiles: Record<string, ScrapedProfile>;
   threadProspectMap: Record<string, string>; // threadId -> prospectId
@@ -95,6 +101,8 @@ type Actions = {
   // LinkedIn / extension
   setPairingCode: (code: string) => void;
   setExtensionConnected: (connected: boolean) => void;
+  setPendingProfileQualification: (payload: State["pendingProfileQualification"]) => void;
+  clearPendingProfileQualification: () => void;
   upsertLinkedinThread: (t: ScrapedThread) => void;
   upsertLinkedinProfile: (p: ScrapedProfile) => void;
   linkThreadToProspect: (threadId: string, prospectId: string) => void;
@@ -138,6 +146,7 @@ export const useStore = create<State & Actions>()(
       pairingCode: "",
       extensionConnected: false,
       extensionLastSeen: null,
+      pendingProfileQualification: null,
       linkedinThreads: {},
       linkedinProfiles: {},
       threadProspectMap: {},
@@ -237,6 +246,8 @@ export const useStore = create<State & Actions>()(
       setPairingCode: (code) => set({ pairingCode: code }),
       setExtensionConnected: (connected) =>
         set({ extensionConnected: connected, extensionLastSeen: connected ? now() : get().extensionLastSeen }),
+      setPendingProfileQualification: (payload) => set({ pendingProfileQualification: payload }),
+      clearPendingProfileQualification: () => set({ pendingProfileQualification: null }),
       upsertLinkedinThread: (t) =>
         set({
           linkedinThreads: { ...get().linkedinThreads, [t.threadId]: t },

@@ -21,12 +21,19 @@
 
     // Profile
     profileName: "h1",
-    profileHeadline: ".text-body-medium.break-words, .pv-text-details__left-panel h2",
-    profileAbout: "#about ~ * .display-flex .visually-hidden + span, .pv-shared-text-with-see-more span",
+    profileHeadline:
+      ".text-body-medium.break-words, .pv-text-details__left-panel h2, .pv-text-details__left-panel .text-body-medium",
+    profileAbout:
+      "#about ~ div .display-flex span[aria-hidden='true'], #about ~ * .display-flex .visually-hidden + span, .pv-shared-text-with-see-more span, [data-generated-suggestion-target]",
     profileLocation: ".text-body-small.inline.t-black--light",
+    profileRecentPosts:
+      "main article .update-components-text span[dir='ltr'], main article .break-words span[dir='ltr'], .occludable-update div[dir='ltr']",
+    profileFeaturedLinks: "a[href*='calendly'], a[href*='cal.com'], a[href*='book'], a[href*='schedule'], #featured a",
   };
 
   const log = (...a) => console.debug("[BTF]", ...a);
+  const clean = (value) => (value || "").replace(/\s+/g, " ").trim();
+  const uniq = (items) => Array.from(new Set(items.filter(Boolean)));
 
   const getMyName = () => {
     const meImg = document.querySelector(SELECTORS.selfHeader);
@@ -93,19 +100,37 @@
     if (!location.pathname.startsWith("/in/")) return null;
     const nameEl = document.querySelector(SELECTORS.profileName);
     if (!nameEl) return null;
-    const name = nameEl.textContent.trim();
+    const name = clean(nameEl.textContent);
     const headlineEl = document.querySelector(SELECTORS.profileHeadline);
     const aboutEl = document.querySelector(SELECTORS.profileAbout);
     const locEl = document.querySelector(SELECTORS.profileLocation);
+    const featuredLinks = uniq(
+      Array.from(document.querySelectorAll(SELECTORS.profileFeaturedLinks)).map((el) => {
+        const href = el.getAttribute("href") || "";
+        const text = clean(el.textContent);
+        if (!href && !text) return "";
+        return [text, href].filter(Boolean).join(" — ");
+      }),
+    );
+    const recentPosts = uniq(
+      Array.from(document.querySelectorAll(SELECTORS.profileRecentPosts))
+        .map((el) => clean(el.textContent))
+        .filter((text) => text.length >= 24)
+        .slice(0, 6),
+    );
+    const recentActivity = uniq([
+      ...featuredLinks.map((item) => `Featured: ${item}`),
+      ...recentPosts.map((item) => `Post: ${item}`),
+    ]).slice(0, 8);
 
     return {
       profileUrl: location.origin + location.pathname,
       name,
-      headline: headlineEl ? headlineEl.textContent.trim() : undefined,
-      about: aboutEl ? aboutEl.textContent.trim() : undefined,
-      currentRole: headlineEl ? headlineEl.textContent.trim() : undefined,
-      location: locEl ? locEl.textContent.trim() : undefined,
-      recentActivity: [],
+      headline: headlineEl ? clean(headlineEl.textContent) : undefined,
+      about: aboutEl ? clean(aboutEl.textContent) : undefined,
+      currentRole: headlineEl ? clean(headlineEl.textContent) : undefined,
+      location: locEl ? clean(locEl.textContent) : undefined,
+      recentActivity,
       scrapedAt: new Date().toISOString(),
     };
   };
@@ -125,7 +150,14 @@
       }
       const profile = scrapeOpenProfile();
       if (profile) {
-        const sig = "p:" + profile.profileUrl;
+        const sig = [
+          "p",
+          profile.profileUrl,
+          profile.name,
+          profile.headline || "",
+          profile.about || "",
+          (profile.recentActivity || []).join("|"),
+        ].join(":");
         if (sig !== lastSent) {
           lastSent = sig;
           chrome.runtime.sendMessage({ kind: "scraped:profile", profile });
