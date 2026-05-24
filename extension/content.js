@@ -192,8 +192,31 @@
   const clipList = (items, maxItems = 6, maxChars = 320) =>
     uniq(items.map((item) => clipText(item, maxChars))).slice(0, maxItems);
 
+  const getFullPageDump = () => {
+    const main = document.querySelector("main") || document.body;
+    return clean(main.innerText || "").slice(0, 18000);
+  };
+
   const buildProfilePayload = (profile) => {
     const recentActivity = clipList(profile.recentActivity || [], 8, 320);
+    const structured = [
+      profile.name,
+      profile.headline,
+      profile.currentRole,
+      profile.location,
+      profile.about,
+      ...recentActivity,
+    ]
+      .filter(Boolean)
+      .map((item) => clipText(item, 2400))
+      .join("\n");
+    // Combine structured fields with the full main-area text so the AI gets
+    // the same depth of context as a manual copy-paste of the page.
+    const dump = getFullPageDump();
+    const profileText = [structured, "--- PAGE TEXT ---", dump]
+      .filter(Boolean)
+      .join("\n")
+      .slice(0, 18000);
     return {
       ...profile,
       headline: clipText(profile.headline || "", 280),
@@ -201,18 +224,7 @@
       currentRole: clipText(profile.currentRole || "", 280),
       location: clipText(profile.location || "", 180),
       recentActivity,
-      profileText: [
-        profile.name,
-        profile.headline,
-        profile.currentRole,
-        profile.location,
-        profile.about,
-        ...recentActivity,
-      ]
-        .filter(Boolean)
-        .map((item) => clipText(item, 2400))
-        .join("\n")
-        .slice(0, 12000),
+      profileText,
     };
   };
 
