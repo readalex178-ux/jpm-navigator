@@ -66,6 +66,32 @@ export const ProfileQualifierResultSchema = z.object({
     earningSomething: z.number().int().min(-1).max(1),
     wantsMore: z.number().int().min(-1).max(1),
   }),
+  extracted: z
+    .object({
+      fullName: z.string().max(120).default(""),
+      headline: z.string().max(280).default(""),
+      bio: z.string().max(1200).default(""),
+    })
+    .default({ fullName: "", headline: "", bio: "" }),
+  buyingSignals: z
+    .object({
+      featuredOffer: z.boolean().default(false),
+      bookingLinkInBio: z.boolean().default(false),
+      referralsOnly: z.boolean().default(false),
+      slowMonth: z.boolean().default(false),
+      wantsToScale: z.boolean().default(false),
+      noOutboundSystem: z.boolean().default(false),
+      decisionMakerConfirmed: z.boolean().default(false),
+    })
+    .default({
+      featuredOffer: false,
+      bookingLinkInBio: false,
+      referralsOnly: false,
+      slowMonth: false,
+      wantsToScale: false,
+      noOutboundSystem: false,
+      decisionMakerConfirmed: false,
+    }),
   greenFlags: z.array(z.string()).max(8),
   redFlags: z.array(z.string()).max(8),
   personalisationHook: z.string().max(300),
@@ -76,14 +102,14 @@ export type ProfileQualifierResult = z.infer<typeof ProfileQualifierResultSchema
 
 const PROFILE_QUALIFIER_SYS = `${BTF_ANALYZER_SYSTEM}
 
-You will be given RAW PASTED CONTENT from a LinkedIn (or other) profile — not a conversation thread. Your job: decide if this person is worth a connection request + VN1 right now.
+You will be given RAW PASTED CONTENT from a LinkedIn (or other) profile — not a conversation thread. Your job: decide if this person is worth a connection request + VN1 right now, AND extract clean profile fields + detect BTF buying signals.
 
 Return ONLY valid JSON matching this schema (no markdown):
 {
   "verdict": "SEND_VN" | "SKIP" | "MAYBE",
   "verdictLine": "<one line starting with ✅ SEND VN — …  /  ❌ SKIP — …  /  ⚠️ MAYBE — …>",
   "icpMatch": "green" | "yellow" | "red",
-  "market": "<one of the market buckets or short string>",
+  "market": "<short market label>",
   "predictedTier": "DIY" | "DWY" | "DFY" | "unknown",
   "predictedTierReason": "<one sentence>",
   "qualification": {
@@ -92,6 +118,20 @@ Return ONLY valid JSON matching this schema (no markdown):
     "earningSomething": 1 | 0 | -1,
     "wantsMore": 1 | 0 | -1
   },
+  "extracted": {
+    "fullName": "<their real full name as it appears on the profile — strip pronouns, titles, emojis, follower counts, 'he/him', '· 3rd', degree badges>",
+    "headline": "<their LinkedIn headline / tagline, one line>",
+    "bio": "<their About / summary cleaned up, ≤1200 chars. If no About, use headline + role.>"
+  },
+  "buyingSignals": {
+    "featuredOffer": <true if featured section / link-in-bio / pinned post advertises a paid offer>,
+    "bookingLinkInBio": <true if a calendly / booking / 'DM me' / 'book a call' link is visible>,
+    "referralsOnly": <true if they say clients come from referrals or word of mouth only>,
+    "slowMonth": <true if posts mention slow month, quiet pipeline, dry spell, needs leads>,
+    "wantsToScale": <true if posts/about mention scaling, growing, hiring, hitting a ceiling>,
+    "noOutboundSystem": <true if no sign of outbound (no SDR, agency, paid ads — inbound/content only)>,
+    "decisionMakerConfirmed": <true if founder/owner/CEO/solo operator — can say yes without asking>
+  },
   "greenFlags": ["..."],
   "redFlags": ["..."],
   "personalisationHook": "<one specific real detail from their profile>",
@@ -99,7 +139,7 @@ Return ONLY valid JSON matching this schema (no markdown):
   "confidence": 0.0-1.0
 }
 
-Verdict order in output is fixed: verdict line FIRST so the user sees ✅/❌ before anything else.`;
+Be strict about buyingSignals: only mark true with concrete evidence in the pasted text. When unsure, false.`;
 
 export const qualifyProfile = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
