@@ -284,6 +284,9 @@ function ProspectsPage() {
                 onToggleSelect={bulkMode ? () => toggleSelect(p.id) : undefined}
                 onClick={!bulkMode ? () => navigate({ to: "/prospects/$id", params: { id: p.id } }) : undefined}
                 onEdit={!bulkMode ? () => { setEditingId(p.id); setOpen(true); } : undefined}
+                onInbox={!bulkMode ? () => {
+                  navigate({ to: "/inbox", search: { prospect: p.id } });
+                } : undefined}
                 onAnalyze={!bulkMode ? () => {
                   const map = useStore.getState().threadProspectMap;
                   const threadId = Object.entries(map).find(([, pid]) => pid === p.id)?.[0];
