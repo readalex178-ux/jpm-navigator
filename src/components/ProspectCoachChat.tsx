@@ -312,19 +312,53 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
 
       {/* Composer */}
       <div className="flex flex-col gap-2">
-        <Textarea
-          rows={2}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask the coach about this prospect…"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send(input);
+        <div className="relative">
+          <Textarea
+            rows={2}
+            value={input + (interim ? (input ? " " : "") + interim : "")}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={
+              listening
+                ? "Listening… say e.g. “Sarah left me on read”"
+                : "Ask the coach about this prospect… (or tap the mic)"
             }
-          }}
-        />
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void send(input);
+              }
+            }}
+            className={cn(listening && "border-primary ring-1 ring-primary/40")}
+          />
+          {listening && (
+            <span className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              Rec
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={listening ? "default" : "outline"}
+            disabled={busy || !speechSupported}
+            onClick={() => startListening(true)}
+            title={
+              speechSupported
+                ? "Hold the mic, speak, then it auto-sends"
+                : "Voice input not supported in this browser"
+            }
+          >
+            {listening ? (
+              <>
+                <MicOff className="mr-1 h-3 w-3" /> Stop & send
+              </>
+            ) : (
+              <>
+                <Mic className="mr-1 h-3 w-3" /> Speak
+              </>
+            )}
+          </Button>
           <Button
             size="sm"
             variant="outline"
