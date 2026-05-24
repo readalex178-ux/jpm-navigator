@@ -1,11 +1,12 @@
-import type { Settings } from "../btf/types";
 import { BTF_SYSTEM } from "./btfFramework";
+import { aiChat } from "./aiChat.functions";
+import type { Settings } from "../btf/types";
 
 export type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
 
 export class AiNotConfiguredError extends Error {
   constructor() {
-    super("AI is not configured. Add your provider, model, and API key in Settings.");
+    super("AI is not configured. Open Settings to enable a backup provider.");
   }
 }
 
@@ -20,19 +21,25 @@ const baseFor = (s: Settings) => {
       return "https://openrouter.ai/api/v1";
     case "lmstudio":
       return "http://localhost:1234/v1";
+    default:
+      return "";
   }
 };
 
-export async function chat(
+function hasBackup(settings: Settings): boolean {
+  if (settings.aiProvider === "lovable") return false;
+  if (!settings.model) return false;
+  if (settings.aiProvider === "lmstudio") return true;
+  return Boolean(settings.apiKey);
+}
+
+async function callBackup(
   settings: Settings,
   messages: ChatMsg[],
-  opts: { json?: boolean; temperature?: number } = {},
+  opts: { json?: boolean; temperature?: number },
 ): Promise<string> {
-  if (!settings.model) throw new AiNotConfiguredError();
-  if (settings.aiProvider !== "lmstudio" && !settings.apiKey) throw new AiNotConfiguredError();
-
   const url = `${baseFor(settings)}/chat/completions`;
-  const body: any = {
+  const body: Record<string, unknown> = {
     model: settings.model,
     messages: [{ role: "system", content: BTF_SYSTEM }, ...messages],
     temperature: opts.temperature ?? 0.7,
@@ -49,10 +56,41 @@ export async function chat(
   });
   if (!res.ok) {
     const t = await res.text().catch(() => "");
-    throw new Error(`AI ${res.status}: ${t.slice(0, 200)}`);
+    throw new Error(`Backup AI ${res.status}: ${t.slice(0, 200)}`);
   }
   const json = await res.json();
   return json.choices?.[0]?.message?.content ?? "";
+}
+
+export async function chat(
+  settings: Settings,
+  messages: ChatMsg[],
+  opts: { json?: boolean; temperature?: number } = {},
+): Promise<string> {
+  // Primary: Lovable AI (always available — key is auto-provisioned server-side).
+  try {
+    const res = await aiChat({
+      data: {
+        messages: [{ role: "system", content: BTF_SYSTEM }, ...messages],
+        json: opts.json,
+        temperature: opts.temperature,
+      },
+    });
+    if (res.ok) return res.content;
+    // Lovable returned a structured failure — try backup if configured.
+    if (hasBackup(settings)) {
+      console.warn(`[ai] Lovable failed (${res.code}); falling back to ${settings.aiProvider}.`);
+      return await callBackup(settings, messages, opts);
+    }
+    throw new Error(res.error || "Lovable AI unavailable");
+  } catch (e) {
+    // Network/RPC error — try backup if configured.
+    if (hasBackup(settings)) {
+      console.warn(`[ai] Lovable threw (${(e as Error).message}); falling back to ${settings.aiProvider}.`);
+      return await callBackup(settings, messages, opts);
+    }
+    throw e;
+  }
 }
 
 export async function chatJson<T = unknown>(settings: Settings, messages: ChatMsg[]): Promise<T> {
@@ -60,7 +98,6 @@ export async function chatJson<T = unknown>(settings: Settings, messages: ChatMs
   try {
     return JSON.parse(text) as T;
   } catch {
-    // try to extract first {...} block
     const m = text.match(/\{[\s\S]*\}/);
     if (m) return JSON.parse(m[0]) as T;
     throw new Error("AI did not return valid JSON");
