@@ -15,6 +15,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { useHydrate } from "@/lib/useHydrate";
 import { useSupabaseSync } from "@/lib/sync/useSupabaseSync";
+import { useFollowUpNotifications } from "@/lib/useFollowUpNotifications";
 import { useAuth } from "@/lib/auth/useAuth";
 import { listenFromExtension, generatePairingCode, postToExtension } from "@/lib/extension/bridge";
 import { useStore } from "@/lib/store";
@@ -155,6 +156,7 @@ function AuthGate() {
 function AuthedShell() {
   useSupabaseSync();
   useExtensionBridge();
+  useFollowUpNotifications();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">

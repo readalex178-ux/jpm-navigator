@@ -32,6 +32,7 @@ import { CommissionStrip } from "./CommissionStrip";
 import { useStore } from "@/lib/store";
 import { getDueFollowUps } from "@/lib/followups";
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const groups = [
   {
