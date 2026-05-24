@@ -22,6 +22,7 @@ import { LoginPage } from "@/components/auth/LoginPage";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 
 function NotFoundComponent() {
   return (
@@ -150,10 +151,14 @@ function AuthedShell() {
             <div className="font-display text-sm font-semibold tracking-tight">
               BTF Setter OS
             </div>
+            <div className="ml-auto">
+              <VoiceAssistant variant="header" />
+            </div>
           </header>
           <main className="flex-1 overflow-x-hidden">
             <Outlet />
           </main>
+          <VoiceAssistant variant="floating" />
         </div>
       </div>
     </SidebarProvider>
