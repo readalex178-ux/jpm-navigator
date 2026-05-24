@@ -119,10 +119,14 @@ export const pushAll = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const stamp = (rows: any[]) => rows.map((r) => ({ ...r, user_id: userId }));
+    const stripProspect = (r: any) => {
+      const { activities, vn_log, ...rest } = r;
+      return rest;
+    };
 
     // Full replace per table — single-user dataset, tiny volumes.
     const tables = [
-      { name: "prospects" as const, rows: stamp(data.prospects) },
+      { name: "prospects" as const, rows: stamp(data.prospects).map(stripProspect) },
       { name: "kpi_entries" as const, rows: stamp(data.kpi) },
       { name: "scripts" as const, rows: stamp(data.scripts) },
       { name: "training_sessions" as const, rows: stamp(data.training) },
