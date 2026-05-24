@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter } from "lucide-react";
+import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter, CheckCheck } from "lucide-react";
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
 import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
@@ -430,11 +430,25 @@ function InboxPage() {
                             <Button
                               size="sm"
                               className="h-6 px-2 text-[10px]"
+                              onClick={() => copyAndLogSug(s)}
+                            >
+                              <CheckCheck className="mr-1 h-2.5 w-2.5" /> Copy + Log
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-[10px]"
                               onClick={() => insertSug(s)}
                             >
-                              <ArrowDownToLine className="mr-1 h-2.5 w-2.5" /> Use
+                              <ArrowDownToLine className="mr-1 h-2.5 w-2.5" /> Edit
                             </Button>
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                         </div>
                       ))}
                     </div>
@@ -539,7 +553,7 @@ function InboxPage() {
                         {s.coaching_note}
                       </p>
                     )}
-                    <div className="mt-2 flex gap-1.5">
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       <Button
                         size="sm"
                         variant="outline"
@@ -551,11 +565,20 @@ function InboxPage() {
                       <Button
                         size="sm"
                         className="h-7 text-xs"
+                        onClick={() => copyAndLogSug(s)}
+                      >
+                        <CheckCheck className="mr-1 h-3 w-3" /> Copy + Log
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
                         onClick={() => insertSug(s)}
                       >
-                        <ArrowDownToLine className="mr-1 h-3 w-3" /> Use in composer
+                        <ArrowDownToLine className="mr-1 h-3 w-3" /> Edit in composer
                       </Button>
                     </div>
+
                   </div>
                 ))}
               </div>
