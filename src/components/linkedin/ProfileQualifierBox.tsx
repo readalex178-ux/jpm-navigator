@@ -9,6 +9,7 @@ import { Section } from "@/components/Page";
 import { qualifyProfile, type ProfileQualifierResult } from "@/lib/ai/aiAssistants.functions";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { SIGNAL_LABELS, EMPTY_SIGNALS, type BuyingSignals } from "@/lib/btf/types";
 import { cn } from "@/lib/utils";
 
 const ICP_COLOR = {
