@@ -118,15 +118,20 @@ export function ProfileQualifierBox() {
 
   const createProspect = () => {
     if (!res) return;
-    const nameLine = text.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+    const extractedName = res.extracted?.fullName?.trim();
+    const fallbackName = text.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+    const nameLine = extractedName && extractedName.length > 1 ? extractedName : fallbackName;
+    const bioText =
+      res.extracted?.bio?.trim() || res.extracted?.headline?.trim() || text.slice(0, 800);
     const created = addProspect({
       name: nameLine,
       profileUrl: profileUrl.trim(),
       platform: "linkedin",
-      bio: text.slice(0, 800),
+      bio: bioText,
       niche: res.market,
       tier: res.predictedTier === "unknown" ? "DWY" : res.predictedTier,
       stage: res.verdict === "SEND_VN" ? "Found" : "Cold",
+      signals: { ...EMPTY_SIGNALS, ...(res.buyingSignals ?? {}) } as BuyingSignals,
     });
     toast.success(`Prospect created: ${created.name}`);
   };
