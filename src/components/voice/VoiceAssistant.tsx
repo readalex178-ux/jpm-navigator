@@ -141,8 +141,10 @@ export function VoiceAssistant({ variant }: Props) {
         break;
       case "add_note":
         if (intent.text) {
-          updateProspect(prospectId, {
-            notes: target.notes ? `${target.notes}\n\n${intent.text}` : intent.text,
+          logActivity(prospectId, {
+            date: new Date().toISOString(),
+            type: "note",
+            notes: intent.text,
           });
           toast.success(`Note added to ${target.name}`);
         }
