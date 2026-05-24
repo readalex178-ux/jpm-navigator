@@ -220,7 +220,7 @@ function Card({ prospect }: { prospect: ReturnType<typeof useStore.getState>["pr
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onDoubleClick={() => navigate({ to: "/inbox", search: { prospect: prospect.id } })}
+      onClick={() => navigate({ to: "/inbox", search: { prospect: prospect.id } })}
       style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
       className={cn(
         "cursor-grab rounded-md border bg-surface p-2.5 active:cursor-grabbing",
