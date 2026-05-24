@@ -13,6 +13,7 @@ import { Route as TrainingRouteImport } from './routes/training'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProspectsRouteImport } from './routes/prospects'
+import { Route as PlaybookRouteImport } from './routes/playbook'
 import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
@@ -40,6 +41,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ProspectsRoute = ProspectsRouteImport.update({
   id: '/prospects',
   path: '/prospects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaybookRoute = PlaybookRouteImport.update({
+  id: '/playbook',
+  path: '/playbook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PipelineRoute = PipelineRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
+  '/playbook': typeof PlaybookRoute
   '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
+  '/playbook': typeof PlaybookRoute
   '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/linkedin': typeof LinkedinRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
+  '/playbook': typeof PlaybookRoute
   '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/linkedin'
     | '/outreach'
     | '/pipeline'
+    | '/playbook'
     | '/prospects'
     | '/settings'
     | '/tools'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/linkedin'
     | '/outreach'
     | '/pipeline'
+    | '/playbook'
     | '/prospects'
     | '/settings'
     | '/tools'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/linkedin'
     | '/outreach'
     | '/pipeline'
+    | '/playbook'
     | '/prospects'
     | '/settings'
     | '/tools'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   LinkedinRoute: typeof LinkedinRoute
   OutreachRoute: typeof OutreachRoute
   PipelineRoute: typeof PipelineRoute
+  PlaybookRoute: typeof PlaybookRoute
   ProspectsRoute: typeof ProspectsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   ToolsRoute: typeof ToolsRoute
@@ -213,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/prospects'
       fullPath: '/prospects'
       preLoaderRoute: typeof ProspectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playbook': {
+      id: '/playbook'
+      path: '/playbook'
+      fullPath: '/playbook'
+      preLoaderRoute: typeof PlaybookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pipeline': {
@@ -293,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   LinkedinRoute: LinkedinRoute,
   OutreachRoute: OutreachRoute,
   PipelineRoute: PipelineRoute,
+  PlaybookRoute: PlaybookRoute,
   ProspectsRoute: ProspectsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   ToolsRoute: ToolsRoute,
@@ -302,3 +323,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
