@@ -3,6 +3,7 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/useAuth";
 import { pullAll, pushAll } from "./sync.functions";
 import { EMPTY_SIGNALS } from "@/lib/btf/types";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
@@ -283,4 +284,61 @@ export function useSupabaseSync() {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
   }, [auth.status]);
+
+  // REALTIME: live-update kpiDays from remote changes (multi-device / extension writes)
+  useEffect(() => {
+    if (auth.status !== "authed" || !auth.user) return;
+    const userId = auth.user.id;
+
+    const mapRow = (k: any) => ({
+      date: k.date,
+      vnSent: k.vn_sent ?? 0,
+      connectionsSent: k.connections_sent ?? 0,
+      connectionsAccepted: k.connections_accepted ?? 0,
+      replies: k.replies ?? 0,
+      activeConvos: k.active_convos ?? 0,
+      calendarsSent: k.calendars_sent ?? 0,
+      booked: k.booked ?? 0,
+      shows: k.shows ?? 0,
+      hours: Number(k.hours ?? 0),
+      byPlatform: k.by_platform ?? {},
+    });
+
+    const channel = supabase
+      .channel(`kpi-rt-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "kpi_entries", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          // Suppress echoes of our own push
+          if (isPulling.current) return;
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+
+          useStore.setState((state) => {
+            const days = state.kpiDays;
+            if (payload.eventType === "DELETE") {
+              if (!oldRow?.date) return {};
+              const next = days.filter((d) => d.date !== oldRow.date);
+              return next.length === days.length ? {} : { kpiDays: next };
+            }
+            if (!newRow?.date) return {};
+            const mapped = mapRow(newRow);
+            const idx = days.findIndex((d) => d.date === mapped.date);
+            if (idx >= 0 && JSON.stringify(days[idx]) === JSON.stringify(mapped)) {
+              return {}; // no-op — prevents push/realtime echo loop
+            }
+            const next = [...days];
+            if (idx >= 0) next[idx] = mapped;
+            else next.push(mapped);
+            return { kpiDays: next };
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [auth.status, auth.user]);
 }
