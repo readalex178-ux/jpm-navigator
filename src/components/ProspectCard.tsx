@@ -39,6 +39,36 @@ export function ProspectCard({
   const stageDays = daysSince(prospect.stageEnteredAt);
   const overdue = stageLimit !== undefined && stageDays > stageLimit;
 
+  const content = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <FlagDot prospect={prospect} />
+            <span className="truncate font-display font-semibold">{prospect.name}</span>
+          </div>
+          <div className="mt-1 truncate text-xs text-muted-foreground">
+            {platformEmoji(prospect.platform)} {prospect.niche || "—"}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="num font-display text-lg font-bold text-primary">
+            {prospect.qualScore}
+          </div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">/100</div>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className="text-[10px]">{prospect.stage}</Badge>
+        <Badge variant="secondary" className="text-[10px]">{prospect.tier}</Badge>
+        <Badge variant="secondary" className="text-[10px]">{prospect.leadType}</Badge>
+        <span className="ml-auto text-[10px] text-muted-foreground num">
+          {days}d since touch
+        </span>
+      </div>
+    </>
+  );
+
   return (
     <div
       className={cn(
@@ -46,11 +76,16 @@ export function ProspectCard({
         selected ? "border-primary bg-primary/5" : "hover:bg-surface-elevated",
         overdue && !selected ? "border-destructive/60" : !selected ? "border-border" : "",
       )}
-      onClick={onToggleSelect ? (e) => { e.stopPropagation(); onToggleSelect(); } : undefined}
     >
       {onToggleSelect ? (
-        <div className="absolute left-2 top-2 z-10">
-          <Checkbox checked={!!selected} onCheckedChange={onToggleSelect} />
+        <div
+          className="w-full p-4 pl-10 cursor-pointer select-none"
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+        >
+          <div className="absolute left-2 top-2 z-10">
+            <Checkbox checked={!!selected} onCheckedChange={onToggleSelect} />
+          </div>
+          {content}
         </div>
       ) : (
         <button
@@ -58,63 +93,43 @@ export function ProspectCard({
           onClick={onClick}
           className="block w-full p-4 text-left"
         >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <FlagDot prospect={prospect} />
-              <span className="truncate font-display font-semibold">{prospect.name}</span>
-            </div>
-            <div className="mt-1 truncate text-xs text-muted-foreground">
-              {platformEmoji(prospect.platform)} {prospect.niche || "—"}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="num font-display text-lg font-bold text-primary">
-              {prospect.qualScore}
-            </div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">/100</div>
-          </div>
+          {content}
+        </button>
+      )}
+
+      {!onToggleSelect && (
+        <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          {onAnalyze && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAnalyze();
+              }}
+              aria-label="Analyze prospect"
+              title="Open in Analyzer"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              aria-label="Edit prospect"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <Badge variant="outline" className="text-[10px]">{prospect.stage}</Badge>
-          <Badge variant="secondary" className="text-[10px]">{prospect.tier}</Badge>
-          <Badge variant="secondary" className="text-[10px]">{prospect.leadType}</Badge>
-          <span className="ml-auto text-[10px] text-muted-foreground num">
-            {days}d since touch
-          </span>
-        </div>
-      </button>
-      <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        {onAnalyze && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAnalyze();
-            }}
-            aria-label="Analyze prospect"
-            title="Open in Analyzer"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        {onEdit && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            aria-label="Edit prospect"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
