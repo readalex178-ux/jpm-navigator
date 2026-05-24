@@ -282,7 +282,7 @@ function ProspectsPage() {
                 prospect={p}
                 selected={bulkMode ? selectedIds.has(p.id) : undefined}
                 onToggleSelect={bulkMode ? () => toggleSelect(p.id) : undefined}
-                onClick={!bulkMode ? () => navigate({ to: "/inbox", search: { prospect: p.id } }) : undefined}
+                onClick={!bulkMode ? () => navigate({ to: "/prospects/$id", params: { id: p.id } }) : undefined}
                 onEdit={!bulkMode ? () => { setEditingId(p.id); setOpen(true); } : undefined}
                 onInbox={!bulkMode ? () => {
                   navigate({ to: "/inbox", search: { prospect: p.id } });
