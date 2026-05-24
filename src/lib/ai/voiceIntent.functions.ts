@@ -25,7 +25,7 @@ export const VoiceIntentSchema = z.object({
   // prospect_action
   prospectName: z.string().optional(),
   action: z
-    .enum(["move_stage", "add_note", "log_activity", "set_tier", "open"])
+    .enum(["move_stage", "add_note", "log_activity", "set_tier", "open", "set_followup"])
     .optional(),
   stage: z.string().max(40).optional(),
   tier: z.enum(["DIY", "DWY", "DFY"]).optional(),
@@ -50,7 +50,7 @@ Return ONLY JSON in this exact shape (no markdown):
   "kind": "navigate" | "prospect_action" | "dictate" | "unknown",
   "route": "<one of the routes if kind=navigate>",
   "prospectName": "<name if kind=prospect_action>",
-  "action": "move_stage" | "add_note" | "log_activity" | "set_tier" | "open",
+  "action": "move_stage" | "add_note" | "log_activity" | "set_tier" | "open" | "set_followup",
   "stage": "<stage if action=move_stage>",
   "tier": "<tier if action=set_tier>",
   "activityType": "<type if action=log_activity>",
@@ -66,6 +66,7 @@ Rules:
 - "add a note on John saying he wants the DFY package" → prospect_action + action=add_note + text
 - "log a voice note to Sarah saying I sent the calendar link" → prospect_action + action=log_activity + activityType=VN + text
 - "set John to DFY tier" → prospect_action + action=set_tier + tier=DFY
+- "Miles left me on read" / "Sarah ghosted me" / "John hasn't replied" → prospect_action + action=set_followup
 - Anything else (long-form writing, message drafting, anything ambiguous) → dictate with the raw transcript in "transcript"
 - Always populate "confirm" with what you understood.`;
 
