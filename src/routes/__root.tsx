@@ -162,6 +162,7 @@ function AuthedShell() {
 
 function useExtensionBridge() {
   const pairingCode = useStore((s) => s.pairingCode);
+  const hydrated = useStore((s) => s.hydrated);
   const setPairingCode = useStore((s) => s.setPairingCode);
   const setExtensionConnected = useStore((s) => s.setExtensionConnected);
   const upsertThread = useStore((s) => s.upsertLinkedinThread);
@@ -169,8 +170,17 @@ function useExtensionBridge() {
   const setPendingProfileQualification = useStore((s) => s.setPendingProfileQualification);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!pairingCode) setPairingCode(generatePairingCode());
-  }, [pairingCode, setPairingCode]);
+  }, [hydrated, pairingCode, setPairingCode]);
+
+  useEffect(() => {
+    if (!hydrated || !pairingCode) return;
+    const announce = () => postToExtension({ kind: "app:ack", pairingCode });
+    announce();
+    const timer = window.setInterval(announce, 5000);
+    return () => window.clearInterval(timer);
+  }, [hydrated, pairingCode]);
 
   useEffect(() => {
     const off = listenFromExtension((e) => {
