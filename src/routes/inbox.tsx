@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter } from "lucide-react";
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
-import { ConversationLog, buildConversation } from "@/components/ConversationLog";
+import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
