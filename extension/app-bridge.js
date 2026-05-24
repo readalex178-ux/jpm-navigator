@@ -28,6 +28,7 @@
   };
 
   const announce = (pairingCode = "") => {
+    if (!pairingCode) return;
     ackApp(pairingCode);
     announceToPage(pairingCode);
   };
@@ -49,6 +50,7 @@
       return;
     }
     if (e.kind === "app:ack") {
+      if (!e.pairingCode) return;
       ackApp(e.pairingCode || "");
     }
   });
