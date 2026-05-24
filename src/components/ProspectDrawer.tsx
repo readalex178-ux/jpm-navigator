@@ -52,6 +52,8 @@ export function ProspectDrawer({
 }) {
   const addProspect = useStore((s) => s.addProspect);
   const updateProspect = useStore((s) => s.updateProspect);
+  const deleteProspect = useStore((s) => s.deleteProspect);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [name, setName] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
