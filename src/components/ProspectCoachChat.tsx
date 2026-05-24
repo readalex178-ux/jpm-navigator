@@ -41,14 +41,13 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   >(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // ---- Voice dictation (Web Speech API) ----
-  const recogRef = useRef<any>(null);
-  const autoSendRef = useRef(false);
+  // ---- Voice dictation (MediaRecorder → /api/transcribe) ----
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const autoSendRef = useRef(true);
   const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState("");
-  const speechSupported =
-    typeof window !== "undefined" &&
-    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  const [transcribing, setTranscribing] = useState(false);
 
   const chatFn = useServerFn(prospectCoachChat);
   const suggestFn = useServerFn(suggestFollowUp);
