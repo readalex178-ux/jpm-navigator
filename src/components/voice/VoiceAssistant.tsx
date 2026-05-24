@@ -8,8 +8,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { parseVoiceIntent, type VoiceIntent } from "@/lib/ai/voiceIntent.functions";
+import { suggestFollowUp } from "@/lib/ai/prospectCoach.functions";
+import { buildConversation } from "@/components/ConversationLog";
 import { useStore } from "@/lib/store";
-import type { Stage } from "@/lib/btf/types";
+import type { Prospect, Stage } from "@/lib/btf/types";
 
 type Status = "idle" | "recording" | "processing";
 
@@ -25,10 +27,12 @@ interface Props {
 export function VoiceAssistant({ variant }: Props) {
   const router = useRouter();
   const parseFn = useServerFn(parseVoiceIntent);
+  const suggestFn = useServerFn(suggestFollowUp);
   const prospects = useStore((s) => s.prospects);
   const moveStage = useStore((s) => s.moveStage);
   const updateProspect = useStore((s) => s.updateProspect);
   const logActivity = useStore((s) => s.logActivity);
+  const setFollowUp = useStore((s) => s.setFollowUp);
 
   const [status, setStatus] = useState<Status>("idle");
   const [pending, setPending] = useState<PendingAction | null>(null);
@@ -66,6 +70,13 @@ export function VoiceAssistant({ variant }: Props) {
         return;
       }
 
+      const directFollowUpProspect = detectDirectFollowUpIntent(prospects, transcript);
+      if (directFollowUpProspect) {
+        await applyFollowUpIntent(directFollowUpProspect);
+        setStatus("idle");
+        return;
+      }
+
       const res = await parseFn({ data: { transcript } });
       setStatus("idle");
       if (!res.ok) {
@@ -75,10 +86,28 @@ export function VoiceAssistant({ variant }: Props) {
       executeIntent(res.intent, transcript);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [parseFn, prospects],
+    [applyFollowUpIntent, parseFn, prospects],
   );
 
-  const executeIntent = (intent: VoiceIntent, raw: string) => {
+  const applyFollowUpIntent = useCallback(
+    async (prospect: Prospect) => {
+      try {
+        const res = await suggestFn({ data: { context: buildProspectContext(prospect) } });
+        if (res.ok) {
+          setFollowUp(prospect.id, res.followUpAt, res.reason);
+          toast.success(`Follow-up set for ${prospect.name}`);
+          return;
+        }
+      } catch {}
+
+      const fallback = fallbackFollowUpForStage(prospect.stage);
+      setFollowUp(prospect.id, fallback.followUpAt, fallback.reason);
+      toast.success(`Follow-up set for ${prospect.name}`);
+    },
+    [setFollowUp, suggestFn],
+  );
+
+  const executeIntent = async (intent: VoiceIntent, raw: string) => {
     switch (intent.kind) {
       case "navigate": {
         if (!intent.route) {
@@ -99,6 +128,10 @@ export function VoiceAssistant({ variant }: Props) {
         if (intent.action === "open") {
           router.navigate({ to: "/prospects/$id", params: { id: match.id } });
           toast.success(`Opening ${match.name}`);
+          return;
+        }
+        if (intent.action === "set_followup") {
+          await applyFollowUpIntent(match);
           return;
         }
         // All other prospect actions require explicit click — no auto-mutation.
