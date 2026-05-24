@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Send, Sparkles, CalendarClock, X, Check, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import type { Prospect } from "@/lib/btf/types";
 import { buildConversation } from "./ConversationLog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -40,14 +41,13 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   >(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // ---- Voice dictation (Web Speech API) ----
-  const recogRef = useRef<any>(null);
-  const autoSendRef = useRef(false);
+  // ---- Voice dictation (MediaRecorder → /api/transcribe) ----
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const autoSendRef = useRef(true);
   const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState("");
-  const speechSupported =
-    typeof window !== "undefined" &&
-    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  const [transcribing, setTranscribing] = useState(false);
 
   const chatFn = useServerFn(prospectCoachChat);
   const suggestFn = useServerFn(suggestFollowUp);
@@ -127,66 +127,94 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
     setPendingFollowUp(null);
   };
 
-  const stopListening = () => {
-    try {
-      recogRef.current?.stop();
-    } catch {}
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
   };
 
-  const startListening = (autoSend: boolean) => {
-    if (!speechSupported) {
-      toast.error("Voice input isn't supported in this browser. Try Chrome.");
-      return;
+  const stopListening = useCallback(() => {
+    if (mediaRef.current?.state === "recording") {
+      try {
+        mediaRef.current.stop();
+      } catch {}
     }
-    if (listening) {
+  }, []);
+
+  const startListening = useCallback(
+    async (autoSend: boolean) => {
+      if (listening || transcribing) {
+        autoSendRef.current = autoSend;
+        stopListening();
+        return;
+      }
       autoSendRef.current = autoSend;
-      stopListening();
-      return;
-    }
-    const SR: any =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const rec = new SR();
-    rec.lang = navigator.language || "en-US";
-    rec.continuous = false;
-    rec.interimResults = true;
-    autoSendRef.current = autoSend;
-
-    let finalText = "";
-    rec.onresult = (e: any) => {
-      let interimText = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalText += r[0].transcript;
-        else interimText += r[0].transcript;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+        const mime = MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
+        const recorder = mime
+          ? new MediaRecorder(stream, { mimeType: mime })
+          : new MediaRecorder(stream);
+        chunksRef.current = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data);
+        };
+        recorder.onstop = async () => {
+          stopStream();
+          setListening(false);
+          const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
+          if (blob.size < 500) {
+            toast.error("Too short. Hold the mic and speak.");
+            return;
+          }
+          setTranscribing(true);
+          try {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (!token) {
+              toast.error("Sign in first.");
+              return;
+            }
+            const fd = new FormData();
+            const ext = mime.includes("mp4") ? "m4a" : "webm";
+            fd.append("file", blob, `voice.${ext}`);
+            const res = await fetch("/api/transcribe", {
+              method: "POST",
+              body: fd,
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const json = (await res.json()) as { ok: boolean; text?: string; error?: string };
+            if (!json.ok) throw new Error(json.error ?? "Transcribe failed");
+            const text = (json.text ?? "").trim();
+            if (!text) {
+              toast.error("Didn't catch that. Try again.");
+              return;
+            }
+            if (autoSendRef.current) {
+              void send(text);
+            } else {
+              setInput((prev) => (prev ? prev + " " : "") + text);
+            }
+          } catch (err) {
+            toast.error(`Mic: ${(err as Error).message}`);
+          } finally {
+            setTranscribing(false);
+          }
+        };
+        mediaRef.current = recorder;
+        recorder.start();
+        setListening(true);
+      } catch {
+        toast.error("Microphone permission denied.");
       }
-      setInterim(interimText);
-      if (finalText) setInput((prev) => (prev ? prev + " " : "") + finalText.trim());
-    };
-    rec.onerror = (e: any) => {
-      if (e.error !== "aborted" && e.error !== "no-speech") {
-        toast.error(`Mic error: ${e.error}`);
-      }
-    };
-    rec.onend = () => {
-      setListening(false);
-      setInterim("");
-      recogRef.current = null;
-      if (autoSendRef.current && finalText.trim()) {
-        const toSend = finalText.trim();
-        setInput("");
-        void send(toSend);
-      }
-    };
-
-    recogRef.current = rec;
-    setListening(true);
-    try {
-      rec.start();
-    } catch (err) {
-      setListening(false);
-      toast.error(`Couldn't start mic: ${(err as Error).message}`);
-    }
-  };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [listening, transcribing, stopListening],
+  );
 
   useEffect(() => {
     return () => stopListening();
@@ -315,7 +343,7 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
         <div className="relative">
           <Textarea
             rows={2}
-            value={input + (interim ? (input ? " " : "") + interim : "")}
+            value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               listening
@@ -340,16 +368,16 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
-            variant={listening ? "default" : "outline"}
-            disabled={busy || !speechSupported}
+            variant={listening ? "destructive" : "outline"}
+            disabled={busy || transcribing}
             onClick={() => startListening(true)}
-            title={
-              speechSupported
-                ? "Hold the mic, speak, then it auto-sends"
-                : "Voice input not supported in this browser"
-            }
+            title="Hold the mic, speak, then it auto-sends"
           >
-            {listening ? (
+            {transcribing ? (
+              <>
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Transcribing…
+              </>
+            ) : listening ? (
               <>
                 <MicOff className="mr-1 h-3 w-3" /> Stop & send
               </>
