@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter, CheckCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
 import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
@@ -71,6 +73,7 @@ function InboxPage() {
   const [suggestions, setSuggestions] = useState<SuggestRepliesResult["suggestions"] | null>(null);
 
   // Historical messages from Supabase, grouped by prospect_id
+  const queryClient = useQueryClient();
   const fetchAllMessages = useServerFn(getAllMessages);
   const { data: dbMessagesData } = useQuery({
     queryKey: ["inbox-messages"],
@@ -86,6 +89,26 @@ function InboxPage() {
     }
     return map;
   }, [dbMessagesData]);
+
+  // Realtime: refetch inbox messages on any insert/update/delete in messages.
+  // RLS scopes the publication to the current user's rows.
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbox-messages-rt")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["inbox-messages"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+
 
 
   const rows = useMemo(() => {
