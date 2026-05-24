@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { BTF_ANALYZER_SYSTEM } from "./btfAnalyzerPrompt";
 import { ThreadAnalysisSchema, type ThreadAnalysis } from "./analyzerSchema";
@@ -138,6 +139,7 @@ function parseAnalysis(text: string): ThreadAnalysis {
 }
 
 export const analyzeThread = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data }): Promise<AnalyzeResult> => {
     const apiKey = process.env.LOVABLE_API_KEY;
