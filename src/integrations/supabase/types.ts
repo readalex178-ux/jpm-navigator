@@ -293,6 +293,8 @@ export type Database = {
           bant: Json
           bio: string | null
           created_at: string
+          follow_up_at: string | null
+          follow_up_reason: string | null
           handle: string | null
           id: string
           intent_level: string | null
@@ -315,6 +317,8 @@ export type Database = {
           bant?: Json
           bio?: string | null
           created_at?: string
+          follow_up_at?: string | null
+          follow_up_reason?: string | null
           handle?: string | null
           id?: string
           intent_level?: string | null
@@ -337,6 +341,8 @@ export type Database = {
           bant?: Json
           bio?: string | null
           created_at?: string
+          follow_up_at?: string | null
+          follow_up_reason?: string | null
           handle?: string | null
           id?: string
           intent_level?: string | null

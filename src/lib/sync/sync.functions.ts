@@ -56,6 +56,8 @@ const ProspectRow = z.object({
   created_at: z.string().max(40),
   stage_entered_at: z.string().max(40),
   last_touch_at: z.string().max(40),
+  follow_up_at: z.string().max(40).nullable().optional(),
+  follow_up_reason: z.string().max(400).nullable().optional(),
   activities: BoundedJson.optional(),
   vn_log: BoundedJson.optional(),
 });

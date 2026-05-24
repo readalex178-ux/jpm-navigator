@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/sidebar";
 import { CommissionStrip } from "./CommissionStrip";
 import { useStore } from "@/lib/store";
+import { getDueFollowUps } from "@/lib/followups";
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const groups = [
   {
@@ -67,6 +70,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const path = useRouterState({ select: (r) => r.location.pathname });
   const extConnected = useStore((s) => s.extensionConnected);
+  const prospects = useStore((s) => s.prospects);
+  const dueCount = useMemo(() => getDueFollowUps(prospects).length, [prospects]);
   const isActive = (u: string) => (u === "/" ? path === "/" : path.startsWith(u));
 
   return (
@@ -103,6 +108,17 @@ export function AppSidebar() {
                       <Link to={item.url} className="flex items-center gap-3">
                         <item.icon className="h-4 w-4" />
                         {!collapsed && <span className="flex-1">{item.title}</span>}
+                        {item.url === "/" && dueCount > 0 && (
+                          <span
+                            className={cn(
+                              "grid place-items-center rounded-full bg-primary px-1.5 text-[10px] font-semibold leading-none text-primary-foreground",
+                              collapsed ? "h-1.5 w-1.5 p-0" : "h-4 min-w-4",
+                            )}
+                            title={`${dueCount} follow-up${dueCount > 1 ? "s" : ""} due`}
+                          >
+                            {!collapsed && dueCount}
+                          </span>
+                        )}
                         {item.url === "/linkedin" && extConnected && (
                           <span
                             className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_6px_var(--success)]"

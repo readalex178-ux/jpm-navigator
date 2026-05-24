@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Plus, ArrowRight, Flame, Clock } from "lucide-react";
 import { useStore, todayStr, daysSince } from "@/lib/store";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
+import { FollowUpsBanner } from "@/components/FollowUpsBanner";
 import { WEEKLY_BENCHMARKS, platformEmoji, type Stage } from "@/lib/btf/types";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +114,8 @@ function DashboardPage() {
       </PageHeader>
 
       <PageBody className="space-y-6">
+        <FollowUpsBanner />
+
         {/* TODAY QUEUE — leads everything */}
         <Section
           title={`Today's queue · ${queue.length}`}

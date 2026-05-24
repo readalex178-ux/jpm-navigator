@@ -84,6 +84,7 @@ type Actions = {
   setSignals: (id: string, s: BuyingSignals) => void;
   setBant: (id: string, b: BANT) => void;
   setQualScore: (id: string, score: number) => void;
+  setFollowUp: (id: string, at: string | null, reason?: string | null) => void;
 
   upsertKpiDay: (patch: Partial<KpiDay> & { date: string }) => void;
   getKpiDay: (date: string) => KpiDay;
@@ -214,6 +215,14 @@ export const useStore = create<State & Actions>()(
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, bant } : x)) }),
       setQualScore: (id, qualScore) =>
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, qualScore } : x)) }),
+      setFollowUp: (id, at, reason) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === id
+              ? { ...x, followUpAt: at ?? undefined, followUpReason: reason ?? undefined }
+              : x,
+          ),
+        }),
 
       upsertKpiDay: (patch) => {
         const existing = get().kpiDays.find((k) => k.date === patch.date);

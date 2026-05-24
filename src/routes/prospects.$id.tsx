@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ConversationLog, buildConversation } from "@/components/ConversationLog";
 import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
+import { ProspectCoachChat } from "@/components/ProspectCoachChat";
 import {
   STAGES,
   SIGNAL_LABELS,
@@ -405,6 +406,10 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
             <div className="mt-4 border-t border-border pt-3">
               <ProspectAnalyserHistory prospectId={prospect.id} />
             </div>
+          </Section>
+
+          <Section title="Coach chat & follow-up">
+            <ProspectCoachChat prospect={prospect} />
           </Section>
 
           <Section title="Activity log">
