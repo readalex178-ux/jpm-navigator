@@ -6,6 +6,16 @@
 (() => {
   "use strict";
   const NS = "btf-setter-os";
+  const VERSION = "1.1.0";
+
+  const ackApp = (pairingCode = "") => {
+    chrome.runtime.sendMessage({
+      kind: "app:ack",
+      pairingCode,
+      appUrl: window.location.href,
+      version: VERSION,
+    });
+  };
 
   // Background → app
   chrome.runtime.onMessage.addListener((msg) => {
@@ -27,8 +37,9 @@
   // Announce extension presence on load
   chrome.runtime.sendMessage({ kind: "get:pairing" }, (resp) => {
     const code = (resp && resp.code) || "";
+    ackApp(code);
     window.postMessage(
-      { __ns: NS, event: { kind: "ext:hello", pairingCode: code, version: "1.0.0" } },
+      { __ns: NS, event: { kind: "ext:hello", pairingCode: code, version: VERSION } },
       "*",
     );
   });

@@ -28,6 +28,20 @@ export type ScrapedProfile = {
   currentRole?: string;
   location?: string;
   recentActivity?: string[];
+  profileText?: string;
+  extensionAnalysis?: {
+    verdict?: "SEND_VN" | "SKIP" | "MAYBE";
+    verdictLine?: string;
+    buyingSignals?: {
+      featuredOffer?: boolean;
+      bookingLinkInBio?: boolean;
+      referralsOnly?: boolean;
+      slowMonth?: boolean;
+      wantsToScale?: boolean;
+      noOutboundSystem?: boolean;
+      decisionMakerConfirmed?: boolean;
+    };
+  } | null;
   scrapedAt: string;
 };
 

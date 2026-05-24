@@ -192,16 +192,19 @@ function useExtensionBridge() {
       if (e.kind === "ext:profile") {
         setExtensionConnected(true);
         upsertProfile(e.profile);
-        const text = [
-          e.profile.name,
-          e.profile.headline,
-          e.profile.currentRole,
-          e.profile.location,
-          e.profile.about,
-          ...(e.profile.recentActivity ?? []),
-        ]
-          .filter(Boolean)
-          .join("\n");
+        const text = (
+          e.profile.profileText ??
+          [
+            e.profile.name,
+            e.profile.headline,
+            e.profile.currentRole,
+            e.profile.location,
+            e.profile.about,
+            ...(e.profile.recentActivity ?? []),
+          ]
+            .filter(Boolean)
+            .join("\n")
+        ).slice(0, 12000);
 
         setPendingProfileQualification({
           text,
