@@ -98,14 +98,36 @@ function ProspectsPage() {
 
 
   const filtered = useMemo(() => {
-    return prospects.filter((p) => {
+    const list = prospects.filter((p) => {
       if (q && !`${p.name} ${p.niche} ${p.bio}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (platform !== "all" && p.platform !== platform) return false;
       if (stage !== "all" && p.stage !== stage) return false;
       if (tier !== "all" && p.tier !== tier) return false;
       return true;
     });
-  }, [prospects, q, platform, stage, tier]);
+    const sorted = [...list];
+    switch (sort) {
+      case "newest":
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case "oldest":
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case "name-az":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-za":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "score-high":
+        sorted.sort((a, b) => (b.qualScore ?? 0) - (a.qualScore ?? 0));
+        break;
+      case "score-low":
+        sorted.sort((a, b) => (a.qualScore ?? 0) - (b.qualScore ?? 0));
+        break;
+    }
+    return sorted;
+  }, [prospects, q, platform, stage, tier, sort]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
