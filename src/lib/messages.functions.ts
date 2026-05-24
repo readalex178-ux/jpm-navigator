@@ -66,7 +66,10 @@ export const logMessage = createServerFn({ method: "POST" })
       })
       .select("id, prospect_id, sender, kind, content, sent_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[logMessage] supabase error:", error);
+      throw new Error("Failed to log message.");
+    }
     return {
       message: {
         id: `db:${row.id}`,
