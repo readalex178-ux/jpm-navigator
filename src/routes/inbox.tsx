@@ -70,6 +70,24 @@ function InboxPage() {
   const [aiBusy, setAiBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestRepliesResult["suggestions"] | null>(null);
 
+  // Historical messages from Supabase, grouped by prospect_id
+  const fetchAllMessages = useServerFn(getAllMessages);
+  const { data: dbMessagesData } = useQuery({
+    queryKey: ["inbox-messages"],
+    queryFn: () => fetchAllMessages(),
+    staleTime: 30_000,
+  });
+  const extrasByProspect = useMemo(() => {
+    const map = new Map<string, ConvMessage[]>();
+    for (const m of dbMessagesData?.messages ?? []) {
+      const arr = map.get(m.prospectId) ?? [];
+      arr.push({ id: m.id, date: m.date, fromMe: m.fromMe, type: m.type, text: m.text });
+      map.set(m.prospectId, arr);
+    }
+    return map;
+  }, [dbMessagesData]);
+
+
   const rows = useMemo(() => {
     return prospects
       .map((p) => {
