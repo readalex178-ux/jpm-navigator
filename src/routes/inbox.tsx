@@ -256,11 +256,20 @@ function InboxPage() {
     const date = new Date().toISOString();
     const sugType = (s.type as ActivityType) ?? "text";
     logActivity(selected.id, { date, type: sugType, notes: s.content, fromMe: true });
-    if (sugType === "VN") {
+    const isVn = sugType === "VN";
+    if (isVn) {
       logVN(selected.id, { date, variation: s.content.slice(0, 80), reply: "none" });
       const today = getKpiDay(todayStr());
       upsertKpiDay({ date: todayStr(), vnSent: today.vnSent + 1 });
     }
+    void syncToSupabase({
+      prospectId: selected.id,
+      fromMe: true,
+      type: sugType,
+      text: s.content,
+      date,
+      variation: isVn ? s.content.slice(0, 80) : undefined,
+    });
     toast.success("Copied & logged — paste into the platform to send.");
   };
 
