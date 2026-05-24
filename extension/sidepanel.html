@@ -3,19 +3,49 @@
   <head>
     <meta charset="utf-8" />
     <title>BTF Co-Pilot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fafafa; margin: 0; padding: 16px; }
-      h1 { font-size: 14px; margin: 0 0 12px; }
-      a { color: #f5a623; }
-      .hint { font-size: 12px; color: #888; line-height: 1.6; }
+      :root {
+        color-scheme: dark;
+        --bg: #1b1a2e;
+        --surface: #2a294a;
+        --border: #3a3960;
+        --fg: #f4f3fb;
+        --muted: #a5a3c4;
+        --primary: #7c6bff;
+      }
+      body {
+        font-family: "Manrope", system-ui, sans-serif;
+        background: radial-gradient(120% 80% at 0% 0%, var(--surface) 0%, var(--bg) 60%);
+        color: var(--fg); margin: 0; padding: 20px;
+      }
+      .brand { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+      .dot { width:8px; height:8px; border-radius:999px; background:var(--primary); box-shadow:0 0 12px var(--primary); }
+      h1 { font-family:"Sora",system-ui,sans-serif; font-size:16px; font-weight:700; margin:0; letter-spacing:-0.02em; }
+      .hint { font-size: 13px; color: var(--muted); line-height: 1.6; }
+      .hint strong { color: var(--fg); font-weight:600; }
+      .card {
+        margin-top: 14px; padding: 14px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px;
+      }
     </style>
   </head>
   <body>
-    <h1>BTF Setter OS</h1>
-    <p class="hint">
-      Open the BTF Setter OS app in another tab and go to the
-      <strong>LinkedIn</strong> page. The full co-pilot lives there —
-      this side panel is for quick reference only.
-    </p>
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>BTF Setter OS</h1>
+    </div>
+    <div class="card">
+      <p class="hint">
+        Open BTF Setter OS and head to the <strong>LinkedIn</strong> page.
+        The full co-pilot lives there — this side panel is for quick reference only.
+      </p>
+    </div>
   </body>
 </html>

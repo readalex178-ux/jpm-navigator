@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BTF Setter OS — LinkedIn Co-Pilot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scrapes LinkedIn conversations and profiles into BTF Setter OS for AI-powered reply, follow-up, and VN script generation.",
   "permissions": ["storage", "activeTab", "scripting", "sidePanel"],
   "host_permissions": [
