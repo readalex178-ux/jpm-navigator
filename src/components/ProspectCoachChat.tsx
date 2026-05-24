@@ -368,16 +368,16 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
-            variant={listening ? "default" : "outline"}
-            disabled={busy || !speechSupported}
+            variant={listening ? "destructive" : "outline"}
+            disabled={busy || transcribing}
             onClick={() => startListening(true)}
-            title={
-              speechSupported
-                ? "Hold the mic, speak, then it auto-sends"
-                : "Voice input not supported in this browser"
-            }
+            title="Hold the mic, speak, then it auto-sends"
           >
-            {listening ? (
+            {transcribing ? (
+              <>
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Transcribing…
+              </>
+            ) : listening ? (
               <>
                 <MicOff className="mr-1 h-3 w-3" /> Stop & send
               </>
