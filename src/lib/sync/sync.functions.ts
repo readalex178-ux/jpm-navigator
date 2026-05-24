@@ -118,19 +118,40 @@ export const pushAll = createServerFn({ method: "POST" })
   .inputValidator((d) => SyncPayload.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const idMap = new Map<string, string>();
+    const toUuid = (id: string | null | undefined) => {
+      if (!id) return id ?? null;
+      if (UUID_RE.test(id)) return id;
+      let v = idMap.get(id);
+      if (!v) {
+        v = crypto.randomUUID();
+        idMap.set(id, v);
+      }
+      return v;
+    };
+
     const stamp = (rows: any[]) => rows.map((r) => ({ ...r, user_id: userId }));
+    const fixIds = (r: any) => ({ ...r, id: toUuid(r.id) });
+    const fixProspectRef = (r: any) =>
+      r.prospect_id !== undefined ? { ...r, prospect_id: toUuid(r.prospect_id) } : r;
     const stripProspect = (r: any) => {
       const { activities, vn_log, ...rest } = r;
       return rest;
     };
 
-    // Full replace per table — single-user dataset, tiny volumes.
+    // Map local nanoid-style ids to UUIDs before insert; resolve prospect refs.
+    const prospects = stamp(data.prospects).map(fixIds).map(stripProspect);
+    const scripts = stamp(data.scripts).map(fixIds).map(fixProspectRef);
+    const training = stamp(data.training).map(fixIds);
+    const analyses = stamp(data.analyses).map(fixIds).map(fixProspectRef);
+
     const tables = [
-      { name: "prospects" as const, rows: stamp(data.prospects).map(stripProspect) },
+      { name: "prospects" as const, rows: prospects },
       { name: "kpi_entries" as const, rows: stamp(data.kpi) },
-      { name: "scripts" as const, rows: stamp(data.scripts) },
-      { name: "training_sessions" as const, rows: stamp(data.training) },
-      { name: "prospect_analyses" as const, rows: stamp(data.analyses) },
+      { name: "scripts" as const, rows: scripts },
+      { name: "training_sessions" as const, rows: training },
+      { name: "prospect_analyses" as const, rows: analyses },
     ];
 
     for (const t of tables) {
