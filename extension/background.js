@@ -40,6 +40,30 @@ async function broadcastToApps(event) {
   );
 }
 
+async function ensureAppBridge() {
+  const tabs = await chrome.tabs.query({
+    url: [
+      "https://*.lovable.app/*",
+      "https://*.lovableproject.com/*",
+      "http://localhost/*",
+    ],
+  });
+
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (!tab.id) return;
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["app-bridge.js"],
+        });
+      } catch {
+        // Ignore tabs where injection is blocked or already present.
+      }
+    }),
+  );
+}
+
 async function getActiveLinkedinTab() {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!tab?.id) return null;
@@ -104,6 +128,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     if (msg.kind === "save:pairing") {
       const code = (msg.code || "").trim().toUpperCase();
+      await ensureAppBridge();
       await chrome.storage.local.set({
         pairingCode: code,
         lastAppAckAt: 0,
