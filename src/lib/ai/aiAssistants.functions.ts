@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { BTF_ANALYZER_SYSTEM } from "./btfAnalyzerPrompt";
 
@@ -184,6 +185,7 @@ Return ONLY valid JSON (no markdown), in this shape:
 Be strict: only mark buyingSignals true with concrete evidence. Lead with the verdict — no fluff.`;
 
 export const qualifyProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z.object({ profileText: z.string().min(10).transform((s) => s.slice(0, 20000)) }).parse(data),
   )
@@ -213,6 +215,7 @@ export const qualifyProfile = createServerFn({ method: "POST" })
  * ========================= */
 
 export const summariseProspect = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -293,6 +296,7 @@ export const VN1ScriptResultSchema = z.object({
 export type VN1ScriptResult = z.infer<typeof VN1ScriptResultSchema>;
 
 export const buildVN1Script = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z.object({ profileText: z.string().min(10).transform((s) => s.slice(0, 20000)) }).parse(data),
   )
@@ -356,6 +360,7 @@ export const PastedThreadResultSchema = z.object({
 export type PastedThreadResult = z.infer<typeof PastedThreadResultSchema>;
 
 export const analyzePastedThread = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z.object({ threadText: z.string().min(5).max(20000) }).parse(data),
   )
@@ -421,6 +426,7 @@ const ConvMessageSchema = z.object({
 });
 
 export const nextMoveFromConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { BTF_ANALYZER_SYSTEM } from "./btfAnalyzerPrompt";
 
@@ -77,6 +78,7 @@ async function callGateway(model: string, system: string, user: string, apiKey: 
 }
 
 export const suggestReplies = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
