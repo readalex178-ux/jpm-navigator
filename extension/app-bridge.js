@@ -9,7 +9,7 @@
   window.__btfAppBridgeMounted = true;
 
   const NS = "btf-setter-os";
-  const VERSION = "1.1.1";
+  const VERSION = "1.1.2";
 
   const ackApp = (pairingCode = "") => {
     chrome.runtime.sendMessage({
@@ -50,4 +50,13 @@
       "*",
     );
   });
+
+  // Keepalive: re-announce every 10s so the background doesn't drop the connection.
+  setInterval(() => {
+    chrome.runtime.sendMessage({ kind: "get:pairing" }, (resp) => {
+      const code = (resp && resp.code) || "";
+      ackApp(code);
+    });
+  }, 10_000);
 })();
+
