@@ -39,7 +39,8 @@ export const Route = createFileRoute("/pipeline")({
 
 function PipelinePage() {
   const prospects = useStore((s) => s.prospects);
-  const moveStage = useStore((s) => s.moveStage);
+  const navigate = useNavigate();
+  const [view, setView] = useState<"board" | "table">("board");
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [tier, setTier] = useState<Tier | "all">("all");
 
