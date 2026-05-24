@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter } from "lucide-react";
+import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter, CheckCheck } from "lucide-react";
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
 import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
@@ -188,6 +188,20 @@ function InboxPage() {
     setText(s.content);
     toast.success("Loaded into composer. Edit, then click Log when you've sent it.");
   };
+  const copyAndLogSug = (s: SuggestRepliesResult["suggestions"][number]) => {
+    if (!selected) return;
+    navigator.clipboard.writeText(s.content);
+    const date = new Date().toISOString();
+    const sugType = (s.type as ActivityType) ?? "text";
+    logActivity(selected.id, { date, type: sugType, notes: s.content, fromMe: true });
+    if (sugType === "VN") {
+      logVN(selected.id, { date, variation: s.content.slice(0, 80), reply: "none" });
+      const today = getKpiDay(todayStr());
+      upsertKpiDay({ date: todayStr(), vnSent: today.vnSent + 1 });
+    }
+    toast.success("Copied & logged — paste into the platform to send.");
+  };
+
 
   return (
     <div className="flex h-[calc(100vh-2rem)] flex-col">
@@ -416,9 +430,17 @@ function InboxPage() {
                             <Button
                               size="sm"
                               className="h-6 px-2 text-[10px]"
+                              onClick={() => copyAndLogSug(s)}
+                            >
+                              <CheckCheck className="mr-1 h-2.5 w-2.5" /> Copy + Log
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-[10px]"
                               onClick={() => insertSug(s)}
                             >
-                              <ArrowDownToLine className="mr-1 h-2.5 w-2.5" /> Use
+                              <ArrowDownToLine className="mr-1 h-2.5 w-2.5" /> Edit
                             </Button>
                           </div>
                         </div>
@@ -426,6 +448,8 @@ function InboxPage() {
                     </div>
                   )}
                 </div>
+
+
 
                 <div className="flex flex-wrap gap-1.5">
                   <Select value={direction} onValueChange={(v) => setDirection(v as "me" | "them")}>
@@ -525,7 +549,7 @@ function InboxPage() {
                         {s.coaching_note}
                       </p>
                     )}
-                    <div className="mt-2 flex gap-1.5">
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       <Button
                         size="sm"
                         variant="outline"
@@ -537,11 +561,20 @@ function InboxPage() {
                       <Button
                         size="sm"
                         className="h-7 text-xs"
+                        onClick={() => copyAndLogSug(s)}
+                      >
+                        <CheckCheck className="mr-1 h-3 w-3" /> Copy + Log
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
                         onClick={() => insertSug(s)}
                       >
-                        <ArrowDownToLine className="mr-1 h-3 w-3" /> Use in composer
+                        <ArrowDownToLine className="mr-1 h-3 w-3" /> Edit in composer
                       </Button>
                     </div>
+
                   </div>
                 ))}
               </div>
