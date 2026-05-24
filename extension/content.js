@@ -8,6 +8,9 @@
 (() => {
   "use strict";
 
+  if (window.__btfLinkedinContentLoaded) return;
+  window.__btfLinkedinContentLoaded = true;
+
   const SELECTORS = {
     // Messaging
     messagingThread: ".msg-conversations-container__convo-item",
@@ -135,6 +138,38 @@
     };
   };
 
+  const clipText = (value, max = 2800) => {
+    const cleaned = clean(value);
+    return cleaned.length > max ? `${cleaned.slice(0, max - 1)}…` : cleaned;
+  };
+
+  const clipList = (items, maxItems = 6, maxChars = 320) =>
+    uniq(items.map((item) => clipText(item, maxChars))).slice(0, maxItems);
+
+  const buildProfilePayload = (profile) => {
+    const recentActivity = clipList(profile.recentActivity || [], 8, 320);
+    return {
+      ...profile,
+      headline: clipText(profile.headline || "", 280),
+      about: clipText(profile.about || "", 2400),
+      currentRole: clipText(profile.currentRole || "", 280),
+      location: clipText(profile.location || "", 180),
+      recentActivity,
+      profileText: [
+        profile.name,
+        profile.headline,
+        profile.currentRole,
+        profile.location,
+        profile.about,
+        ...recentActivity,
+      ]
+        .filter(Boolean)
+        .map((item) => clipText(item, 2400))
+        .join("\n")
+        .slice(0, 12000),
+    };
+  };
+
   let lastSent = "";
   const tick = () => {
     try {
@@ -150,18 +185,19 @@
       }
       const profile = scrapeOpenProfile();
       if (profile) {
+        const payload = buildProfilePayload(profile);
         const sig = [
           "p",
-          profile.profileUrl,
-          profile.name,
-          profile.headline || "",
-          profile.about || "",
-          (profile.recentActivity || []).join("|"),
+          payload.profileUrl,
+          payload.name,
+          payload.headline || "",
+          payload.about || "",
+          (payload.recentActivity || []).join("|"),
         ].join(":");
         if (sig !== lastSent) {
           lastSent = sig;
-          chrome.runtime.sendMessage({ kind: "scraped:profile", profile });
-          log("sent profile", profile.name);
+          chrome.runtime.sendMessage({ kind: "scraped:profile", profile: payload });
+          log("sent profile", payload.name);
         }
       }
     } catch (e) {
@@ -171,6 +207,22 @@
 
   // Insert text into active reply box on demand
   chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.kind === "inspect:page") {
+      const profile = scrapeOpenProfile();
+      const thread = scrapeOpenThread();
+      if (profile) {
+        return Promise.resolve({
+          pageType: "profile",
+          profile: buildProfilePayload(profile),
+          url: location.href,
+        });
+      }
+      if (thread) {
+        return Promise.resolve({ pageType: "messaging", thread, url: location.href });
+      }
+      return Promise.resolve({ pageType: "unsupported", url: location.href });
+    }
+
     if (msg && msg.kind === "insert:reply") {
       const box = document.querySelector(SELECTORS.replyBox);
       if (box) {
