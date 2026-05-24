@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Send, Sparkles, CalendarClock, X, Check, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import type { Prospect } from "@/lib/btf/types";
 import { buildConversation } from "./ConversationLog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
