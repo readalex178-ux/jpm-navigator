@@ -78,6 +78,7 @@ export function ProspectCard({
         selected ? "border-primary bg-primary/5" : "hover:bg-surface-elevated",
         overdue && !selected ? "border-destructive/60" : !selected ? "border-border" : "",
       )}
+      onDoubleClick={!onToggleSelect ? () => onInbox?.() : undefined}
     >
       {onToggleSelect ? (
         <div
