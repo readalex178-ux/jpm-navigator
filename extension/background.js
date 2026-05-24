@@ -83,6 +83,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       return;
     }
 
+    if (msg.kind === "scraped:profile") {
+      return;
+    }
+
     if (msg.kind === "app:insert") {
       const tabs = await chrome.tabs.query({ url: "https://www.linkedin.com/messaging/*" });
       await Promise.all(
