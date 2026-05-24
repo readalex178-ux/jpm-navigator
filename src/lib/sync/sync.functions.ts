@@ -11,85 +11,121 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * Supabase boundary, mapped to camelCase in the client adapter.
  */
 
+const BantSchema = z.object({
+  budget: z.number().int().min(0).max(2).default(0),
+  authority: z.number().int().min(0).max(2).default(0),
+  need: z.number().int().min(0).max(2).default(0),
+  timeline: z.number().int().min(0).max(2).default(0),
+}).partial().default({});
+
+const SignalsSchema = z.record(z.string().max(60), z.boolean()).default({});
+
+const ByPlatformSchema = z
+  .record(
+    z.string().max(40),
+    z.record(z.string().max(40), z.number().min(0).max(1_000_000)),
+  )
+  .default({});
+
+// Free-form but bounded — transcripts/activities/vn_log can vary across versions.
+const BoundedJson = z.unknown().refine(
+  (v) => {
+    try {
+      return JSON.stringify(v ?? null).length <= 200_000;
+    } catch {
+      return false;
+    }
+  },
+  { message: "payload too large" },
+);
+
 const ProspectRow = z.object({
-  id: z.string(),
-  name: z.string(),
-  profile_url: z.string().nullable().optional(),
-  platform: z.string(),
-  niche: z.string().nullable().optional(),
-  bio: z.string().nullable().optional(),
-  lead_type: z.string(),
-  tier: z.string(),
-  stage: z.string(),
-  qual_score: z.number(),
-  bant: z.any(),
-  signals: z.any(),
-  notes: z.string().nullable().optional(),
-  created_at: z.string(),
-  stage_entered_at: z.string(),
-  last_touch_at: z.string(),
-  // soft extras packed into notes JSON if needed later
-  activities: z.any().optional(),
-  vn_log: z.any().optional(),
+  id: z.string().max(64),
+  name: z.string().min(1).max(200),
+  profile_url: z.string().max(1000).nullable().optional(),
+  platform: z.string().max(40),
+  niche: z.string().max(400).nullable().optional(),
+  bio: z.string().max(8000).nullable().optional(),
+  lead_type: z.string().max(40),
+  tier: z.string().max(20),
+  stage: z.string().max(40),
+  qual_score: z.number().min(0).max(100),
+  bant: BantSchema,
+  signals: SignalsSchema,
+  notes: z.string().max(20_000).nullable().optional(),
+  created_at: z.string().max(40),
+  stage_entered_at: z.string().max(40),
+  last_touch_at: z.string().max(40),
+  activities: BoundedJson.optional(),
+  vn_log: BoundedJson.optional(),
 });
 
 const KpiRow = z.object({
-  date: z.string(),
-  vn_sent: z.number(),
-  connections_sent: z.number(),
-  connections_accepted: z.number(),
-  replies: z.number(),
-  active_convos: z.number(),
-  calendars_sent: z.number(),
-  booked: z.number(),
-  shows: z.number(),
-  hours: z.number(),
-  by_platform: z.any(),
+  date: z.string().max(40),
+  vn_sent: z.number().int().min(0).max(100_000),
+  connections_sent: z.number().int().min(0).max(100_000),
+  connections_accepted: z.number().int().min(0).max(100_000),
+  replies: z.number().int().min(0).max(100_000),
+  active_convos: z.number().int().min(0).max(100_000),
+  calendars_sent: z.number().int().min(0).max(100_000),
+  booked: z.number().int().min(0).max(100_000),
+  shows: z.number().int().min(0).max(100_000),
+  hours: z.number().min(0).max(24 * 7),
+  by_platform: ByPlatformSchema,
 });
 
 const ScriptRow = z.object({
-  id: z.string(),
-  name: z.string(),
-  content: z.string(),
-  category: z.string().nullable().optional(),
-  prospect_id: z.string().nullable().optional(),
-  prospect_name: z.string().nullable().optional(),
-  niche: z.string().nullable().optional(),
-  scenario: z.string().nullable().optional(),
+  id: z.string().max(64),
+  name: z.string().min(1).max(200),
+  content: z.string().max(20_000),
+  category: z.string().max(80).nullable().optional(),
+  prospect_id: z.string().max(64).nullable().optional(),
+  prospect_name: z.string().max(200).nullable().optional(),
+  niche: z.string().max(200).nullable().optional(),
+  scenario: z.string().max(400).nullable().optional(),
   used: z.boolean(),
-  outcome: z.string().nullable().optional(),
-  date: z.string().nullable().optional(),
+  outcome: z.string().max(80).nullable().optional(),
+  date: z.string().max(40).nullable().optional(),
 });
 
+const TranscriptEntrySchema = z.object({
+  role: z.string().max(40).optional(),
+  speaker: z.string().max(40).optional(),
+  text: z.string().max(8_000).optional(),
+  content: z.string().max(8_000).optional(),
+  at: z.string().max(40).optional(),
+  ts: z.union([z.string().max(40), z.number()]).optional(),
+}).passthrough();
+
 const TrainingRow = z.object({
-  id: z.string(),
-  scenario: z.string(),
-  persona: z.string().nullable().optional(),
-  transcript: z.any(),
-  score: z.number().nullable().optional(),
-  notes: z.string().nullable().optional(),
+  id: z.string().max(64),
+  scenario: z.string().max(400),
+  persona: z.string().max(200).nullable().optional(),
+  transcript: z.array(TranscriptEntrySchema).max(500).default([]),
+  score: z.number().min(0).max(100).nullable().optional(),
+  notes: z.string().max(10_000).nullable().optional(),
 });
 
 const AnalysisRow = z.object({
-  id: z.string(),
-  prospect_id: z.string(),
-  stage_at_time: z.string(),
-  verdict_line: z.string(),
-  suggested_stage: z.string().nullable().optional(),
-  next_move: z.string().nullable().optional(),
-  draft_message: z.string().nullable().optional(),
-  suggested_activity_type: z.string().nullable().optional(),
-  reasoning: z.string().nullable().optional(),
-  confidence: z.number().nullable().optional(),
-  created_at: z.string().optional(),
+  id: z.string().max(64),
+  prospect_id: z.string().max(64),
+  stage_at_time: z.string().max(40),
+  verdict_line: z.string().max(400),
+  suggested_stage: z.string().max(40).nullable().optional(),
+  next_move: z.string().max(800).nullable().optional(),
+  draft_message: z.string().max(4_000).nullable().optional(),
+  suggested_activity_type: z.string().max(40).nullable().optional(),
+  reasoning: z.string().max(4_000).nullable().optional(),
+  confidence: z.number().min(0).max(1).nullable().optional(),
+  created_at: z.string().max(40).optional(),
 });
 
 const SyncPayload = z.object({
-  prospects: z.array(ProspectRow),
-  kpi: z.array(KpiRow),
-  scripts: z.array(ScriptRow),
-  training: z.array(TrainingRow),
-  analyses: z.array(AnalysisRow),
+  prospects: z.array(ProspectRow).max(5_000),
+  kpi: z.array(KpiRow).max(2_000),
+  scripts: z.array(ScriptRow).max(2_000),
+  training: z.array(TrainingRow).max(2_000),
+  analyses: z.array(AnalysisRow).max(10_000),
 });
 
 export const pullAll = createServerFn({ method: "GET" })

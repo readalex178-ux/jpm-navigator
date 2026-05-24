@@ -116,7 +116,8 @@ async function callGateway(model: string, userPrompt: string, apiKey: string): P
   if (res.status === 402) throw Object.assign(new Error("credits"), { code: "credits" });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    throw Object.assign(new Error(`upstream ${res.status}: ${txt.slice(0, 200)}`), {
+    console.error(`[linkedinAnalyzer] upstream ${res.status}: ${txt.slice(0, 500)}`);
+    throw Object.assign(new Error("AI service temporarily unavailable."), {
       code: "upstream",
     });
   }
@@ -173,7 +174,7 @@ export const analyzeThread = createServerFn({ method: "POST" })
           if (code2 === "credits") {
             return { ok: false, error: "Lovable AI credits exhausted. Add credits in Workspace settings.", code: "credits" };
           }
-          return { ok: false, error: (e2 as Error).message, code: "upstream" };
+          return { ok: false, error: "AI service temporarily unavailable.", code: "upstream" };
         }
       }
       if (code === "credits") {
@@ -182,6 +183,6 @@ export const analyzeThread = createServerFn({ method: "POST" })
       if ((e as Error).message === "parse") {
         return { ok: false, error: "AI returned malformed output. Click Regenerate.", code: "parse" };
       }
-      return { ok: false, error: (e as Error).message, code: "upstream" };
+      return { ok: false, error: "AI service temporarily unavailable.", code: "upstream" };
     }
   });
