@@ -71,6 +71,12 @@ function PipelinePage() {
   return (
     <>
       <PageHeader title="Pipeline" subtitle="Drag prospects across BTF stages.">
+        <Tabs value={view} onValueChange={(v) => setView(v as "board" | "table")}>
+          <TabsList>
+            <TabsTrigger value="board" className="gap-1.5"><LayoutGrid className="h-3.5 w-3.5" /> Board</TabsTrigger>
+            <TabsTrigger value="table" className="gap-1.5"><TableIcon className="h-3.5 w-3.5" /> Table</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Select value={platform} onValueChange={(v) => setPlatform(v as any)}>
           <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -90,15 +96,85 @@ function PipelinePage() {
       </PageHeader>
 
       <PageBody>
-        <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-          <div className="flex gap-3 overflow-x-auto pb-4">
-            {STAGES.map((stage) => (
-              <Column key={stage} stage={stage} items={byStage[stage]} />
-            ))}
-          </div>
-        </DndContext>
+        {view === "board" ? (
+          <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+            <div className="flex gap-3 overflow-x-auto pb-4">
+              {STAGES.map((stage) => (
+                <Column key={stage} stage={stage} items={byStage[stage]} />
+              ))}
+            </div>
+          </DndContext>
+        ) : (
+          <TableView items={filtered} onStageChange={moveStage} onOpen={(id) => navigate({ to: "/prospects/$id", params: { id } })} />
+        )}
       </PageBody>
     </>
+  );
+}
+
+function TableView({
+  items,
+  onStageChange,
+  onOpen,
+}: {
+  items: ReturnType<typeof useStore.getState>["prospects"];
+  onStageChange: (id: string, stage: Stage) => void;
+  onOpen: (id: string) => void;
+}) {
+  const sorted = useMemo(
+    () => [...items].sort((a, b) => +new Date(b.stageEnteredAt) - +new Date(a.stageEnteredAt)),
+    [items],
+  );
+
+  if (sorted.length === 0) {
+    return <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">No prospects match these filters.</div>;
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Platform</TableHead>
+            <TableHead>Tier</TableHead>
+            <TableHead>Stage</TableHead>
+            <TableHead className="text-right">Days in stage</TableHead>
+            <TableHead className="text-right">Score</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sorted.map((p) => {
+            const stageDays = daysSince(p.stageEnteredAt);
+            const limit = STAGE_AGE_LIMIT[p.stage];
+            const overdue = limit !== undefined && stageDays > limit;
+            return (
+              <TableRow
+                key={p.id}
+                className="cursor-pointer"
+                onDoubleClick={() => onOpen(p.id)}
+              >
+                <TableCell className="font-medium">
+                  {platformEmoji(p.platform)} {p.name}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-xs uppercase">{p.platform}</TableCell>
+                <TableCell><Badge variant="secondary" className="text-[10px]">{p.tier}</Badge></TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                  <Select value={p.stage} onValueChange={(v) => onStageChange(p.id, v as Stage)}>
+                    <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell className={cn("text-right num text-xs", overdue && "text-destructive")}>{stageDays}d</TableCell>
+                <TableCell className="text-right num text-xs">{p.qualScore}/100</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
