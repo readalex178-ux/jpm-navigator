@@ -6,12 +6,14 @@ const wrap = (event: BridgeEvent) => ({ __ns: BRIDGE_NAMESPACE, event });
 
 export function postToExtension(event: BridgeEvent) {
   if (typeof window === "undefined") return;
-  window.postMessage(wrap(event), "*");
+  window.postMessage(wrap(event), window.location.origin);
 }
 
 export function listenFromExtension(handler: Handler) {
   if (typeof window === "undefined") return () => {};
   const onMsg = (ev: MessageEvent) => {
+    // Only accept same-origin messages (the bridge runs in the same page).
+    if (ev.origin !== window.location.origin) return;
     const data = ev.data;
     if (!data || data.__ns !== BRIDGE_NAMESPACE || !data.event) return;
     handler(data.event as BridgeEvent);
