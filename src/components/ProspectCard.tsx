@@ -26,6 +26,7 @@ export function ProspectCard({
   onClick,
   onEdit,
   onAnalyze,
+  onInbox,
 }: {
   prospect: Prospect;
   selected?: boolean;
@@ -33,6 +34,7 @@ export function ProspectCard({
   onClick?: () => void;
   onEdit?: () => void;
   onAnalyze?: () => void;
+  onInbox?: () => void;
 }) {
   const days = daysSince(prospect.lastTouchAt);
   const stageLimit = STAGE_AGE_LIMIT[prospect.stage];
