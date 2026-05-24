@@ -22,6 +22,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 const PRESETS: Record<AiProvider, { url: string; model: string }> = {
+  lovable: { url: "", model: "google/gemini-3-flash-preview" },
   groq: { url: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" },
   openai: { url: "https://api.openai.com/v1", model: "gpt-4o-mini" },
   openrouter: { url: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet" },
@@ -77,8 +78,15 @@ function SettingsPage() {
       <PageBody className="grid gap-4 lg:grid-cols-2">
         <Section title="AI configuration">
           <div className="space-y-3">
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Lovable AI is the default.</span>{" "}
+              No API key needed — it&apos;s wired in automatically. Pick a different provider below only as a backup
+              for when Lovable is rate-limited or out of credits.
+            </div>
             <div className="grid gap-1.5">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Provider</Label>
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Backup provider {settings.aiProvider === "lovable" ? "(none — Lovable only)" : ""}
+              </Label>
               <Select
                 value={settings.aiProvider}
                 onValueChange={(v) => {
@@ -88,35 +96,40 @@ function SettingsPage() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="groq">Groq</SelectItem>
-                  <SelectItem value="openai">OpenAI</SelectItem>
-                  <SelectItem value="openrouter">OpenRouter</SelectItem>
-                  <SelectItem value="lmstudio">LM Studio (local)</SelectItem>
+                  <SelectItem value="lovable">Lovable AI (default)</SelectItem>
+                  <SelectItem value="groq">Groq (backup)</SelectItem>
+                  <SelectItem value="openai">OpenAI (backup)</SelectItem>
+                  <SelectItem value="openrouter">OpenRouter (backup)</SelectItem>
+                  <SelectItem value="lmstudio">LM Studio local (backup)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Base URL</Label>
-              <Input value={settings.baseUrl} onChange={(e) => update({ baseUrl: e.target.value })} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Model</Label>
-              <Input value={settings.model} onChange={(e) => update({ model: e.target.value })} />
-            </div>
-            {settings.aiProvider !== "lmstudio" && (
-              <div className="grid gap-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">API Key</Label>
-                <Input
-                  type="password"
-                  value={settings.apiKey}
-                  onChange={(e) => update({ apiKey: e.target.value })}
-                  placeholder="sk-..."
-                />
-                <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-                  <AlertTriangle className="mt-0.5 h-3 w-3 text-primary" />
-                  Stored in this browser's localStorage. Anyone with access to this device can read it.
+            {settings.aiProvider !== "lovable" && (
+              <>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs uppercase tracking-widest text-muted-foreground">Base URL</Label>
+                  <Input value={settings.baseUrl} onChange={(e) => update({ baseUrl: e.target.value })} />
                 </div>
-              </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs uppercase tracking-widest text-muted-foreground">Model</Label>
+                  <Input value={settings.model} onChange={(e) => update({ model: e.target.value })} />
+                </div>
+                {settings.aiProvider !== "lmstudio" && (
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Backup API Key</Label>
+                    <Input
+                      type="password"
+                      value={settings.apiKey}
+                      onChange={(e) => update({ apiKey: e.target.value })}
+                      placeholder="sk-..."
+                    />
+                    <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 text-primary" />
+                      Stored in this browser&apos;s localStorage. Only used if Lovable AI fails.
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             <Button onClick={test} disabled={busy} variant="outline" size="sm">
               {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null} Test connection
