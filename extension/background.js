@@ -2,7 +2,7 @@
 // Holds pairing state, talks to the active LinkedIn tab, and forwards manual
 // profile sends to the BTF app via the app-bridge content script.
 
-const VERSION = "1.1.0";
+const VERSION = "1.1.1";
 const APP_ACK_TTL_MS = 60_000;
 
 async function getState() {
