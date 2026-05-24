@@ -144,8 +144,9 @@ export const analyzeThread = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AnalyzeResult> => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {
-      return { ok: false, error: "AI gateway not configured (missing LOVABLE_API_KEY).", code: "config" };
+      return { ok: false, error: "AI service is not configured.", code: "config" };
     }
+
 
     const userPrompt = buildUserPrompt(data);
 

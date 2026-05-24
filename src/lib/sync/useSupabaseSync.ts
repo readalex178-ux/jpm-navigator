@@ -158,8 +158,9 @@ export function useSupabaseSync() {
         hydratedFromRemote.current = true;
       } catch (e) {
         console.error("[sync] pull failed", e);
-        toast.error(`Sync failed: ${(e as Error).message}`);
+        toast.error("Sync failed. Please try again.");
       } finally {
+
         isPulling.current = false;
       }
     })();
@@ -272,8 +273,9 @@ export function useSupabaseSync() {
           });
         } catch (e) {
           console.error("[sync] push failed", e);
-          toast.error(`Cloud sync failed: ${(e as Error).message}`);
+          toast.error("Cloud sync failed. Please try again.");
         }
+
       }, 1500);
     });
     return () => {

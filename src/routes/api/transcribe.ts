@@ -91,8 +91,10 @@ export const Route = createFileRoute("/api/transcribe")({
         });
         if (!upstream.ok) {
           const txt = await upstream.text().catch(() => "");
+          console.error("[transcribe] upstream error", upstream.status, txt.slice(0, 500));
           return new Response(
-            JSON.stringify({ ok: false, error: `Transcription failed (${upstream.status}): ${txt.slice(0, 200)}` }),
+            JSON.stringify({ ok: false, error: "Transcription failed. Please try again." }),
+
             { status: 502, headers: { "Content-Type": "application/json" } },
           );
         }
