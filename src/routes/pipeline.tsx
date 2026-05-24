@@ -105,7 +105,7 @@ function PipelinePage() {
             </div>
           </DndContext>
         ) : (
-          <TableView items={filtered} onStageChange={moveStage} onOpen={(id) => navigate({ to: "/prospects/$id", params: { id } })} />
+          <TableView items={filtered} onStageChange={moveStage} onOpen={(id) => navigate({ to: "/inbox", search: { prospect: id } })} />
         )}
       </PageBody>
     </>
@@ -220,7 +220,7 @@ function Card({ prospect }: { prospect: ReturnType<typeof useStore.getState>["pr
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onDoubleClick={() => navigate({ to: "/prospects/$id", params: { id: prospect.id } })}
+      onDoubleClick={() => navigate({ to: "/inbox", search: { prospect: prospect.id } })}
       style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
       className={cn(
         "cursor-grab rounded-md border bg-surface p-2.5 active:cursor-grabbing",
