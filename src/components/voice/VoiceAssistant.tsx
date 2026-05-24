@@ -45,6 +45,26 @@ export function VoiceAssistant({ variant }: Props) {
     streamRef.current = null;
   };
 
+  const applyFollowUpIntent = useCallback(
+    async (prospect: Prospect) => {
+      try {
+        const res = await suggestFn({ data: { context: buildProspectContext(prospect) } });
+        if (res.ok) {
+          setFollowUp(prospect.id, res.followUpAt, res.reason);
+          toast.success(`Follow-up set for ${prospect.name}`);
+          return;
+        }
+      } catch {
+        // Fall back to a deterministic rule below.
+      }
+
+      const fallback = fallbackFollowUpForStage(prospect.stage);
+      setFollowUp(prospect.id, fallback.followUpAt, fallback.reason);
+      toast.success(`Follow-up set for ${prospect.name}`);
+    },
+    [setFollowUp, suggestFn],
+  );
+
   const handleTranscript = useCallback(
     async (transcript: string) => {
       if (!transcript.trim()) {
@@ -83,28 +103,10 @@ export function VoiceAssistant({ variant }: Props) {
         toast.error(res.error);
         return;
       }
-      executeIntent(res.intent, transcript);
+      await executeIntent(res.intent, transcript);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [applyFollowUpIntent, parseFn, prospects],
-  );
-
-  const applyFollowUpIntent = useCallback(
-    async (prospect: Prospect) => {
-      try {
-        const res = await suggestFn({ data: { context: buildProspectContext(prospect) } });
-        if (res.ok) {
-          setFollowUp(prospect.id, res.followUpAt, res.reason);
-          toast.success(`Follow-up set for ${prospect.name}`);
-          return;
-        }
-      } catch {}
-
-      const fallback = fallbackFollowUpForStage(prospect.stage);
-      setFollowUp(prospect.id, fallback.followUpAt, fallback.reason);
-      toast.success(`Follow-up set for ${prospect.name}`);
-    },
-    [setFollowUp, suggestFn],
   );
 
   const executeIntent = async (intent: VoiceIntent, raw: string) => {
@@ -128,10 +130,6 @@ export function VoiceAssistant({ variant }: Props) {
         if (intent.action === "open") {
           router.navigate({ to: "/prospects/$id", params: { id: match.id } });
           toast.success(`Opening ${match.name}`);
-          return;
-        }
-        if (intent.action === "set_followup") {
-          await applyFollowUpIntent(match);
           return;
         }
         // All other prospect actions require explicit click — no auto-mutation.
@@ -401,10 +399,32 @@ const ROUTE_ALIASES: Record<string, string> = {
   settings: "/settings",
 };
 
+const FOLLOWUP_TRIGGER_RE =
+  /\b(left (me )?on read|on read|ghost(ed|ing)?|no reply|hasn['’ ]?t replied|haven['’ ]?t replied|didn['’ ]?t reply|ignored( me)?|no response|went silent|left me hanging)\b/i;
+
 function normaliseRoute(input: string): string {
   const key = input.trim().toLowerCase().replace(/^\/+/, "");
   if (key === "") return "/";
   return ROUTE_ALIASES[key] ?? (input.startsWith("/") ? input : `/${key}`);
+}
+
+function detectDirectFollowUpIntent(
+  prospects: Prospect[],
+  transcript: string,
+): Prospect | undefined {
+  if (!FOLLOWUP_TRIGGER_RE.test(transcript)) return undefined;
+
+  const lower = transcript.toLowerCase();
+  const direct = prospects.find((p) => lower.includes(p.name.toLowerCase()));
+  if (direct) return direct;
+
+  const candidate = transcript
+    .replace(FOLLOWUP_TRIGGER_RE, " ")
+    .replace(/\b(has|have|had|is|was|me|on|the|a|an|they|them|i|need|to|please|that|prospect)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return findProspect(prospects, candidate);
 }
 
 function findProspect<T extends { id: string; name: string }>(
@@ -421,6 +441,52 @@ function findProspect<T extends { id: string; name: string }>(
     list.find((p) => p.name.toLowerCase().includes(q)) ||
     list.find((p) => q.split(/\s+/).every((w) => p.name.toLowerCase().includes(w)))
   );
+}
+
+function buildProspectContext(prospect: Prospect) {
+  const conv = buildConversation(prospect.activities, prospect.vnLog);
+  return {
+    name: prospect.name,
+    platform: prospect.platform,
+    niche: prospect.niche,
+    stage: prospect.stage,
+    stageEnteredAt: prospect.stageEnteredAt,
+    lastTouchAt: prospect.lastTouchAt,
+    tier: prospect.tier,
+    bio: prospect.bio,
+    signals: Object.entries(prospect.signals)
+      .filter(([, value]) => value)
+      .map(([key]) => key),
+    bant: prospect.bant,
+    qualScore: prospect.qualScore,
+    messages: conv.map((m) => ({
+      fromMe: m.fromMe,
+      type: m.type,
+      date: m.date,
+      text: m.text,
+    })),
+    followUpAt: prospect.followUpAt ?? null,
+  };
+}
+
+function fallbackFollowUpForStage(stage: Prospect["stage"]) {
+  const at = new Date();
+
+  switch (stage) {
+    case "VN1 Sent":
+      at.setDate(at.getDate() + 2);
+      return { followUpAt: at.toISOString(), reason: "No reply after VN1 — check and send the next touch." };
+    case "VN2 Sent":
+    case "Calendar Sent":
+      at.setDate(at.getDate() + 2);
+      return { followUpAt: at.toISOString(), reason: "Check whether they saw the last message and nudge if needed." };
+    case "Nurturing":
+      at.setDate(at.getDate() + 7);
+      return { followUpAt: at.toISOString(), reason: "Weekly nurture follow-up." };
+    default:
+      at.setDate(at.getDate() + 2);
+      return { followUpAt: at.toISOString(), reason: "Follow up after no reply." };
+  }
 }
 
 function insertIntoField(el: HTMLInputElement | HTMLTextAreaElement, text: string) {
