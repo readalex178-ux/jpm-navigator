@@ -161,7 +161,7 @@ export type Commission = {
   claimedInGhl?: boolean;
 };
 
-export type AiProvider = "groq" | "openai" | "openrouter" | "lmstudio";
+export type AiProvider = "lovable" | "groq" | "openai" | "openrouter" | "lmstudio";
 
 export type Settings = {
   aiProvider: AiProvider;
@@ -178,9 +178,9 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  aiProvider: "groq",
-  baseUrl: "https://api.groq.com/openai/v1",
-  model: "llama-3.3-70b-versatile",
+  aiProvider: "lovable",
+  baseUrl: "",
+  model: "google/gemini-3-flash-preview",
   apiKey: "",
   name: "",
   linkedinUrl: "",
