@@ -141,7 +141,12 @@ export const pullAll = createServerFn({ method: "GET" })
       supabase.from("training_sessions").select("*").eq("user_id", userId),
       supabase.from("prospect_analyses").select("*").eq("user_id", userId).order("created_at", { ascending: true }),
     ]);
-    for (const r of [p, k, s, t, a]) if (r.error) throw new Error(r.error.message);
+    for (const r of [p, k, s, t, a]) {
+      if (r.error) {
+        console.error("[pullAll] supabase error:", r.error);
+        throw new Error("Failed to load data.");
+      }
+    }
     return {
       prospects: p.data ?? [],
       kpi: k.data ?? [],
@@ -194,10 +199,16 @@ export const pushAll = createServerFn({ method: "POST" })
 
     for (const t of tables) {
       const del = await supabase.from(t.name).delete().eq("user_id", userId);
-      if (del.error) throw new Error(`${t.name} delete: ${del.error.message}`);
+      if (del.error) {
+        console.error(`[pushAll] ${t.name} delete error:`, del.error);
+        throw new Error("Failed to save data.");
+      }
       if (t.rows.length) {
         const ins = await supabase.from(t.name).insert(t.rows);
-        if (ins.error) throw new Error(`${t.name} insert: ${ins.error.message}`);
+        if (ins.error) {
+          console.error(`[pushAll] ${t.name} insert error:`, ins.error);
+          throw new Error("Failed to save data.");
+        }
       }
     }
     return { ok: true };

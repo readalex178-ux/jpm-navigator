@@ -19,7 +19,10 @@ export const getAllMessages = createServerFn({ method: "GET" })
       .from("messages")
       .select("id, prospect_id, sender, kind, content, sent_at")
       .order("sent_at", { ascending: true });
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[getAllMessages] supabase error:", error);
+      throw new Error("Failed to load messages.");
+    }
     const messages: DbMessage[] = (data ?? []).map((m: any) => ({
       id: `db:${m.id}`,
       prospectId: m.prospect_id,
@@ -63,7 +66,10 @@ export const logMessage = createServerFn({ method: "POST" })
       })
       .select("id, prospect_id, sender, kind, content, sent_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[logMessage] supabase error:", error);
+      throw new Error("Failed to log message.");
+    }
     return {
       message: {
         id: `db:${row.id}`,
