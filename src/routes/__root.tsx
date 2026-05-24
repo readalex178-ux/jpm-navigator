@@ -21,6 +21,7 @@ import { useStore } from "@/lib/store";
 import { LoginPage } from "@/components/auth/LoginPage";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 function NotFoundComponent() {
   return (
@@ -185,6 +186,7 @@ function useExtensionBridge() {
       if (e.kind === "ext:thread") {
         setExtensionConnected(true);
         upsertThread(e.thread);
+        toast.success(`LinkedIn thread synced: ${e.thread.participantName}`);
         return;
       }
 
@@ -208,6 +210,7 @@ function useExtensionBridge() {
           name: e.profile.name,
           capturedAt: new Date().toISOString(),
         });
+        toast.success(`LinkedIn profile captured: ${e.profile.name}`);
       }
     });
 
