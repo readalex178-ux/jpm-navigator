@@ -9,6 +9,7 @@ import { Section } from "@/components/Page";
 import { qualifyProfile, type ProfileQualifierResult } from "@/lib/ai/aiAssistants.functions";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { SIGNAL_LABELS, EMPTY_SIGNALS, type BuyingSignals } from "@/lib/btf/types";
 import { cn } from "@/lib/utils";
 
 const ICP_COLOR = {
@@ -43,8 +44,14 @@ export function ProfileQualifierBox() {
       if (r.ok) {
         setRes(r.result);
         if (r.result.verdict === "SEND_VN") {
-          const nameLine =
+          const extractedName = r.result.extracted?.fullName?.trim();
+          const fallbackName =
             trimmed.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+          const nameLine = extractedName && extractedName.length > 1 ? extractedName : fallbackName;
+          const bioText =
+            r.result.extracted?.bio?.trim() ||
+            r.result.extracted?.headline?.trim() ||
+            trimmed.slice(0, 800);
           const url = profileUrl.trim();
           const dup = prospects.find(
             (p) =>
@@ -56,10 +63,11 @@ export function ProfileQualifierBox() {
               name: nameLine,
               profileUrl: url,
               platform: "linkedin",
-              bio: trimmed.slice(0, 800),
+              bio: bioText,
               niche: r.result.market,
               tier: r.result.predictedTier === "unknown" ? "DWY" : r.result.predictedTier,
               stage: "Found",
+              signals: { ...EMPTY_SIGNALS, ...(r.result.buyingSignals ?? {}) } as BuyingSignals,
             });
             setAutoAdded(true);
             toast.success(`Added ${created.name} to pipeline (Found)`);
@@ -110,15 +118,20 @@ export function ProfileQualifierBox() {
 
   const createProspect = () => {
     if (!res) return;
-    const nameLine = text.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+    const extractedName = res.extracted?.fullName?.trim();
+    const fallbackName = text.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+    const nameLine = extractedName && extractedName.length > 1 ? extractedName : fallbackName;
+    const bioText =
+      res.extracted?.bio?.trim() || res.extracted?.headline?.trim() || text.slice(0, 800);
     const created = addProspect({
       name: nameLine,
       profileUrl: profileUrl.trim(),
       platform: "linkedin",
-      bio: text.slice(0, 800),
+      bio: bioText,
       niche: res.market,
       tier: res.predictedTier === "unknown" ? "DWY" : res.predictedTier,
       stage: res.verdict === "SEND_VN" ? "Found" : "Cold",
+      signals: { ...EMPTY_SIGNALS, ...(res.buyingSignals ?? {}) } as BuyingSignals,
     });
     toast.success(`Prospect created: ${created.name}`);
   };
@@ -184,6 +197,39 @@ export function ProfileQualifierBox() {
             Earning {FLAG(res.qualification.earningSomething)} ·{" "}
             Wants more {FLAG(res.qualification.wantsMore)}
           </div>
+
+          {res.extracted && (res.extracted.fullName || res.extracted.headline) && (
+            <div className="rounded bg-surface p-2">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Extracted</div>
+              {res.extracted.fullName && <div><strong>{res.extracted.fullName}</strong></div>}
+              {res.extracted.headline && <div className="text-muted-foreground">{res.extracted.headline}</div>}
+            </div>
+          )}
+
+          {res.buyingSignals && (
+            <div className="rounded bg-surface p-2">
+              <div className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                Buying signals
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(Object.keys(SIGNAL_LABELS) as Array<keyof typeof SIGNAL_LABELS>).map((k) => {
+                  const on = Boolean(res.buyingSignals?.[k]);
+                  return (
+                    <Badge
+                      key={k}
+                      variant="outline"
+                      className={cn(
+                        "text-[10px]",
+                        on ? "border-success text-success" : "border-muted text-muted-foreground opacity-60",
+                      )}
+                    >
+                      {on ? "✓" : "·"} {SIGNAL_LABELS[k]}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-1 sm:grid-cols-2">
             <div>
