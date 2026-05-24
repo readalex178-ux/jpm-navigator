@@ -4,7 +4,7 @@ import { PageBody, PageHeader } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Download, Upload, Trash2, X } from "lucide-react";
+import { Plus, Search, Download, Upload, Trash2, X, ArrowUpDown } from "lucide-react";
 import { ProspectCard } from "@/components/ProspectCard";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { useStore } from "@/lib/store";
@@ -23,6 +23,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+type SortOption = "newest" | "oldest" | "name-az" | "name-za" | "score-high" | "score-low";
+
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  "name-az": "Name A → Z",
+  "name-za": "Name Z → A",
+  "score-high": "Score: high → low",
+  "score-low": "Score: low → high",
+};
 
 
 export const Route = createFileRoute("/prospects")({
