@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Copy, X } from "lucide-react";
 import { Section } from "@/components/Page";
@@ -23,6 +24,7 @@ export function ProfileQualifierBox() {
   const addProspect = useStore((s) => s.addProspect);
   const prospects = useStore((s) => s.prospects);
   const [text, setText] = useState("");
+  const [profileUrl, setProfileUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<ProfileQualifierResult | null>(null);
   const [autoAdded, setAutoAdded] = useState(false);
@@ -43,12 +45,16 @@ export function ProfileQualifierBox() {
         if (r.result.verdict === "SEND_VN") {
           const nameLine =
             trimmed.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
+          const url = profileUrl.trim();
           const dup = prospects.find(
-            (p) => p.name.trim().toLowerCase() === nameLine.toLowerCase(),
+            (p) =>
+              p.name.trim().toLowerCase() === nameLine.toLowerCase() ||
+              (url && p.profileUrl && p.profileUrl.toLowerCase() === url.toLowerCase()),
           );
           if (!dup) {
             const created = addProspect({
               name: nameLine,
+              profileUrl: url,
               platform: "linkedin",
               bio: trimmed.slice(0, 800),
               niche: r.result.market,
@@ -77,15 +83,15 @@ export function ProfileQualifierBox() {
   // (e.g. extension scrape of a LinkedIn profile, or "Analyze" button from /prospects).
   useEffect(() => {
     const handler = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ text: string; autoRun?: boolean }>).detail;
+      const detail = (ev as CustomEvent<{ text: string; profileUrl?: string; autoRun?: boolean }>).detail;
       if (!detail?.text) return;
       setText(detail.text);
+      if (detail.profileUrl) setProfileUrl(detail.profileUrl);
       setRes(null);
       if (detail.autoRun !== false) void runWith(detail.text);
     };
     window.addEventListener("btf:qualify-profile", handler);
     return () => window.removeEventListener("btf:qualify-profile", handler);
-    // runWith closes over `fn` only, which is stable from useServerFn
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -107,6 +113,7 @@ export function ProfileQualifierBox() {
     const nameLine = text.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
     const created = addProspect({
       name: nameLine,
+      profileUrl: profileUrl.trim(),
       platform: "linkedin",
       bio: text.slice(0, 800),
       niche: res.market,
@@ -121,7 +128,7 @@ export function ProfileQualifierBox() {
       title="Paste-a-profile verdict"
       action={
         res ? (
-          <Button size="sm" variant="ghost" onClick={() => { setRes(null); setText(""); }}>
+          <Button size="sm" variant="ghost" onClick={() => { setRes(null); setText(""); setProfileUrl(""); }}>
             <X className="mr-1 h-3 w-3" /> Clear
           </Button>
         ) : null
@@ -129,6 +136,12 @@ export function ProfileQualifierBox() {
     >
       {!res ? (
         <>
+          <Input
+            value={profileUrl}
+            onChange={(e) => setProfileUrl(e.target.value)}
+            placeholder="LinkedIn profile URL (https://linkedin.com/in/…)"
+            className="mb-2 text-xs"
+          />
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
