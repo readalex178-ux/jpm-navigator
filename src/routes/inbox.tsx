@@ -25,6 +25,7 @@ import {
   suggestReplies,
   type SuggestRepliesResult,
 } from "@/lib/ai/suggestReplies.functions";
+import { getAllMessages } from "@/lib/messages.functions";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
