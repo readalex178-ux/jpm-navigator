@@ -3,6 +3,7 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/useAuth";
 import { pullAll, pushAll } from "./sync.functions";
 import { EMPTY_SIGNALS } from "@/lib/btf/types";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
