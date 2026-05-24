@@ -183,13 +183,45 @@ export function ProspectDrawer({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
+              {editing && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setConfirmDelete(true)}
+                  className="mr-auto"
+                >
+                  Delete
+                </Button>
+              )}
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button onClick={save}>{editing ? "Save" : "Add prospect"}</Button>
             </div>
           </div>
         </div>
       </DrawerContent>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {editing?.name || "prospect"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the prospect and their activity log. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (editing) deleteProspect(editing.id);
+                setConfirmDelete(false);
+                onOpenChange(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 }
