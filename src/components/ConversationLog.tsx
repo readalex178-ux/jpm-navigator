@@ -11,6 +11,39 @@ export type ConvMessage = {
   text: string;
 };
 
+const DEDUP_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+
+function normalizeText(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/^🎙\s*vn sent(\s*—.*)?$/i, "__vn__")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function dedupeMessages(msgs: ConvMessage[]): ConvMessage[] {
+  // Sort by date first so earlier entries win as canonical.
+  const sorted = [...msgs].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+  const kept: ConvMessage[] = [];
+  for (const m of sorted) {
+    const mTime = new Date(m.date).getTime();
+    const mKey = normalizeText(m.text);
+    const isVn = m.type === "VN" || mKey === "__vn__";
+    const dup = kept.find((k) => {
+      if (k.fromMe !== m.fromMe) return false;
+      if (Math.abs(new Date(k.date).getTime() - mTime) > DEDUP_WINDOW_MS) return false;
+      const kKey = normalizeText(k.text);
+      const kIsVn = k.type === "VN" || kKey === "__vn__";
+      if (isVn && kIsVn) return true;
+      return kKey === mKey && kKey.length > 0;
+    });
+    if (!dup) kept.push(m);
+  }
+  return kept;
+}
+
 function mergeMessages(
   activities: Activity[],
   vnLog: VNEntry[],
@@ -42,9 +75,7 @@ function mergeMessages(
       });
     }
   }
-  return [...fromActs, ...fromVns, ...extras].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
+  return dedupeMessages([...fromActs, ...fromVns, ...extras]);
 }
 
 export function buildConversation(
