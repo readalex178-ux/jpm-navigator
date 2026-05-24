@@ -91,7 +91,7 @@ function InboxPage() {
   const rows = useMemo(() => {
     return prospects
       .map((p) => {
-        const msgs = buildConversation(p.activities ?? [], p.vnLog ?? []);
+        const msgs = buildConversation(p.activities ?? [], p.vnLog ?? [], extrasByProspect.get(p.id) ?? []);
         const last = msgs[msgs.length - 1];
         return {
           p,
