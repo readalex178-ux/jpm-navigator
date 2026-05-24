@@ -31,6 +31,10 @@
     const e = d.event;
     if (e.kind === "app:insert") {
       chrome.runtime.sendMessage({ kind: "app:insert", text: e.text, threadId: e.threadId });
+      return;
+    }
+    if (e.kind === "app:ack") {
+      ackApp(e.pairingCode || "");
     }
   });
 
