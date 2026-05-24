@@ -6,7 +6,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -14,38 +14,97 @@
         color-scheme: dark;
         --bg: #1b1a2e;
         --surface: #2a294a;
+        --surface-hi: #302f54;
         --border: #3a3960;
         --fg: #f4f3fb;
         --muted: #a5a3c4;
         --primary: #7c6bff;
+        --primary-hi: #9486ff;
+        --success: #4ade80;
+        --warning: #f59e0b;
+        --danger: #fb7185;
       }
+      * { box-sizing: border-box; }
       body {
         font-family: "Manrope", system-ui, sans-serif;
         background: radial-gradient(120% 80% at 0% 0%, var(--surface) 0%, var(--bg) 60%);
-        color: var(--fg); margin: 0; padding: 20px;
+        color: var(--fg); margin: 0; padding: 18px;
       }
       .brand { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
       .dot { width:8px; height:8px; border-radius:999px; background:var(--primary); box-shadow:0 0 12px var(--primary); }
-      h1 { font-family:"Sora",system-ui,sans-serif; font-size:16px; font-weight:700; margin:0; letter-spacing:-0.02em; }
-      .hint { font-size: 13px; color: var(--muted); line-height: 1.6; }
-      .hint strong { color: var(--fg); font-weight:600; }
-      .card {
-        margin-top: 14px; padding: 14px;
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: 12px;
+      h1 { font-family:"Sora",system-ui,sans-serif; font-size:15px; font-weight:700; margin:0; letter-spacing:-0.02em; }
+      .sub { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.18em; margin-top:2px; }
+      .card { background: color-mix(in oklab, var(--surface) 92%, black); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px; }
+      .card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+      .card-title { font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+      .badge { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:10px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+      .badge.ok { color:var(--success); border-color: color-mix(in oklab, var(--success) 45%, var(--border)); }
+      .badge.warn { color:var(--warning); border-color: color-mix(in oklab, var(--warning) 45%, var(--border)); }
+      .badge.danger { color:var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, var(--border)); }
+      .badge.neutral { color:var(--muted); }
+      label { font-size:10px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.14em; font-weight:600; }
+      input {
+        width:100%; padding:10px 12px; background:var(--surface-hi); color:var(--fg);
+        border:1px solid var(--border); border-radius:10px; font-size:14px;
+        font-family:"JetBrains Mono",ui-monospace,monospace; text-transform:uppercase; letter-spacing:0.22em;
       }
+      input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 25%, transparent); }
+      button {
+        width:100%; padding:12px; border-radius:10px; border:1px solid transparent;
+        font-family:"Sora",system-ui,sans-serif; font-weight:600; cursor:pointer; font-size:13px;
+        letter-spacing:0.02em; transition: transform .1s, box-shadow .15s, opacity .15s;
+      }
+      button.primary { background: linear-gradient(135deg, var(--primary), var(--primary-hi)); color:white; }
+      button.secondary { background:var(--surface-hi); color:var(--fg); border-color:var(--border); }
+      button:hover:not(:disabled) { transform: translateY(-1px); box-shadow:0 8px 24px -8px color-mix(in oklab, var(--primary) 55%, transparent); }
+      button:disabled { opacity:0.45; cursor:not-allowed; }
+      .status { font-size:12px; color:var(--muted); line-height:1.5; margin-top:10px; }
+      .status.ok { color:var(--success); }
+      .status.err { color:var(--danger); }
+      .mono { font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px; letter-spacing:0.14em; }
+      .hint { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.55; }
+      .actions { display:grid; gap:8px; margin-top:10px; }
     </style>
   </head>
   <body>
     <div class="brand">
       <span class="dot"></span>
-      <h1>BTF Setter OS</h1>
+      <div>
+        <h1>BTF Setter OS</h1>
+        <div class="sub">LinkedIn Side Panel</div>
+      </div>
     </div>
-    <div class="card">
-      <p class="hint">
-        Open BTF Setter OS and head to the <strong>LinkedIn</strong> page.
-        The full co-pilot lives there — this side panel is for quick reference only.
-      </p>
-    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">Pairing</div>
+        <span class="badge neutral" id="app-badge">Waiting for app</span>
+      </div>
+      <label for="code">Pairing code</label>
+      <input id="code" maxlength="6" placeholder="ABC123" autocomplete="off" />
+      <div class="actions">
+        <button id="save" class="secondary">Pair with app</button>
+      </div>
+      <div class="status" id="pair-status">Enter the code shown inside the app.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">Sync profile</div>
+      </div>
+      <div class="actions">
+        <button id="sync" class="primary">Sync this profile</button>
+      </div>
+      <div class="status" id="sync-status">
+        Open a LinkedIn profile (<span class="mono">/in/...</span>) in the active tab, then click sync.
+      </div>
+      <div class="hint">
+        Use this when auto-detection doesn't fire. It force-scrapes the current
+        profile and pushes it into the app, even if LinkedIn hasn't finished
+        loading the full About / Featured sections.
+      </div>
+    </section>
+
+    <script src="sidepanel.js"></script>
   </body>
 </html>
