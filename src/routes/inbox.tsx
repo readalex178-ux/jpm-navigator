@@ -27,7 +27,7 @@ import {
   suggestReplies,
   type SuggestRepliesResult,
 } from "@/lib/ai/suggestReplies.functions";
-import { getAllMessages } from "@/lib/messages.functions";
+import { getAllMessages, logMessage } from "@/lib/messages.functions";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
@@ -75,11 +75,40 @@ function InboxPage() {
   // Historical messages from Supabase, grouped by prospect_id
   const queryClient = useQueryClient();
   const fetchAllMessages = useServerFn(getAllMessages);
+  const callLogMessage = useServerFn(logMessage);
   const { data: dbMessagesData } = useQuery({
     queryKey: ["inbox-messages"],
     queryFn: () => fetchAllMessages(),
     staleTime: 30_000,
   });
+
+  const activityTypeToKind = (t: ActivityType): "text" | "vn" | "email" | "comment" | "call" | "note" =>
+    t === "VN" ? "vn" : (t as "text" | "email" | "comment" | "call" | "note");
+
+  const syncToSupabase = async (args: {
+    prospectId: string;
+    fromMe: boolean;
+    type: ActivityType;
+    text: string;
+    date: string;
+    variation?: string;
+  }) => {
+    try {
+      await callLogMessage({
+        data: {
+          prospectId: args.prospectId,
+          sender: args.fromMe ? "me" : "them",
+          kind: activityTypeToKind(args.type),
+          content: args.text,
+          variationName: args.variation,
+          sentAt: args.date,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["inbox-messages"] });
+    } catch (e) {
+      toast.error(`Sync failed: ${(e as Error).message}`);
+    }
+  };
   const extrasByProspect = useMemo(() => {
     const map = new Map<string, ConvMessage[]>();
     for (const m of dbMessagesData?.messages ?? []) {
@@ -156,12 +185,22 @@ function InboxPage() {
     if (!selected || !text.trim()) return;
     const fromMe = direction === "me";
     const date = new Date().toISOString();
-    logActivity(selected.id, { date, type, notes: text.trim(), fromMe });
-    if (type === "VN" && fromMe) {
-      logVN(selected.id, { date, variation: text.trim().slice(0, 80), reply: "none" });
+    const content = text.trim();
+    logActivity(selected.id, { date, type, notes: content, fromMe });
+    const isVn = type === "VN" && fromMe;
+    if (isVn) {
+      logVN(selected.id, { date, variation: content.slice(0, 80), reply: "none" });
       const today = getKpiDay(todayStr());
       upsertKpiDay({ date: todayStr(), vnSent: today.vnSent + 1 });
     }
+    void syncToSupabase({
+      prospectId: selected.id,
+      fromMe,
+      type,
+      text: content,
+      date,
+      variation: isVn ? content.slice(0, 80) : undefined,
+    });
     setText("");
     toast.success(fromMe ? "Logged your message" : "Logged their message");
   };
@@ -217,11 +256,20 @@ function InboxPage() {
     const date = new Date().toISOString();
     const sugType = (s.type as ActivityType) ?? "text";
     logActivity(selected.id, { date, type: sugType, notes: s.content, fromMe: true });
-    if (sugType === "VN") {
+    const isVn = sugType === "VN";
+    if (isVn) {
       logVN(selected.id, { date, variation: s.content.slice(0, 80), reply: "none" });
       const today = getKpiDay(todayStr());
       upsertKpiDay({ date: todayStr(), vnSent: today.vnSent + 1 });
     }
+    void syncToSupabase({
+      prospectId: selected.id,
+      fromMe: true,
+      type: sugType,
+      text: s.content,
+      date,
+      variation: isVn ? s.content.slice(0, 80) : undefined,
+    });
     toast.success("Copied & logged — paste into the platform to send.");
   };
 
