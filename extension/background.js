@@ -2,7 +2,7 @@
 // Holds pairing state, talks to the active LinkedIn tab, and forwards manual
 // profile sends to the BTF app via the app-bridge content script.
 
-const VERSION = "1.1.1";
+const VERSION = "1.1.2";
 const APP_ACK_TTL_MS = 60_000;
 
 async function getState() {
@@ -11,16 +11,42 @@ async function getState() {
     "lastAppAckAt",
     "lastAppUrl",
     "lastAckPairingCode",
+    "lastAppTabId",
+    "lastAppFrameId",
   ]);
   return {
     pairingCode: data.pairingCode || "",
     lastAppAckAt: typeof data.lastAppAckAt === "number" ? data.lastAppAckAt : 0,
     lastAppUrl: data.lastAppUrl || "",
     lastAckPairingCode: data.lastAckPairingCode || "",
+    lastAppTabId: data.lastAppTabId ?? null,
+    lastAppFrameId: typeof data.lastAppFrameId === "number" ? data.lastAppFrameId : null,
   };
 }
 
 async function broadcastToApps(event) {
+  const state = await getState();
+
+  // 1. If we know the exact frame that last ack'd, try targeting it directly.
+  // This fixes the iframe issue when the app runs inside the Lovable editor preview.
+  if (
+    state.lastAppTabId &&
+    state.lastAppFrameId != null &&
+    Date.now() - state.lastAppAckAt <= APP_ACK_TTL_MS
+  ) {
+    try {
+      await chrome.tabs.sendMessage(
+        state.lastAppTabId,
+        { kind: "to-app", event },
+        { frameId: state.lastAppFrameId }
+      );
+      return; // direct delivery succeeded
+    } catch {
+      // fall through to broadcast fallback
+    }
+  }
+
+  // 2. Broadcast to all matching tabs (frame 0 only — top-level tabs).
   const tabs = await chrome.tabs.query({
     url: [
       "https://*.lovable.app/*",
@@ -38,6 +64,13 @@ async function broadcastToApps(event) {
       }
     }),
   );
+
+  // 3. Safety-net: also broadcast via runtime to reach any listeners we missed.
+  try {
+    chrome.runtime.sendMessage({ kind: "to-app", event }).catch(() => {});
+  } catch {
+    // No listeners available is harmless.
+  }
 }
 
 async function ensureAppBridge() {
@@ -53,8 +86,9 @@ async function ensureAppBridge() {
     tabs.map(async (tab) => {
       if (!tab.id) return;
       try {
+        // Try injecting into all frames so the bridge also lands inside iframes.
         await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
+          target: { tabId: tab.id, allFrames: true },
           files: ["app-bridge.js"],
         });
       } catch {
@@ -97,6 +131,9 @@ function isAppConnected(state) {
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  // Ignore our own broadcast messages to avoid recursive handling.
+  if (msg && msg.kind === "to-app") return;
+
   (async () => {
     if (!msg) return;
 
@@ -133,6 +170,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         pairingCode: code,
         lastAppAckAt: 0,
         lastAckPairingCode: "",
+        lastAppTabId: null,
+        lastAppFrameId: null,
       });
       await broadcastToApps({ kind: "ext:hello", pairingCode: code, version: VERSION });
       sendResponse({ ok: true, code });
@@ -174,10 +213,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
 
     if (msg.kind === "app:ack") {
+      const tabId = _sender.tab?.id ?? null;
+      const frameId = _sender.frameId ?? null;
       await chrome.storage.local.set({
         lastAppAckAt: Date.now(),
         lastAppUrl: msg.appUrl || "",
         lastAckPairingCode: msg.pairingCode || "",
+        lastAppTabId: tabId,
+        lastAppFrameId: frameId,
       });
       sendResponse({ ok: true });
     }

@@ -86,10 +86,10 @@ function updatePairingUI(status) {
   if (status.code) codeEl.value = status.code;
   if (status.appConnected) {
     setBadge(appBadgeEl, "App connected", "ok");
-    pairingStatusEl.innerHTML = `Paired with <span class="mono">${status.code || "------"}</span>.`;
+    pairingStatusEl.innerHTML = `Paired with <span class="mono">${status.code || "------"</span>.`;
   } else if (status.code) {
     setBadge(appBadgeEl, "Waiting for app", "warn");
-    pairingStatusEl.innerHTML = `Code saved as <span class="mono">${status.code}</span>. Keep the app open on screen.`;
+    pairingStatusEl.innerHTML = `Code saved as <span class="mono">${status.code}</span>. Open the app preview in its own tab and keep it on screen.`;
   } else {
     setBadge(appBadgeEl, "Not paired", "danger");
     pairingStatusEl.textContent = "Enter the code shown inside the app.";
@@ -176,6 +176,7 @@ async function sendMessage(message) {
 async function refreshStatus() {
   const status = await sendMessage({ kind: "get:status" });
   updatePairingUI(status || {});
+  return status || {};
 }
 
 function refreshStatusSoon(delay = 400) {
@@ -193,6 +194,16 @@ async function inspectActivePage() {
     renderInspection(result);
   } finally {
     setButtonBusy(refreshBtn, "Checking…", false);
+  }
+}
+
+async function rePingApp() {
+  const status = await refreshStatus();
+  if (!status.appConnected && status.code) {
+    // Re-broadcast the pairing code to wake up the app
+    await sendMessage({ kind: "save:pairing", code: status.code });
+    refreshStatusSoon(600);
+    refreshStatusSoon(1800);
   }
 }
 
@@ -254,6 +265,13 @@ codeEl.addEventListener("input", () => {
   codeEl.value = codeEl.value.toUpperCase();
 });
 
-Promise.all([refreshStatus(), inspectActivePage()]).catch(() => {
-  pairingStatusEl.textContent = "Could not load extension state.";
-});
+// On popup open: refresh status, inspect the page, and re-ping the app if disconnected.
+Promise.all([refreshStatus(), inspectActivePage()])
+  .then(([status]) => {
+    if (!status.appConnected && status.code) {
+      rePingApp();
+    }
+  })
+  .catch(() => {
+    pairingStatusEl.textContent = "Could not load extension state.";
+  });
