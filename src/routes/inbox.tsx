@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { Search, Sparkles, Loader2, Copy, ArrowDownToLine, Send, Filter } from "lucide-react";
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
-import { ConversationLog, buildConversation } from "@/components/ConversationLog";
+import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,7 @@ import {
   suggestReplies,
   type SuggestRepliesResult,
 } from "@/lib/ai/suggestReplies.functions";
+import { getAllMessages } from "@/lib/messages.functions";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
@@ -68,10 +70,28 @@ function InboxPage() {
   const [aiBusy, setAiBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestRepliesResult["suggestions"] | null>(null);
 
+  // Historical messages from Supabase, grouped by prospect_id
+  const fetchAllMessages = useServerFn(getAllMessages);
+  const { data: dbMessagesData } = useQuery({
+    queryKey: ["inbox-messages"],
+    queryFn: () => fetchAllMessages(),
+    staleTime: 30_000,
+  });
+  const extrasByProspect = useMemo(() => {
+    const map = new Map<string, ConvMessage[]>();
+    for (const m of dbMessagesData?.messages ?? []) {
+      const arr = map.get(m.prospectId) ?? [];
+      arr.push({ id: m.id, date: m.date, fromMe: m.fromMe, type: m.type, text: m.text });
+      map.set(m.prospectId, arr);
+    }
+    return map;
+  }, [dbMessagesData]);
+
+
   const rows = useMemo(() => {
     return prospects
       .map((p) => {
-        const msgs = buildConversation(p.activities ?? [], p.vnLog ?? []);
+        const msgs = buildConversation(p.activities ?? [], p.vnLog ?? [], extrasByProspect.get(p.id) ?? []);
         const last = msgs[msgs.length - 1];
         return {
           p,
@@ -128,7 +148,7 @@ function InboxPage() {
     setAiBusy(true);
     setSuggestions(null);
     try {
-      const conv = buildConversation(selected.activities, selected.vnLog);
+      const conv = buildConversation(selected.activities, selected.vnLog, extrasByProspect.get(selected.id) ?? []);
       const signals = Object.entries(selected.signals)
         .filter(([, v]) => v)
         .map(([k]) => k);
@@ -343,7 +363,7 @@ function InboxPage() {
                 </div>
               </div>
               <ScrollArea className="flex-1 p-3">
-                <ConversationLog activities={selected.activities} vnLog={selected.vnLog} />
+                <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
               </ScrollArea>
               <div className="space-y-2 border-t border-border p-3">
                 {/* Inline AI suggestions — right above the composer */}

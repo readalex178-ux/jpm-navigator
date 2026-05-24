@@ -11,8 +11,11 @@ export type ConvMessage = {
   text: string;
 };
 
-function mergeMessages(activities: Activity[], vnLog: VNEntry[]): ConvMessage[] {
-  // Activities default fromMe=true for legacy entries (we authored them).
+function mergeMessages(
+  activities: Activity[],
+  vnLog: VNEntry[],
+  extras: ConvMessage[] = [],
+): ConvMessage[] {
   const fromActs: ConvMessage[] = activities.map((a) => ({
     id: `a:${a.id}`,
     date: a.date,
@@ -20,7 +23,6 @@ function mergeMessages(activities: Activity[], vnLog: VNEntry[]): ConvMessage[] 
     type: a.type,
     text: a.notes,
   }));
-  // VN log entries are always sent by Me, optionally with their reply mentioned as separate message.
   const fromVns: ConvMessage[] = [];
   for (const v of vnLog) {
     fromVns.push({
@@ -40,23 +42,29 @@ function mergeMessages(activities: Activity[], vnLog: VNEntry[]): ConvMessage[] 
       });
     }
   }
-  return [...fromActs, ...fromVns].sort(
+  return [...fromActs, ...fromVns, ...extras].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
 }
 
-export function buildConversation(activities: Activity[], vnLog: VNEntry[]): ConvMessage[] {
-  return mergeMessages(activities, vnLog);
+export function buildConversation(
+  activities: Activity[],
+  vnLog: VNEntry[],
+  extras: ConvMessage[] = [],
+): ConvMessage[] {
+  return mergeMessages(activities, vnLog, extras);
 }
 
 export function ConversationLog({
   activities,
   vnLog,
+  extras = [],
 }: {
   activities: Activity[];
   vnLog: VNEntry[];
+  extras?: ConvMessage[];
 }) {
-  const messages = useMemo(() => mergeMessages(activities, vnLog), [activities, vnLog]);
+  const messages = useMemo(() => mergeMessages(activities, vnLog, extras), [activities, vnLog, extras]);
 
   if (messages.length === 0) {
     return (
