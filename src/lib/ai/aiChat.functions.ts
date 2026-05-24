@@ -32,7 +32,8 @@ async function callGateway(
   if (res.status === 402) throw Object.assign(new Error("credits"), { code: "credits" });
   if (!res.ok) {
     const t = await res.text().catch(() => "");
-    throw new Error(`upstream ${res.status}: ${t.slice(0, 200)}`);
+    console.error(`[aiChat] upstream ${res.status}: ${t.slice(0, 500)}`);
+    throw Object.assign(new Error("AI service temporarily unavailable."), { code: "upstream" });
   }
   const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
   return j.choices?.[0]?.message?.content ?? "";
@@ -68,10 +69,12 @@ export const aiChat = createServerFn({ method: "POST" })
           const content = await callGateway(FALLBACK_MODEL, data.messages, apiKey, json, temperature);
           return { ok: true, content };
         } catch (e2) {
+          console.error("[aiChat] fallback failed", e2);
           const code2 = (e2 as { code?: string }).code ?? "upstream";
-          return { ok: false, code: code2, error: (e2 as Error).message };
+          return { ok: false, code: code2, error: "AI service temporarily unavailable." };
         }
       }
-      return { ok: false, code: code ?? "upstream", error: (e as Error).message };
+      console.error("[aiChat] gateway failed", e);
+      return { ok: false, code: code ?? "upstream", error: "AI service temporarily unavailable." };
     }
   });

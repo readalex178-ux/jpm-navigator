@@ -31,7 +31,8 @@ async function callGateway(
   if (res.status === 402) throw Object.assign(new Error("credits"), { code: "credits" });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    throw new Error(`upstream ${res.status}: ${txt.slice(0, 200)}`);
+    console.error(`[aiAssistants] upstream ${res.status}: ${txt.slice(0, 500)}`);
+    throw Object.assign(new Error("AI service temporarily unavailable."), { code: "upstream" });
   }
   const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
   return j.choices?.[0]?.message?.content ?? "";

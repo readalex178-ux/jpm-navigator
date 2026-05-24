@@ -71,7 +71,8 @@ async function callGateway(model: string, system: string, user: string, apiKey: 
     });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    throw new Error(`Upstream ${res.status}: ${txt.slice(0, 200)}`);
+    console.error(`[suggestReplies] upstream ${res.status}: ${txt.slice(0, 500)}`);
+    throw Object.assign(new Error("AI service temporarily unavailable."), { code: "upstream" });
   }
   const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
   return j.choices?.[0]?.message?.content ?? "";
@@ -147,7 +148,10 @@ Return JSON only — exactly 3 suggestions, each a different angle.`;
         }));
         return { ok: true, result: parsed };
       } catch (e) {
-        return { ok: false, error: (e as Error).message };
+        console.error("[suggestReplies] failed", e);
+        const known = (e as Error).message;
+        const safe = known.startsWith("AI ") ? known : "AI service temporarily unavailable.";
+        return { ok: false, error: safe };
       }
     },
   );
