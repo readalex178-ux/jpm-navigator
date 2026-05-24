@@ -77,6 +77,8 @@ export function useSupabaseSync() {
           createdAt: p.created_at,
           stageEnteredAt: p.stage_entered_at,
           lastTouchAt: p.last_touch_at,
+          followUpAt: p.follow_up_at ?? undefined,
+          followUpReason: p.follow_up_reason ?? undefined,
         }));
 
         const kpiDays = remote.kpi.map((k: any) => ({
@@ -206,6 +208,8 @@ export function useSupabaseSync() {
                 created_at: p.createdAt,
                 stage_entered_at: p.stageEnteredAt,
                 last_touch_at: p.lastTouchAt,
+                follow_up_at: p.followUpAt ?? null,
+                follow_up_reason: p.followUpReason ?? null,
               })),
               kpi: s.kpiDays.map((k) => ({
                 date: k.date,
