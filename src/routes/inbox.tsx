@@ -148,7 +148,7 @@ function InboxPage() {
     setAiBusy(true);
     setSuggestions(null);
     try {
-      const conv = buildConversation(selected.activities, selected.vnLog);
+      const conv = buildConversation(selected.activities, selected.vnLog, extrasByProspect.get(selected.id) ?? []);
       const signals = Object.entries(selected.signals)
         .filter(([, v]) => v)
         .map(([k]) => k);
