@@ -152,7 +152,7 @@ function TableView({
               <TableRow
                 key={p.id}
                 className="cursor-pointer"
-                onDoubleClick={() => onOpen(p.id)}
+                onClick={() => onOpen(p.id)}
               >
                 <TableCell className="font-medium">
                   {platformEmoji(p.platform)} {p.name}
