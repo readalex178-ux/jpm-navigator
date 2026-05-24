@@ -143,7 +143,7 @@ Be strict about buyingSignals: only mark true with concrete evidence in the past
 
 export const qualifyProfile = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
-    z.object({ profileText: z.string().min(10).max(20000) }).parse(data),
+    z.object({ profileText: z.string().min(10).transform((s) => s.slice(0, 20000)) }).parse(data),
   )
   .handler(async ({ data }): Promise<{ ok: true; result: ProfileQualifierResult } | { ok: false; error: string }> => {
     try {
