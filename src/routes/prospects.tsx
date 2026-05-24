@@ -4,7 +4,7 @@ import { PageBody, PageHeader } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Download, Upload, Trash2, X } from "lucide-react";
+import { Plus, Search, Download, Upload, Trash2, X, ArrowUpDown } from "lucide-react";
 import { ProspectCard } from "@/components/ProspectCard";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { useStore } from "@/lib/store";
@@ -23,6 +23,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+type SortOption = "newest" | "oldest" | "name-az" | "name-za" | "score-high" | "score-low";
+
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  "name-az": "Name A → Z",
+  "name-za": "Name Z → A",
+  "score-high": "Score: high → low",
+  "score-low": "Score: low → high",
+};
 
 
 export const Route = createFileRoute("/prospects")({
@@ -49,6 +60,7 @@ function ProspectsPage() {
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [stage, setStage] = useState<Stage | "all">("all");
   const [tier, setTier] = useState<Tier | "all">("all");
+  const [sort, setSort] = useState<SortOption>("newest");
 
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -86,14 +98,36 @@ function ProspectsPage() {
 
 
   const filtered = useMemo(() => {
-    return prospects.filter((p) => {
+    const list = prospects.filter((p) => {
       if (q && !`${p.name} ${p.niche} ${p.bio}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (platform !== "all" && p.platform !== platform) return false;
       if (stage !== "all" && p.stage !== stage) return false;
       if (tier !== "all" && p.tier !== tier) return false;
       return true;
     });
-  }, [prospects, q, platform, stage, tier]);
+    const sorted = [...list];
+    switch (sort) {
+      case "newest":
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case "oldest":
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case "name-az":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-za":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "score-high":
+        sorted.sort((a, b) => (b.qualScore ?? 0) - (a.qualScore ?? 0));
+        break;
+      case "score-low":
+        sorted.sort((a, b) => (a.qualScore ?? 0) - (b.qualScore ?? 0));
+        break;
+    }
+    return sorted;
+  }, [prospects, q, platform, stage, tier, sort]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -219,6 +253,17 @@ function ProspectsPage() {
               <SelectItem value="DIY">DIY</SelectItem>
               <SelectItem value="DWY">DWY</SelectItem>
               <SelectItem value="DFY">DFY</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="w-[150px]">
+              <ArrowUpDown className="mr-1 h-4 w-4 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortOption[]).map((k) => (
+                <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
