@@ -203,7 +203,7 @@ function useExtensionBridge() {
         return;
       }
 
-      if (e.pairingCode && e.pairingCode !== pairingCode) return;
+      if (e.pairingCode !== pairingCode) return;
 
       if (e.kind === "ext:thread") {
         setExtensionConnected(true);
