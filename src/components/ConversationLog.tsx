@@ -58,11 +58,13 @@ export function buildConversation(
 export function ConversationLog({
   activities,
   vnLog,
+  extras = [],
 }: {
   activities: Activity[];
   vnLog: VNEntry[];
+  extras?: ConvMessage[];
 }) {
-  const messages = useMemo(() => mergeMessages(activities, vnLog), [activities, vnLog]);
+  const messages = useMemo(() => mergeMessages(activities, vnLog, extras), [activities, vnLog, extras]);
 
   if (messages.length === 0) {
     return (
