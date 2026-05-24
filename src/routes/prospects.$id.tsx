@@ -115,7 +115,14 @@ function ProspectDetail() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("You must be signed in to transcribe.");
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        body: fd,
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const json = (await res.json()) as { ok: boolean; text?: string; error?: string };
       if (!json.ok) throw new Error(json.error || "Transcription failed");
       setMsgType("VN");
