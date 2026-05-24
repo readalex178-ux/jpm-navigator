@@ -449,11 +449,7 @@ function InboxPage() {
                   )}
                 </div>
 
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+
 
                 <div className="flex flex-wrap gap-1.5">
                   <Select value={direction} onValueChange={(v) => setDirection(v as "me" | "them")}>
