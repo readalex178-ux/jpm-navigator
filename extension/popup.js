@@ -86,7 +86,7 @@ function updatePairingUI(status) {
   if (status.code) codeEl.value = status.code;
   if (status.appConnected) {
     setBadge(appBadgeEl, "App connected", "ok");
-    pairingStatusEl.innerHTML = `Paired with <span class="mono">${status.code || "------"</span>.`;
+    pairingStatusEl.innerHTML = `Paired with <span class="mono">${status.code || "------"}</span>.`;
   } else if (status.code) {
     setBadge(appBadgeEl, "Waiting for app", "warn");
     pairingStatusEl.innerHTML = `Code saved as <span class="mono">${status.code}</span>. Open the app preview in its own tab and keep it on screen.`;
@@ -209,7 +209,7 @@ async function rePingApp() {
 
 saveBtn.addEventListener("click", async () => {
   const code = (codeEl.value || "").trim().toUpperCase();
-  if (code.length < 4) {
+  if (code.length < 6) {
     pairingStatusEl.textContent = "Enter the 6-character code from the app.";
     return;
   }

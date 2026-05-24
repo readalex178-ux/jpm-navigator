@@ -9,7 +9,7 @@
   window.__btfAppBridgeMounted = true;
 
   const NS = "btf-setter-os";
-  const VERSION = "1.1.2";
+  const VERSION = "1.1.3";
 
   const ackApp = (pairingCode = "") => {
     chrome.runtime.sendMessage({
@@ -18,6 +18,19 @@
       appUrl: window.location.href,
       version: VERSION,
     });
+  };
+
+  const announceToPage = (pairingCode = "") => {
+    window.postMessage(
+      { __ns: NS, event: { kind: "ext:hello", pairingCode, version: VERSION } },
+      "*",
+    );
+  };
+
+  const announce = (pairingCode = "") => {
+    if (!pairingCode) return;
+    ackApp(pairingCode);
+    announceToPage(pairingCode);
   };
 
   // Background → app
@@ -37,6 +50,7 @@
       return;
     }
     if (e.kind === "app:ack") {
+      if (!e.pairingCode) return;
       ackApp(e.pairingCode || "");
     }
   });
@@ -44,18 +58,14 @@
   // Announce extension presence on load
   chrome.runtime.sendMessage({ kind: "get:pairing" }, (resp) => {
     const code = (resp && resp.code) || "";
-    ackApp(code);
-    window.postMessage(
-      { __ns: NS, event: { kind: "ext:hello", pairingCode: code, version: VERSION } },
-      "*",
-    );
+    announce(code);
   });
 
   // Keepalive: re-announce every 10s so the background doesn't drop the connection.
   setInterval(() => {
     chrome.runtime.sendMessage({ kind: "get:pairing" }, (resp) => {
       const code = (resp && resp.code) || "";
-      ackApp(code);
+      announce(code);
     });
   }, 10_000);
 })();

@@ -2,7 +2,7 @@
 // Holds pairing state, talks to the active LinkedIn tab, and forwards manual
 // profile sends to the BTF app via the app-bridge content script.
 
-const VERSION = "1.1.2";
+const VERSION = "1.1.3";
 const APP_ACK_TTL_MS = 60_000;
 
 async function getState() {
@@ -124,9 +124,11 @@ async function inspectActiveLinkedinPage() {
 
 function isAppConnected(state) {
   return Boolean(
-    state.lastAppAckAt &&
+    state.pairingCode &&
+      state.lastAckPairingCode &&
+      state.lastAppAckAt &&
       Date.now() - state.lastAppAckAt <= APP_ACK_TTL_MS &&
-      (!state.lastAckPairingCode || state.lastAckPairingCode === state.pairingCode),
+      state.lastAckPairingCode === state.pairingCode,
   );
 }
 
@@ -213,6 +215,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
 
     if (msg.kind === "app:ack") {
+      if (!msg.pairingCode) {
+        sendResponse({ ok: false, ignored: true });
+        return;
+      }
       const tabId = _sender.tab?.id ?? null;
       const frameId = _sender.frameId ?? null;
       await chrome.storage.local.set({
