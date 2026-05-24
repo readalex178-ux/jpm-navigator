@@ -47,7 +47,7 @@ export const aiChat = createServerFn({ method: "POST" })
         messages: z.array(MsgSchema).min(1).max(50),
         json: z.boolean().optional(),
         temperature: z.number().min(0).max(2).optional(),
-        model: z.string().max(120).optional(),
+        model: z.enum([PRIMARY_MODEL, FALLBACK_MODEL]).optional(),
       })
       .parse(input),
   )
