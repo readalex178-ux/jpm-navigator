@@ -28,6 +28,48 @@ const SIGNAL_LABELS = {
 let currentContext = null;
 let currentAnalysis = null;
 
+function normalize(value) {
+  return String(value || "").toLowerCase();
+}
+
+function includesAny(haystack, needles) {
+  return needles.some((needle) => haystack.includes(needle));
+}
+
+function runHeuristicAnalysis(profile) {
+  const text = normalize(
+    [
+      profile.name,
+      profile.headline,
+      profile.currentRole,
+      profile.location,
+      profile.about,
+      ...(profile.recentActivity || []),
+    ].join("\n"),
+  );
+
+  const buyingSignals = {
+    featuredOffer: includesAny(text, ["featured:", "work with", "offer", "program", "service", "help founders", "help coaches"]),
+    bookingLinkInBio: includesAny(text, ["calendly", "cal.com", "book a call", "schedule", "booking", "dm me"]),
+    referralsOnly: includesAny(text, ["referrals", "word of mouth", "referral only", "referrals only"]),
+    slowMonth: includesAny(text, ["slow month", "quiet month", "dry spell", "pipeline is slow", "need leads", "low month"]),
+    wantsToScale: includesAny(text, ["scale", "scaling", "grow", "growth", "hire", "ceiling", "want to grow"]),
+    noOutboundSystem: !includesAny(text, ["outbound", "sdr", "appointment setter", "paid ads", "media buyer", "cold email", "cold dm"]),
+    decisionMakerConfirmed: includesAny(text, ["founder", "co-founder", "owner", "ceo", "director", "agency owner", "solo"]),
+  };
+
+  const score = Object.values(buyingSignals).filter(Boolean).length;
+  const verdict = score >= 4 && buyingSignals.decisionMakerConfirmed ? "SEND_VN" : score >= 2 ? "MAYBE" : "SKIP";
+  const verdictLine =
+    verdict === "SEND_VN"
+      ? "✅ SEND VN — strong enough fit signals on this profile."
+      : verdict === "MAYBE"
+        ? "⚠️ MAYBE — some buying signals are present but not enough yet."
+        : "❌ SKIP — not enough clear buying signals on this profile.";
+
+  return { verdict, verdictLine, buyingSignals };
+}
+
 function setBadge(el, label, kind = "neutral") {
   el.textContent = label;
   el.className = `badge ${kind}`;
@@ -124,7 +166,7 @@ function renderAnalysis(data) {
     signalsEl.appendChild(chip);
   });
 
-  sendBtn.disabled = false;
+  sendBtn.disabled = data.verdict !== "SEND_VN";
 }
 
 async function sendMessage(message) {
@@ -170,38 +212,10 @@ refreshBtn.addEventListener("click", () => {
 analyzeBtn.addEventListener("click", async () => {
   if (!currentContext?.profile) return;
   setButtonBusy(analyzeBtn, "Analysing…", true);
-  sendBtn.disabled = true;
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are qualifying a LinkedIn prospect for a manual outbound pipeline. Return JSON only with keys: verdict, verdictLine, buyingSignals. verdict must be SEND_VN, MAYBE, or SKIP. buyingSignals must include featuredOffer, bookingLinkInBio, referralsOnly, slowMonth, wantsToScale, noOutboundSystem, decisionMakerConfirmed as booleans. Be strict and only mark true when the evidence is explicit.",
-          },
-          {
-            role: "user",
-            content: currentContext.profile.profileText,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.2,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Analysis failed: ${response.status}`);
-    }
-
-    const body = await response.json();
-    const content = body?.choices?.[0]?.message?.content || "{}";
-    renderAnalysis(JSON.parse(content));
-  } catch (error) {
-    pageStateEl.textContent = error.message || "Analysis failed.";
+    const analysis = runHeuristicAnalysis(currentContext.profile);
+    renderAnalysis(analysis);
+    pageStateEl.textContent = "Analysis ready. Send to app if it is a fit.";
   } finally {
     setButtonBusy(analyzeBtn, "Analysing…", false);
   }
