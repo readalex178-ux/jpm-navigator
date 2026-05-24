@@ -127,6 +127,71 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
     setPendingFollowUp(null);
   };
 
+  const stopListening = () => {
+    try {
+      recogRef.current?.stop();
+    } catch {}
+  };
+
+  const startListening = (autoSend: boolean) => {
+    if (!speechSupported) {
+      toast.error("Voice input isn't supported in this browser. Try Chrome.");
+      return;
+    }
+    if (listening) {
+      autoSendRef.current = autoSend;
+      stopListening();
+      return;
+    }
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = navigator.language || "en-US";
+    rec.continuous = false;
+    rec.interimResults = true;
+    autoSendRef.current = autoSend;
+
+    let finalText = "";
+    rec.onresult = (e: any) => {
+      let interimText = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interimText += r[0].transcript;
+      }
+      setInterim(interimText);
+      if (finalText) setInput((prev) => (prev ? prev + " " : "") + finalText.trim());
+    };
+    rec.onerror = (e: any) => {
+      if (e.error !== "aborted" && e.error !== "no-speech") {
+        toast.error(`Mic error: ${e.error}`);
+      }
+    };
+    rec.onend = () => {
+      setListening(false);
+      setInterim("");
+      recogRef.current = null;
+      if (autoSendRef.current && finalText.trim()) {
+        const toSend = finalText.trim();
+        setInput("");
+        void send(toSend);
+      }
+    };
+
+    recogRef.current = rec;
+    setListening(true);
+    try {
+      rec.start();
+    } catch (err) {
+      setListening(false);
+      toast.error(`Couldn't start mic: ${(err as Error).message}`);
+    }
+  };
+
+  useEffect(() => {
+    return () => stopListening();
+  }, []);
+
   return (
     <div className="space-y-3">
       {/* Existing follow-up status */}
