@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Send, Sparkles, CalendarClock, X, Check } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarClock, X, Check, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,15 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
     { at: string; reason: string } | null
   >(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ---- Voice dictation (Web Speech API) ----
+  const recogRef = useRef<any>(null);
+  const autoSendRef = useRef(false);
+  const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");
+  const speechSupported =
+    typeof window !== "undefined" &&
+    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
   const chatFn = useServerFn(prospectCoachChat);
   const suggestFn = useServerFn(suggestFollowUp);
@@ -117,6 +126,71 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
     );
     setPendingFollowUp(null);
   };
+
+  const stopListening = () => {
+    try {
+      recogRef.current?.stop();
+    } catch {}
+  };
+
+  const startListening = (autoSend: boolean) => {
+    if (!speechSupported) {
+      toast.error("Voice input isn't supported in this browser. Try Chrome.");
+      return;
+    }
+    if (listening) {
+      autoSendRef.current = autoSend;
+      stopListening();
+      return;
+    }
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = navigator.language || "en-US";
+    rec.continuous = false;
+    rec.interimResults = true;
+    autoSendRef.current = autoSend;
+
+    let finalText = "";
+    rec.onresult = (e: any) => {
+      let interimText = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interimText += r[0].transcript;
+      }
+      setInterim(interimText);
+      if (finalText) setInput((prev) => (prev ? prev + " " : "") + finalText.trim());
+    };
+    rec.onerror = (e: any) => {
+      if (e.error !== "aborted" && e.error !== "no-speech") {
+        toast.error(`Mic error: ${e.error}`);
+      }
+    };
+    rec.onend = () => {
+      setListening(false);
+      setInterim("");
+      recogRef.current = null;
+      if (autoSendRef.current && finalText.trim()) {
+        const toSend = finalText.trim();
+        setInput("");
+        void send(toSend);
+      }
+    };
+
+    recogRef.current = rec;
+    setListening(true);
+    try {
+      rec.start();
+    } catch (err) {
+      setListening(false);
+      toast.error(`Couldn't start mic: ${(err as Error).message}`);
+    }
+  };
+
+  useEffect(() => {
+    return () => stopListening();
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -238,19 +312,53 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
 
       {/* Composer */}
       <div className="flex flex-col gap-2">
-        <Textarea
-          rows={2}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask the coach about this prospect…"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send(input);
+        <div className="relative">
+          <Textarea
+            rows={2}
+            value={input + (interim ? (input ? " " : "") + interim : "")}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={
+              listening
+                ? "Listening… say e.g. “Sarah left me on read”"
+                : "Ask the coach about this prospect… (or tap the mic)"
             }
-          }}
-        />
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void send(input);
+              }
+            }}
+            className={cn(listening && "border-primary ring-1 ring-primary/40")}
+          />
+          {listening && (
+            <span className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              Rec
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={listening ? "default" : "outline"}
+            disabled={busy || !speechSupported}
+            onClick={() => startListening(true)}
+            title={
+              speechSupported
+                ? "Hold the mic, speak, then it auto-sends"
+                : "Voice input not supported in this browser"
+            }
+          >
+            {listening ? (
+              <>
+                <MicOff className="mr-1 h-3 w-3" /> Stop & send
+              </>
+            ) : (
+              <>
+                <Mic className="mr-1 h-3 w-3" /> Speak
+              </>
+            )}
+          </Button>
           <Button
             size="sm"
             variant="outline"
