@@ -75,11 +75,40 @@ function InboxPage() {
   // Historical messages from Supabase, grouped by prospect_id
   const queryClient = useQueryClient();
   const fetchAllMessages = useServerFn(getAllMessages);
+  const callLogMessage = useServerFn(logMessage);
   const { data: dbMessagesData } = useQuery({
     queryKey: ["inbox-messages"],
     queryFn: () => fetchAllMessages(),
     staleTime: 30_000,
   });
+
+  const activityTypeToKind = (t: ActivityType): "text" | "vn" | "email" | "comment" | "call" | "note" =>
+    t === "VN" ? "vn" : (t as "text" | "email" | "comment" | "call" | "note");
+
+  const syncToSupabase = async (args: {
+    prospectId: string;
+    fromMe: boolean;
+    type: ActivityType;
+    text: string;
+    date: string;
+    variation?: string;
+  }) => {
+    try {
+      await callLogMessage({
+        data: {
+          prospectId: args.prospectId,
+          sender: args.fromMe ? "me" : "them",
+          kind: activityTypeToKind(args.type),
+          content: args.text,
+          variationName: args.variation,
+          sentAt: args.date,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["inbox-messages"] });
+    } catch (e) {
+      toast.error(`Sync failed: ${(e as Error).message}`);
+    }
+  };
   const extrasByProspect = useMemo(() => {
     const map = new Map<string, ConvMessage[]>();
     for (const m of dbMessagesData?.messages ?? []) {
