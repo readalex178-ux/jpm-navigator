@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -71,6 +72,22 @@ export function ProspectCard({
     </>
   );
 
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSingle = () => {
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    clickTimer.current = setTimeout(() => {
+      clickTimer.current = null;
+      onClick?.();
+    }, 220);
+  };
+  const handleDouble = () => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    onInbox?.();
+  };
+
   return (
     <div
       className={cn(
@@ -78,7 +95,6 @@ export function ProspectCard({
         selected ? "border-primary bg-primary/5" : "hover:bg-surface-elevated",
         overdue && !selected ? "border-destructive/60" : !selected ? "border-border" : "",
       )}
-      onDoubleClick={!onToggleSelect ? () => onInbox?.() : undefined}
     >
       {onToggleSelect ? (
         <div
@@ -93,7 +109,8 @@ export function ProspectCard({
       ) : (
         <button
           type="button"
-          onClick={onClick}
+          onClick={handleSingle}
+          onDoubleClick={handleDouble}
           className="block w-full p-4 text-left"
         >
           {content}
