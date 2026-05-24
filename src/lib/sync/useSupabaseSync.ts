@@ -316,16 +316,22 @@ export function useSupabaseSync() {
           const oldRow = payload.old as any;
 
           useStore.setState((state) => {
-            const days = [...state.kpiDays];
+            const days = state.kpiDays;
             if (payload.eventType === "DELETE") {
-              return { kpiDays: days.filter((d) => d.date !== oldRow?.date) };
+              if (!oldRow?.date) return {};
+              const next = days.filter((d) => d.date !== oldRow.date);
+              return next.length === days.length ? {} : { kpiDays: next };
             }
             if (!newRow?.date) return {};
             const mapped = mapRow(newRow);
             const idx = days.findIndex((d) => d.date === mapped.date);
-            if (idx >= 0) days[idx] = mapped;
-            else days.push(mapped);
-            return { kpiDays: days };
+            if (idx >= 0 && JSON.stringify(days[idx]) === JSON.stringify(mapped)) {
+              return {}; // no-op — prevents push/realtime echo loop
+            }
+            const next = [...days];
+            if (idx >= 0) next[idx] = mapped;
+            else next.push(mapped);
+            return { kpiDays: next };
           });
         },
       )
