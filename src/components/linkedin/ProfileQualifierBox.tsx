@@ -115,11 +115,16 @@ export function ProfileQualifierBox() {
       return;
     }
 
-    setText(pendingProfileQualification.text);
-    setProfileUrl(pendingProfileQualification.profileUrl);
+    const capturedText = pendingProfileQualification.text;
+    const capturedUrl = pendingProfileQualification.profileUrl;
+    setText(capturedText);
+    setProfileUrl(capturedUrl);
     setRes(null);
-    toast.success(`Profile captured: ${pendingProfileQualification.name}`);
+    toast.success(`Profile captured: ${pendingProfileQualification.name} — qualifying…`);
     clearPendingProfileQualification();
+    // Extension sync is an explicit user action ("Sync this profile" / opening
+    // a profile in the side panel), so auto-run the BTF Setter qualifier.
+    void runWith(capturedText);
   }, [clearPendingProfileQualification, pendingProfileQualification]);
 
   const copyVerdict = () => {
@@ -213,11 +218,16 @@ export function ProfileQualifierBox() {
             >
               FIT: {res.fit}
             </Badge>
-            {res.priorityMarket?.match && (
-              <Badge variant="outline" className="border-success text-success">
-                ★ Priority: {res.priorityMarket.name}
-              </Badge>
-            )}
+            <Badge
+              variant="outline"
+              className={cn(
+                res.priorityMarket?.match
+                  ? "border-success text-success"
+                  : "border-muted text-muted-foreground",
+              )}
+            >
+              ★ Priority: {res.priorityMarket?.match ? `Yes — ${res.priorityMarket.name}` : "No"}
+            </Badge>
             <Badge variant="outline" className={cn("uppercase", ICP_COLOR[res.icpMatch])}>
               ICP {res.icpMatch}
             </Badge>
