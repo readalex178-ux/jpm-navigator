@@ -23,12 +23,13 @@
     replyBox: ".msg-form__contenteditable",
 
     // Profile
-    profileName: "h1",
+    profileName:
+      "h1, .text-heading-xlarge, .artdeco-entity-lockup__title, [data-anonymize='person-name'], .profile-topcard-person-entity__name",
     profileHeadline:
-      ".text-body-medium.break-words, .pv-text-details__left-panel h2, .pv-text-details__left-panel .text-body-medium",
+      ".text-body-medium.break-words, .pv-text-details__left-panel h2, .pv-text-details__left-panel .text-body-medium, .artdeco-entity-lockup__subtitle, [data-anonymize='headline'], .profile-topcard-person-entity__headline",
     profileAbout:
       "#about ~ div .display-flex span[aria-hidden='true'], #about ~ * .display-flex .visually-hidden + span, .pv-shared-text-with-see-more span, [data-generated-suggestion-target]",
-    profileLocation: ".text-body-small.inline.t-black--light",
+    profileLocation: ".text-body-small.inline.t-black--light, [data-anonymize='location'], .profile-topcard__location-data",
     profileRecentPosts:
       "main article .update-components-text span[dir='ltr'], main article .break-words span[dir='ltr'], .occludable-update div[dir='ltr']",
     profileFeaturedLinks: "a[href*='calendly'], a[href*='cal.com'], a[href*='book'], a[href*='schedule'], #featured a",
@@ -37,6 +38,7 @@
   const log = (...a) => console.debug("[BTF]", ...a);
   const clean = (value) => (value || "").replace(/\s+/g, " ").trim();
   const uniq = (items) => Array.from(new Set(items.filter(Boolean)));
+  const PROFILE_PATHS = [/^\/in\//, /^\/sales\/lead\//, /^\/sales\/people\//, /^\/recruiter\//];
 
   const getMyName = () => {
     const meImg = document.querySelector(SELECTORS.selfHeader);
@@ -48,6 +50,49 @@
     let h = 0;
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
     return Math.abs(h).toString(36);
+  };
+
+  const getCanonicalProfileUrl = () => {
+    const canonicalHref = document.querySelector("link[rel='canonical']")?.href;
+    if (canonicalHref && /linkedin\.com\/(in|sales|recruiter)\//i.test(canonicalHref)) return canonicalHref;
+
+    const ogUrl = document.querySelector("meta[property='og:url']")?.content;
+    if (ogUrl && /linkedin\.com\/(in|sales|recruiter)\//i.test(ogUrl)) return ogUrl;
+
+    const inlineProfileLink = document.querySelector("a[href*='linkedin.com/in/'], a[href^='/in/']")?.href;
+    if (inlineProfileLink) return inlineProfileLink;
+
+    return location.origin + location.pathname;
+  };
+
+  const isLikelyProfilePage = () => {
+    if (PROFILE_PATHS.some((pattern) => pattern.test(location.pathname))) return true;
+    const canonical = getCanonicalProfileUrl();
+    if (/linkedin\.com\/in\//i.test(canonical)) return true;
+    const hasNameLikeNode = !!document.querySelector(SELECTORS.profileName);
+    const hasProfileLink = !!document.querySelector("a[href*='/in/'], link[rel='canonical'][href*='/in/']");
+    return hasNameLikeNode && hasProfileLink && !location.pathname.startsWith("/messaging");
+  };
+
+  const buildFallbackProfile = () => {
+    if (!isLikelyProfilePage()) return null;
+    const nameEl = document.querySelector(SELECTORS.profileName);
+    const rawName = clean(nameEl?.textContent || document.title.split("|")[0] || "LinkedIn profile");
+    if (!rawName || /^linkedin$/i.test(rawName)) return null;
+    const headlineEl = document.querySelector(SELECTORS.profileHeadline);
+    const headlineGuess = clean(
+      headlineEl?.textContent || document.title.replace(rawName, "").replace(/\|/g, "").replace(/LinkedIn/gi, "").trim(),
+    );
+
+    return {
+      profileUrl: getCanonicalProfileUrl(),
+      name: rawName,
+      headline: headlineGuess || undefined,
+      currentRole: headlineGuess || undefined,
+      location: clean(document.querySelector(SELECTORS.profileLocation)?.textContent) || undefined,
+      recentActivity: [],
+      scrapedAt: new Date().toISOString(),
+    };
   };
 
   const scrapeOpenThread = () => {
@@ -100,10 +145,11 @@
   };
 
   const scrapeOpenProfile = () => {
-    if (!location.pathname.startsWith("/in/")) return null;
+    if (!isLikelyProfilePage()) return null;
     const nameEl = document.querySelector(SELECTORS.profileName);
-    if (!nameEl) return null;
+    if (!nameEl) return buildFallbackProfile();
     const name = clean(nameEl.textContent);
+    if (!name || /^linkedin$/i.test(name)) return buildFallbackProfile();
     const headlineEl = document.querySelector(SELECTORS.profileHeadline);
     const aboutEl = document.querySelector(SELECTORS.profileAbout);
     const locEl = document.querySelector(SELECTORS.profileLocation);
@@ -127,7 +173,7 @@
     ]).slice(0, 8);
 
     return {
-      profileUrl: location.origin + location.pathname,
+      profileUrl: getCanonicalProfileUrl(),
       name,
       headline: headlineEl ? clean(headlineEl.textContent) : undefined,
       about: aboutEl ? clean(aboutEl.textContent) : undefined,
@@ -223,20 +269,9 @@
       }
       // Forced fallback: on a /in/ URL but selectors failed — return a minimal
       // profile from <h1> / <title> / URL so the user can still push it.
-      if (force && location.pathname.startsWith("/in/")) {
-        const h1 = document.querySelector("h1");
-        const rawName = clean(h1?.textContent || document.title.split("|")[0] || "LinkedIn profile");
-        const headlineGuess = clean(
-          document.title.replace(rawName, "").replace(/\|/g, "").replace(/LinkedIn/gi, "").trim(),
-        );
-        const fallback = buildProfilePayload({
-          profileUrl: location.origin + location.pathname,
-          name: rawName,
-          headline: headlineGuess || undefined,
-          currentRole: headlineGuess || undefined,
-          recentActivity: [],
-          scrapedAt: new Date().toISOString(),
-        });
+      const fallbackProfile = buildFallbackProfile();
+      if ((force || isLikelyProfilePage()) && fallbackProfile) {
+        const fallback = buildProfilePayload(fallbackProfile);
         return Promise.resolve({
           pageType: "profile",
           profile: fallback,
