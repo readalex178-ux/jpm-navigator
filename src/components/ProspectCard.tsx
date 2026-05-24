@@ -72,7 +72,6 @@ export function ProspectCard({
     </>
   );
 
-  return (
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSingle = () => {
     if (clickTimer.current) clearTimeout(clickTimer.current);
