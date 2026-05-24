@@ -38,6 +38,7 @@ export const Route = createFileRoute("/prospects")({
 function ProspectsPage() {
   const prospects = useStore((s) => s.prospects);
   const addProspect = useStore((s) => s.addProspect);
+  const deleteProspect = useStore((s) => s.deleteProspect);
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -48,6 +49,10 @@ function ProspectsPage() {
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [stage, setStage] = useState<Stage | "all">("all");
   const [tier, setTier] = useState<Tier | "all">("all");
+
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const handleImport = async (file: File) => {
     try {
