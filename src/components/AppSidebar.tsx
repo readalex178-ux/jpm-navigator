@@ -58,6 +58,7 @@ const groups = [
     items: [
       { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
       { title: "Training", url: "/training", icon: GraduationCap },
+      { title: "Playbook", url: "/playbook", icon: BookOpen },
     ],
   },
   {
