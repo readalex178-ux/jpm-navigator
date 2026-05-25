@@ -76,7 +76,6 @@ function LinkedInPage() {
   const addVnScript = useStore((s) => s.addVnScript);
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [analyzeProspectId, setAnalyzeProspectId] = useState<string | null>(null);
   const [action, setAction] = useState<LinkedinAction>("reply");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -94,7 +93,6 @@ function LinkedInPage() {
         profileUrl?: string;
         profileText?: string;
       };
-      if (target.prospectId) setAnalyzeProspectId(target.prospectId);
       if (target.threadId) {
         setActiveThreadId(target.threadId);
       } else if (target.profileText) {
