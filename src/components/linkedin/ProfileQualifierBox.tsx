@@ -50,13 +50,13 @@ export function ProfileQualifierBox() {
         if (targetProspectId) {
           updateProspect(targetProspectId, {
             qualScore: r.result.score,
-            tier: r.result.predictedTier === "unknown" ? undefined : r.result.predictedTier,
             niche: r.result.market,
-            profileUrl: profileUrl.trim() || undefined,
             signals: { ...EMPTY_SIGNALS, ...(r.result.buyingSignals ?? {}) } as BuyingSignals,
+            ...(r.result.predictedTier !== "unknown" ? { tier: r.result.predictedTier } : {}),
+            ...(profileUrl.trim() ? { profileUrl: profileUrl.trim() } : {}),
           });
         }
-        if (r.result.verdict === "SEND_VN") {
+        if (r.result.verdict === "SEND_VN" && !targetProspectId) {
           const extractedName = r.result.extracted?.fullName?.trim();
           const fallbackName =
             trimmed.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
