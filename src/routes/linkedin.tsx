@@ -76,6 +76,7 @@ function LinkedInPage() {
   const addVnScript = useStore((s) => s.addVnScript);
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [analyzeProspectId, setAnalyzeProspectId] = useState<string | null>(null);
   const [action, setAction] = useState<LinkedinAction>("reply");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -87,7 +88,13 @@ function LinkedInPage() {
     if (!raw) return;
     sessionStorage.removeItem("btf:analyze");
     try {
-      const target = JSON.parse(raw) as { threadId?: string; profileText?: string };
+      const target = JSON.parse(raw) as {
+        threadId?: string;
+        prospectId?: string;
+        profileUrl?: string;
+        profileText?: string;
+      };
+      if (target.prospectId) setAnalyzeProspectId(target.prospectId);
       if (target.threadId) {
         setActiveThreadId(target.threadId);
       } else if (target.profileText) {
@@ -95,7 +102,12 @@ function LinkedInPage() {
         setTimeout(() => {
           window.dispatchEvent(
             new CustomEvent("btf:qualify-profile", {
-              detail: { text: target.profileText, autoRun: true },
+              detail: {
+                text: target.profileText,
+                profileUrl: target.profileUrl,
+                prospectId: target.prospectId,
+                autoRun: true,
+              },
             }),
           );
         }, 0);
