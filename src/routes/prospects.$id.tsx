@@ -167,7 +167,7 @@ function ProspectDetail() {
       // Sync AI's re-scoring into the prospect so it shows up on the prospects
       // list, drawer, pipeline, etc. User-driven action (button click) so it
       // does not violate the no-automation rule.
-      setBant(prospect.id, res.result.bantSuggestion);
+      setBant(prospect.id, res.result.bantSuggestion as typeof prospect.bant);
       setQualScore(prospect.id, res.result.qualScoreSuggestion);
       addProspectAnalysis(prospect.id, {
         stageAtTime: prospect.stage,
