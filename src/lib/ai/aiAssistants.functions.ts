@@ -395,7 +395,7 @@ export const analyzePastedThread = createServerFn({ method: "POST" })
 
 const NEXT_MOVE_SYS = `${BTF_ANALYZER_SYSTEM}
 
-You are reading a running conversation between a setter (ME) and a prospect (THEM), plus the prospect's profile and buying signals. Decide the single best next move and write the exact message to send.
+You are reading a running conversation between a setter (ME) and a prospect (THEM), plus the prospect's profile and buying signals. Decide the single best next move, write the exact message to send, AND re-score qualification.
 
 Return JSON ONLY (no markdown):
 {
@@ -405,8 +405,12 @@ Return JSON ONLY (no markdown):
   "draftMessage": "<the verbatim message to send next, ≤150 words, no brackets, no placeholders. Empty string if WAIT or WALK AWAY.>",
   "suggestedActivityType": "<one of: VN | text | email | comment | call | note>",
   "reasoning": "<2-3 sentences explaining the call, referencing the most recent prospect message>",
-  "confidence": 0.0-1.0
-}`;
+  "confidence": 0.0-1.0,
+  "bantSuggestion": { "need": 0-2, "timeline": 0-2, "authority": 0-2, "budget": 0-2 },
+  "qualScoreSuggestion": 0-100
+}
+
+Scoring rubric: BANT in BTF order (need → timeline → authority → budget), each 0-2. qualScoreSuggestion is your overall 0-100 read of the prospect based on signals, fit, and engagement. Use low numbers only when there's genuinely no evidence — be honest, not stingy.`;
 
 export const NextMoveResultSchema = z.object({
   verdictLine: z.string().max(200),
@@ -416,6 +420,13 @@ export const NextMoveResultSchema = z.object({
   suggestedActivityType: z.string().max(20),
   reasoning: z.string().max(600),
   confidence: z.number().min(0).max(1),
+  bantSuggestion: z.object({
+    need: z.number().min(0).max(2),
+    timeline: z.number().min(0).max(2),
+    authority: z.number().min(0).max(2),
+    budget: z.number().min(0).max(2),
+  }),
+  qualScoreSuggestion: z.number().int().min(0).max(100),
 });
 export type NextMoveResult = z.infer<typeof NextMoveResultSchema>;
 
