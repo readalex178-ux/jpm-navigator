@@ -23,11 +23,13 @@ const FLAG = (v: number) => (v === 1 ? "✓" : v === 0 ? "✗" : "?");
 export function ProfileQualifierBox() {
   const fn = useServerFn(qualifyProfile);
   const addProspect = useStore((s) => s.addProspect);
+  const updateProspect = useStore((s) => s.updateProspect);
   const prospects = useStore((s) => s.prospects);
   const pendingProfileQualification = useStore((s) => s.pendingProfileQualification);
   const clearPendingProfileQualification = useStore((s) => s.clearPendingProfileQualification);
   const [text, setText] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
+  const [targetProspectId, setTargetProspectId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<ProfileQualifierResult | null>(null);
   const [autoAdded, setAutoAdded] = useState(false);
@@ -45,6 +47,15 @@ export function ProfileQualifierBox() {
       const r = await fn({ data: { profileText: trimmed } });
       if (r.ok) {
         setRes(r.result);
+        if (targetProspectId) {
+          updateProspect(targetProspectId, {
+            qualScore: r.result.score,
+            tier: r.result.predictedTier === "unknown" ? undefined : r.result.predictedTier,
+            niche: r.result.market,
+            profileUrl: profileUrl.trim() || undefined,
+            signals: { ...EMPTY_SIGNALS, ...(r.result.buyingSignals ?? {}) } as BuyingSignals,
+          });
+        }
         if (r.result.verdict === "SEND_VN") {
           const extractedName = r.result.extracted?.fullName?.trim();
           const fallbackName =
@@ -93,10 +104,11 @@ export function ProfileQualifierBox() {
   // (e.g. extension scrape of a LinkedIn profile, or "Analyze" button from /prospects).
   useEffect(() => {
     const handler = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ text: string; profileUrl?: string; autoRun?: boolean }>).detail;
+      const detail = (ev as CustomEvent<{ text: string; profileUrl?: string; prospectId?: string; autoRun?: boolean }>).detail;
       if (!detail?.text) return;
       setText(detail.text);
       if (detail.profileUrl) setProfileUrl(detail.profileUrl);
+      setTargetProspectId(detail.prospectId ?? null);
       setRes(null);
       if (detail.autoRun !== false) void runWith(detail.text);
     };
