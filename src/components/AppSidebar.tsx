@@ -12,6 +12,7 @@ import {
   Linkedin,
   Wrench,
   LogOut,
+  BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ const groups = [
     items: [
       { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
       { title: "Training", url: "/training", icon: GraduationCap },
+      { title: "Playbook", url: "/playbook", icon: BookOpen },
     ],
   },
   {

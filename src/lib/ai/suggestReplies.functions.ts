@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { BTF_ANALYZER_SYSTEM } from "./btfAnalyzerPrompt";
+import { BTF_SYSTEM } from "./btfFramework";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const PRIMARY_MODEL = "google/gemini-3-flash-preview";
 const FALLBACK_MODEL = "google/gemini-2.5-flash";
 
-const SUGGEST_REPLIES_SYS = `${BTF_ANALYZER_SYSTEM}
+const SUGGEST_REPLIES_SYS = `${BTF_SYSTEM}
+
+=== ANALYZER LAYER ===
+${BTF_ANALYZER_SYSTEM}
 
 You are an AI co-pilot helping a setter (ME) decide what to send next to a prospect (THEM).
 You DO NOT send messages. You ONLY suggest. The setter will read, edit, and send manually.
