@@ -89,7 +89,10 @@ async function callGateway(
   return res.json();
 }
 
-const COACH_SYSTEM = `You are the user's BTF (Behind the Funnel) setter coach for ONE prospect.
+const COACH_SYSTEM = `${BTF_SYSTEM}
+
+=== COACH MODE ===
+You are the user's BTF (Behind the Funnel) setter coach for ONE prospect.
 You see the full conversation, stage, BANT, signals. You answer like a sharp sales mentor — tight, tactical, no fluff.
 
 Rules:
