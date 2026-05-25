@@ -66,7 +66,7 @@ export function ProspectCard({
         <Badge variant="secondary" className="text-[10px]">{prospect.tier}</Badge>
         <Badge variant="secondary" className="text-[10px]">{prospect.leadType}</Badge>
         <span className="ml-auto text-[10px] text-muted-foreground num">
-          {days}d since touch
+          {days}d since touch · added {new Date(prospect.createdAt).toLocaleDateString()}
         </span>
       </div>
     </>

@@ -244,7 +244,7 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
     <>
       <PageHeader
         title={prospect.name}
-        subtitle={`${platformEmoji(prospect.platform)} ${prospect.niche || "—"} · ${prospect.leadType}`}
+        subtitle={`${platformEmoji(prospect.platform)} ${prospect.niche || "—"} · ${prospect.leadType} · Added ${new Date(prospect.createdAt).toLocaleDateString()}`}
       >
         <Button variant="ghost" size="sm" asChild>
           <Link to="/prospects"><ArrowLeft className="mr-1 h-4 w-4" /> Back</Link>
