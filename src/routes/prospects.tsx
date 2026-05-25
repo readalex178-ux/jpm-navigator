@@ -291,8 +291,12 @@ function ProspectsPage() {
                   const map = useStore.getState().threadProspectMap;
                   const threadId = Object.entries(map).find(([, pid]) => pid === p.id)?.[0];
                   const payload = threadId
-                    ? { threadId }
-                    : { profileText: [p.name, p.niche, p.bio].filter(Boolean).join("\n") };
+                    ? { threadId, prospectId: p.id }
+                    : {
+                        prospectId: p.id,
+                        profileUrl: p.profileUrl,
+                        profileText: [p.name, p.niche, p.bio].filter(Boolean).join("\n"),
+                      };
                   sessionStorage.setItem("btf:analyze", JSON.stringify(payload));
                   navigate({ to: "/linkedin" });
                 } : undefined}

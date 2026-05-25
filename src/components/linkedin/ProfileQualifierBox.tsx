@@ -23,21 +23,25 @@ const FLAG = (v: number) => (v === 1 ? "✓" : v === 0 ? "✗" : "?");
 export function ProfileQualifierBox() {
   const fn = useServerFn(qualifyProfile);
   const addProspect = useStore((s) => s.addProspect);
+  const updateProspect = useStore((s) => s.updateProspect);
   const prospects = useStore((s) => s.prospects);
   const pendingProfileQualification = useStore((s) => s.pendingProfileQualification);
   const clearPendingProfileQualification = useStore((s) => s.clearPendingProfileQualification);
   const [text, setText] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
+  const [targetProspectId, setTargetProspectId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<ProfileQualifierResult | null>(null);
   const [autoAdded, setAutoAdded] = useState(false);
 
-  const runWith = async (input: string) => {
+  const runWith = async (input: string, overrides?: { prospectId?: string | null; profileUrl?: string }) => {
     const trimmed = input.trim();
     if (trimmed.length < 10) {
       toast.error("Paste a profile first.");
       return;
     }
+    const effectiveProspectId = overrides?.prospectId ?? targetProspectId;
+    const effectiveProfileUrl = overrides?.profileUrl ?? profileUrl;
     setBusy(true);
     setRes(null);
     setAutoAdded(false);
@@ -45,7 +49,16 @@ export function ProfileQualifierBox() {
       const r = await fn({ data: { profileText: trimmed } });
       if (r.ok) {
         setRes(r.result);
-        if (r.result.verdict === "SEND_VN") {
+        if (effectiveProspectId) {
+          updateProspect(effectiveProspectId, {
+            qualScore: r.result.score,
+            niche: r.result.market,
+            signals: { ...EMPTY_SIGNALS, ...(r.result.buyingSignals ?? {}) } as BuyingSignals,
+            ...(r.result.predictedTier !== "unknown" ? { tier: r.result.predictedTier } : {}),
+            ...(effectiveProfileUrl.trim() ? { profileUrl: effectiveProfileUrl.trim() } : {}),
+          });
+        }
+        if (r.result.verdict === "SEND_VN" && !effectiveProspectId) {
           const extractedName = r.result.extracted?.fullName?.trim();
           const fallbackName =
             trimmed.split("\n").find((l) => l.trim().length > 1)?.trim().slice(0, 80) ?? "New prospect";
@@ -54,7 +67,7 @@ export function ProfileQualifierBox() {
             r.result.extracted?.bio?.trim() ||
             r.result.extracted?.headline?.trim() ||
             trimmed.slice(0, 800);
-          const url = profileUrl.trim();
+          const url = effectiveProfileUrl.trim();
           const dup = prospects.find(
             (p) =>
               p.name.trim().toLowerCase() === nameLine.toLowerCase() ||
@@ -93,12 +106,18 @@ export function ProfileQualifierBox() {
   // (e.g. extension scrape of a LinkedIn profile, or "Analyze" button from /prospects).
   useEffect(() => {
     const handler = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ text: string; profileUrl?: string; autoRun?: boolean }>).detail;
+      const detail = (ev as CustomEvent<{ text: string; profileUrl?: string; prospectId?: string; autoRun?: boolean }>).detail;
       if (!detail?.text) return;
       setText(detail.text);
       if (detail.profileUrl) setProfileUrl(detail.profileUrl);
+      setTargetProspectId(detail.prospectId ?? null);
       setRes(null);
-      if (detail.autoRun !== false) void runWith(detail.text);
+      if (detail.autoRun !== false) {
+        void runWith(detail.text, {
+          prospectId: detail.prospectId,
+          profileUrl: detail.profileUrl,
+        });
+      }
     };
     window.addEventListener("btf:qualify-profile", handler);
     return () => window.removeEventListener("btf:qualify-profile", handler);

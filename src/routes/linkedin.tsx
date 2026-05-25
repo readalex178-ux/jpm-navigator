@@ -87,7 +87,12 @@ function LinkedInPage() {
     if (!raw) return;
     sessionStorage.removeItem("btf:analyze");
     try {
-      const target = JSON.parse(raw) as { threadId?: string; profileText?: string };
+      const target = JSON.parse(raw) as {
+        threadId?: string;
+        prospectId?: string;
+        profileUrl?: string;
+        profileText?: string;
+      };
       if (target.threadId) {
         setActiveThreadId(target.threadId);
       } else if (target.profileText) {
@@ -95,7 +100,12 @@ function LinkedInPage() {
         setTimeout(() => {
           window.dispatchEvent(
             new CustomEvent("btf:qualify-profile", {
-              detail: { text: target.profileText, autoRun: true },
+              detail: {
+                text: target.profileText,
+                profileUrl: target.profileUrl,
+                prospectId: target.prospectId,
+                autoRun: true,
+              },
             }),
           );
         }, 0);
