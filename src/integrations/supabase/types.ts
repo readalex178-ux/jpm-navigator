@@ -295,6 +295,8 @@ export type Database = {
           created_at: string
           follow_up_at: string | null
           follow_up_reason: string | null
+          ghl_claimed: boolean
+          ghl_remind_at: string | null
           handle: string | null
           id: string
           intent_level: string | null
@@ -303,6 +305,7 @@ export type Database = {
           name: string
           niche: string | null
           notes: string | null
+          pinned: boolean
           platform: string
           profile_url: string | null
           qual_score: number
@@ -319,6 +322,8 @@ export type Database = {
           created_at?: string
           follow_up_at?: string | null
           follow_up_reason?: string | null
+          ghl_claimed?: boolean
+          ghl_remind_at?: string | null
           handle?: string | null
           id?: string
           intent_level?: string | null
@@ -327,6 +332,7 @@ export type Database = {
           name: string
           niche?: string | null
           notes?: string | null
+          pinned?: boolean
           platform?: string
           profile_url?: string | null
           qual_score?: number
@@ -343,6 +349,8 @@ export type Database = {
           created_at?: string
           follow_up_at?: string | null
           follow_up_reason?: string | null
+          ghl_claimed?: boolean
+          ghl_remind_at?: string | null
           handle?: string | null
           id?: string
           intent_level?: string | null
@@ -351,6 +359,7 @@ export type Database = {
           name?: string
           niche?: string | null
           notes?: string | null
+          pinned?: boolean
           platform?: string
           profile_url?: string | null
           qual_score?: number
