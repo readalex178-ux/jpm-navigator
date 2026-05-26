@@ -166,6 +166,14 @@ export type Prospect = {
   followUpAt?: string;
   /** Short note explaining the follow-up reason. */
   followUpReason?: string;
+  /** Free-text sticky notes — auto-saves on the prospect detail page. */
+  notes?: string;
+  /** User-pinned: floats to top of its pipeline column. */
+  pinned?: boolean;
+  /** True once user confirms the booked call was claimed in GHL. */
+  ghlClaimed?: boolean;
+  /** If set, re-prompt the GHL claim modal on next app open. */
+  ghlRemindAt?: string;
 };
 
 export type KpiDay = {
