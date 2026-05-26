@@ -59,6 +59,8 @@ type State = {
   analyses: Record<string, CachedAnalysis>; // threadId -> latest analysis
   analysisHistory: Record<string, CachedAnalysis[]>; // threadId -> chronological history (oldest first)
   prospectAnalyses: Record<string, ProspectAnalysisEntry[]>; // prospectId -> chronological
+  /** Transient: when set, GhlClaimModal opens for this prospect. */
+  ghlPromptProspectId: string | null;
 };
 
 export type ProspectAnalysisEntry = {
@@ -118,6 +120,9 @@ type Actions = {
 
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
+
+  setGhlPromptProspectId: (id: string | null) => void;
+  togglePin: (id: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
@@ -155,6 +160,7 @@ export const useStore = create<State & Actions>()(
       analyses: {},
       analysisHistory: {},
       prospectAnalyses: {},
+      ghlPromptProspectId: null,
 
       addProspect: (p) => {
         const prospect: Prospect = {

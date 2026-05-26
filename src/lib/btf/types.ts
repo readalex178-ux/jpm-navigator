@@ -38,6 +38,55 @@ export const STAGES: Stage[] = [
   "Cold",
 ];
 
+/** Default stages shown on the pipeline board. */
+export const ACTIVE_STAGES: Stage[] = [
+  "Found",
+  "Connected",
+  "VN1 Sent",
+  "Replied",
+  "VN2 Sent",
+  "Calendar Sent",
+  "Call Booked",
+];
+
+/** Collapsed by default — shown when "Inactive" toggle is on. */
+export const INACTIVE_STAGES: Stage[] = [
+  "No Show",
+  "Nurturing",
+  "Re-Engaged",
+  "Closed",
+  "Cold",
+];
+
+/** Recommended next action per stage — surfaced on every card. */
+export const STAGE_NEXT_ACTION: Record<Stage, string> = {
+  Found: "Send connection request",
+  Connected: "Record + send VN1",
+  "VN1 Sent": "Wait 3d, then VN2",
+  Replied: "Reply within 1h",
+  "VN2 Sent": "Wait 5d, then text",
+  "Calendar Sent": "Confirm booking",
+  "Call Booked": "Claim in GHL",
+  "No Show": "Send reschedule script",
+  Nurturing: "Value drop in 5d",
+  "Re-Engaged": "Re-pitch",
+  Closed: "Log commission",
+  Cold: "Drop or re-engage in 30d",
+};
+
+/** Tier visual border colours — drives the left strip on every card. */
+export const TIER_BORDER_CLASS: Record<Tier, string> = {
+  DFY: "border-l-[3px] border-l-tier-dfy",
+  DWY: "border-l-[3px] border-l-tier-dwy",
+  DIY: "border-l-[3px] border-l-border",
+};
+
+export const TIER_BADGE_CLASS: Record<Tier, string> = {
+  DFY: "bg-tier-dfy/15 text-tier-dfy border-tier-dfy/40",
+  DWY: "bg-tier-dwy/15 text-tier-dwy border-tier-dwy/40",
+  DIY: "bg-muted text-muted-foreground border-border",
+};
+
 export const PLATFORMS: { value: Platform; label: string; emoji: string }[] = [
   { value: "linkedin", label: "LinkedIn", emoji: "💼" },
   { value: "instagram", label: "Instagram", emoji: "📸" },
@@ -117,6 +166,14 @@ export type Prospect = {
   followUpAt?: string;
   /** Short note explaining the follow-up reason. */
   followUpReason?: string;
+  /** Free-text sticky notes — auto-saves on the prospect detail page. */
+  notes?: string;
+  /** User-pinned: floats to top of its pipeline column. */
+  pinned?: boolean;
+  /** True once user confirms the booked call was claimed in GHL. */
+  ghlClaimed?: boolean;
+  /** If set, re-prompt the GHL claim modal on next app open. */
+  ghlRemindAt?: string;
 };
 
 export type KpiDay = {

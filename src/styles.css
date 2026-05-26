@@ -37,6 +37,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --color-tier-dfy: var(--tier-dfy);
+  --color-tier-dwy: var(--tier-dwy);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-chart-1: var(--chart-1);
@@ -80,6 +82,8 @@
   --border: oklch(0.28 0.04 270);
   --input: oklch(0.26 0.04 270);
   --ring: oklch(0.62 0.21 274);
+  --tier-dfy: oklch(0.82 0.16 88);   /* gold */
+  --tier-dwy: oklch(0.7 0.18 240);   /* electric blue */
   --chart-1: oklch(0.62 0.21 274);
   --chart-2: oklch(0.72 0.16 160);
   --chart-3: oklch(0.7 0.18 220);
