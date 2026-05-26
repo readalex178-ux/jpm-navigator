@@ -120,6 +120,9 @@ type Actions = {
 
   importJson: (data: Partial<State>) => void;
   exportJson: () => string;
+
+  setGhlPromptProspectId: (id: string | null) => void;
+  togglePin: (id: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
