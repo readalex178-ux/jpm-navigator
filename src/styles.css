@@ -37,6 +37,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --color-tier-dfy: var(--tier-dfy);
+  --color-tier-dwy: var(--tier-dwy);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-chart-1: var(--chart-1);
