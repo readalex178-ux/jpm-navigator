@@ -160,6 +160,7 @@ export const useStore = create<State & Actions>()(
       analyses: {},
       analysisHistory: {},
       prospectAnalyses: {},
+      ghlPromptProspectId: null,
 
       addProspect: (p) => {
         const prospect: Prospect = {
