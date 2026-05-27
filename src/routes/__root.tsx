@@ -176,6 +176,7 @@ function AuthedShell() {
             <Outlet />
           </main>
           <VoiceAssistant variant="floating" />
+          <GhlClaimModal />
         </div>
       </div>
     </SidebarProvider>
