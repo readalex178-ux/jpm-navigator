@@ -189,12 +189,38 @@ export const useStore = create<State & Actions>()(
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       deleteProspect: (id) =>
         set({ prospects: get().prospects.filter((x) => x.id !== id) }),
-      moveStage: (id, stage) =>
+      moveStage: (id, stage) => {
+        const prev = get().prospects.find((x) => x.id === id);
         set({
           prospects: get().prospects.map((x) =>
             x.id === id ? { ...x, stage, stageEnteredAt: now() } : x,
           ),
-        }),
+        });
+        // Auto-wire KPI counters on user-driven stage moves.
+        const date = today();
+        const day = get().kpiDays.find((k) => k.date === date) ?? blankKpi(date);
+        const bumped: Partial<KpiDay> & { date: string } = { date };
+        if (stage === "Connected") bumped.connectionsAccepted = day.connectionsAccepted + 1;
+        if (stage === "VN1 Sent" || stage === "VN2 Sent") bumped.vnSent = day.vnSent + 1;
+        if (stage === "Replied") bumped.replies = day.replies + 1;
+        if (stage === "Calendar Sent") bumped.calendarsSent = day.calendarsSent + 1;
+        if (stage === "Call Booked") bumped.booked = day.booked + 1;
+        if (Object.keys(bumped).length > 1) {
+          const exists = get().kpiDays.find((k) => k.date === date);
+          if (exists) {
+            set({ kpiDays: get().kpiDays.map((k) => (k.date === date ? { ...k, ...bumped } : k)) });
+          } else {
+            set({ kpiDays: [{ ...blankKpi(date), ...bumped }, ...get().kpiDays] });
+          }
+        }
+        // Win celebration + GHL prompt on Call Booked (only on actual transition).
+        if (stage === "Call Booked" && prev && prev.stage !== "Call Booked") {
+          if (typeof window !== "undefined") {
+            void import("./confetti").then((m) => m.celebrateWin()).catch(() => {});
+          }
+          set({ ghlPromptProspectId: id });
+        }
+      },
       logActivity: (id, a) =>
         set({
           prospects: get().prospects.map((x) =>
@@ -207,14 +233,23 @@ export const useStore = create<State & Actions>()(
               : x,
           ),
         }),
-      logVN: (id, v) =>
+      logVN: (id, v) => {
         set({
           prospects: get().prospects.map((x) =>
             x.id === id
               ? { ...x, vnLog: [{ id: uid(), ...v }, ...x.vnLog], lastTouchAt: v.date }
               : x,
           ),
-        }),
+        });
+        // VN logged = bump today's vn_sent (user action).
+        const date = today();
+        const exists = get().kpiDays.find((k) => k.date === date);
+        if (exists) {
+          set({ kpiDays: get().kpiDays.map((k) => (k.date === date ? { ...k, vnSent: k.vnSent + 1 } : k)) });
+        } else {
+          set({ kpiDays: [{ ...blankKpi(date), vnSent: 1 }, ...get().kpiDays] });
+        }
+      },
       setSignals: (id, signals) =>
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, signals } : x)) }),
       setBant: (id, bant) =>
