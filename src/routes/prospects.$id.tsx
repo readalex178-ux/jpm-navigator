@@ -295,6 +295,16 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
 
       <PageBody className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Section title="Sticky notes" action={<span className="text-[10px] uppercase tracking-widest text-muted-foreground">Auto-saves</span>}>
+            <Textarea
+              rows={3}
+              value={notesDraft}
+              onChange={(e) => setNotesDraft(e.target.value)}
+              placeholder="Quick thoughts that don't fit the activity log — e.g. mentioned rebrand, follow up in 3 weeks."
+              className="resize-none bg-amber-400/5"
+            />
+          </Section>
+
           <Section title="Conversation">
             <ConversationLog activities={prospect.activities} vnLog={prospect.vnLog} />
 
