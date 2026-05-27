@@ -81,6 +81,25 @@ function ProspectDetail() {
   const [aiBusy, setAiBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
+  // Sticky notes — debounced auto-save to prospect.notes.
+  const [notesDraft, setNotesDraft] = useState(prospect?.notes ?? "");
+  const notesInitRef = useRef(false);
+  useEffect(() => {
+    if (!prospect) return;
+    if (!notesInitRef.current) {
+      setNotesDraft(prospect.notes ?? "");
+      notesInitRef.current = true;
+    }
+  }, [prospect]);
+  useEffect(() => {
+    if (!prospect) return;
+    if (notesDraft === (prospect.notes ?? "")) return;
+    const t = setTimeout(() => {
+      updateProspect(prospect.id, { notes: notesDraft });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [notesDraft, prospect, updateProspect]);
+
   const callNextMove = useServerFn(nextMoveFromConversation);
 
   const stageDays = useMemo(
