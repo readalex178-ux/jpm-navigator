@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
@@ -58,6 +58,7 @@ function ProspectDetail() {
   const logActivity = useStore((s) => s.logActivity);
   const logVN = useStore((s) => s.logVN);
   const deleteProspect = useStore((s) => s.deleteProspect);
+  const updateProspect = useStore((s) => s.updateProspect);
   const addProspectAnalysis = useStore((s) => s.addProspectAnalysis);
   const settings = useStore((s) => s.settings);
 
@@ -79,6 +80,25 @@ function ProspectDetail() {
   const [aiAction, setAiAction] = useState<string>("");
   const [aiBusy, setAiBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+
+  // Sticky notes — debounced auto-save to prospect.notes.
+  const [notesDraft, setNotesDraft] = useState(prospect?.notes ?? "");
+  const notesInitRef = useRef(false);
+  useEffect(() => {
+    if (!prospect) return;
+    if (!notesInitRef.current) {
+      setNotesDraft(prospect.notes ?? "");
+      notesInitRef.current = true;
+    }
+  }, [prospect]);
+  useEffect(() => {
+    if (!prospect) return;
+    if (notesDraft === (prospect.notes ?? "")) return;
+    const t = setTimeout(() => {
+      updateProspect(prospect.id, { notes: notesDraft });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [notesDraft, prospect, updateProspect]);
 
   const callNextMove = useServerFn(nextMoveFromConversation);
 
@@ -275,6 +295,16 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
 
       <PageBody className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Section title="Sticky notes" action={<span className="text-[10px] uppercase tracking-widest text-muted-foreground">Auto-saves</span>}>
+            <Textarea
+              rows={3}
+              value={notesDraft}
+              onChange={(e) => setNotesDraft(e.target.value)}
+              placeholder="Quick thoughts that don't fit the activity log — e.g. mentioned rebrand, follow up in 3 weeks."
+              className="resize-none bg-amber-400/5"
+            />
+          </Section>
+
           <Section title="Conversation">
             <ConversationLog activities={prospect.activities} vnLog={prospect.vnLog} />
 

@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
+import { GhlClaimModal } from "@/components/GhlClaimModal";
 
 function NotFoundComponent() {
   return (
@@ -175,6 +176,7 @@ function AuthedShell() {
             <Outlet />
           </main>
           <VoiceAssistant variant="floating" />
+          <GhlClaimModal />
         </div>
       </div>
     </SidebarProvider>
