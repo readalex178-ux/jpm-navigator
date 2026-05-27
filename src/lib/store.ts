@@ -321,6 +321,14 @@ export const useStore = create<State & Actions>()(
 
 
 
+      setGhlPromptProspectId: (id) => set({ ghlPromptProspectId: id }),
+      togglePin: (id) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === id ? { ...x, pinned: !x.pinned } : x,
+          ),
+        }),
+
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
         const { prospects, kpiDays, scripts, training, commissions, settings, vnScripts } = get();
