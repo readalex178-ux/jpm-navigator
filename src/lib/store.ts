@@ -61,6 +61,8 @@ type State = {
   prospectAnalyses: Record<string, ProspectAnalysisEntry[]>; // prospectId -> chronological
   /** Transient: when set, GhlClaimModal opens for this prospect. */
   ghlPromptProspectId: string | null;
+  /** threadId -> ISO timestamp the user last opened/marked-read that thread. */
+  linkedinThreadReads: Record<string, string>;
 };
 
 export type ProspectAnalysisEntry = {
