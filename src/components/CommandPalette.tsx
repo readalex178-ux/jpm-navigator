@@ -86,10 +86,10 @@ export function CommandPalette() {
             {matches.map((p) => (
               <CommandItem
                 key={p.id}
-                value={`${p.name} ${p.niche ?? ""} ${p.handle ?? ""}`}
+                value={`${p.name} ${p.niche ?? ""}`}
                 onSelect={() => go(`/prospects/${p.id}`)}
               >
-                <span className="mr-2">{platformEmoji[p.platform]}</span>
+                <span className="mr-2">{platformEmoji(p.platform)}</span>
                 <span className="font-medium">{p.name}</span>
                 <span className="ml-auto text-[10px] uppercase tracking-widest text-muted-foreground">
                   {p.stage} · {p.qualScore}
