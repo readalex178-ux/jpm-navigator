@@ -30,6 +30,7 @@ import {
 import { getAllMessages, logMessage } from "@/lib/messages.functions";
 import { NextActionCard } from "@/components/NextActionCard";
 import { AiSetupBanner } from "@/components/AiSetupBanner";
+import { ObjectionPanel } from "@/components/ObjectionPanel";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
@@ -457,6 +458,7 @@ function InboxPage() {
                     </span>
                   </div>
                 </div>
+                <ObjectionPanel triggerLabel="Objections" triggerVariant="ghost" triggerSize="sm" />
               </div>
               <ScrollArea className="flex-1 p-3">
                 <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
