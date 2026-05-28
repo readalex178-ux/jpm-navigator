@@ -306,6 +306,13 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
             />
           </Section>
 
+          <ProfileQualifierBox />
+
+          <Section title="Timeline">
+            <ProspectTimeline prospectId={prospect.id} />
+          </Section>
+
+
           <Section title="Conversation">
             <ConversationLog activities={prospect.activities} vnLog={prospect.vnLog} />
 
