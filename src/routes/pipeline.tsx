@@ -265,107 +265,157 @@ function Card({ prospect }: { prospect: Prospect }) {
   const nextAction = STAGE_NEXT_ACTION[prospect.stage];
 
   return (
-    <HoverCard openDelay={350} closeDelay={120}>
-      <HoverCardTrigger asChild>
-        <div
-          ref={setNodeRef}
-          {...listeners}
-          {...attributes}
-          onClick={() => navigate({ to: "/prospects/$id", params: { id: prospect.id } })}
-          style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
-          className={cn(
-            "group relative cursor-grab rounded-md border bg-surface p-2.5 pl-3 active:cursor-grabbing",
-            TIER_BORDER_CLASS[prospect.tier],
-            overdue ? "border-destructive/70" : "border-border",
-            highScore && !overdue && "ring-1 ring-primary/40",
-            isDragging && "opacity-60",
-          )}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="shrink-0">{platformEmoji(prospect.platform)}</span>
-                <span className="truncate text-sm font-medium">{prospect.name}</span>
-                {dmConfirmed && <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />}
-                {prospect.pinned && <Pin className="h-3 w-3 shrink-0 fill-primary text-primary" />}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Badge variant="outline" className={cn("text-[10px]", TIER_BADGE_CLASS[prospect.tier])}>
-                {prospect.tier}
-              </Badge>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); togglePin(prospect.id); }}
-                className="opacity-0 transition-opacity group-hover:opacity-100"
-                aria-label={prospect.pinned ? "Unpin" : "Pin"}
-                title={prospect.pinned ? "Unpin" : "Pin"}
-              >
-                <Pin className={cn("h-3 w-3", prospect.pinned ? "fill-primary text-primary" : "text-muted-foreground")} />
-              </button>
-            </div>
-          </div>
-
-          {lastMsgText && (
-            <div className="mt-1 truncate text-[11px] text-muted-foreground">
-              <span className="text-muted-foreground/70">{lastMsg.fromMe === false ? "Them" : "Me"}:</span>{" "}
-              {lastMsgText}
-            </div>
-          )}
-
-          <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px]">
-            <span className="truncate text-muted-foreground">→ {nextAction}</span>
-            <span className={cn("num shrink-0", overdue ? "text-destructive" : "text-muted-foreground")}>
-              {overdue && <AlertTriangle className="mr-0.5 inline h-2.5 w-2.5" />}
-              {stageDays}d · {prospect.qualScore}
-            </span>
-          </div>
-
-          <div className="mt-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-2 text-[10px]"
-              onClick={(e) => { e.stopPropagation(); navigate({ to: "/inbox", search: { prospect: prospect.id } }); }}
-            >
-              <Inbox className="mr-1 h-3 w-3" /> Inbox
-            </Button>
-          </div>
-        </div>
-      </HoverCardTrigger>
-      <HoverCardContent align="start" className="w-80 space-y-2">
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
         <div>
-          <div className="font-display text-sm font-semibold">{prospect.name}</div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            {prospect.platform} · {prospect.niche || "no niche"}
-          </div>
+          <HoverCard openDelay={350} closeDelay={120}>
+            <HoverCardTrigger asChild>
+              <div
+                ref={setNodeRef}
+                {...listeners}
+                {...attributes}
+                onClick={() => navigate({ to: "/prospects/$id", params: { id: prospect.id } })}
+                style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
+                className={cn(
+                  "group relative cursor-grab rounded-md border bg-surface p-2.5 pl-3 active:cursor-grabbing",
+                  TIER_BORDER_CLASS[prospect.tier],
+                  overdue ? "border-destructive/70" : "border-border",
+                  highScore && !overdue && "ring-1 ring-primary/40",
+                  isDragging && "opacity-60",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="shrink-0">{platformEmoji(prospect.platform)}</span>
+                      <span className="truncate text-sm font-medium">{prospect.name}</span>
+                      {dmConfirmed && <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />}
+                      {prospect.pinned && <Pin className="h-3 w-3 shrink-0 fill-primary text-primary" />}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Badge variant="outline" className={cn("text-[10px]", TIER_BADGE_CLASS[prospect.tier])}>
+                      {prospect.tier}
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); togglePin(prospect.id); }}
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-label={prospect.pinned ? "Unpin" : "Pin"}
+                      title={prospect.pinned ? "Unpin" : "Pin"}
+                    >
+                      <Pin className={cn("h-3 w-3", prospect.pinned ? "fill-primary text-primary" : "text-muted-foreground")} />
+                    </button>
+                  </div>
+                </div>
+
+                {lastMsgText && (
+                  <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                    <span className="text-muted-foreground/70">{lastMsg.fromMe === false ? "Them" : "Me"}:</span>{" "}
+                    {lastMsgText}
+                  </div>
+                )}
+
+                <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px]">
+                  <span className="truncate text-muted-foreground">→ {nextAction}</span>
+                  <span className={cn("num shrink-0", overdue ? "text-destructive" : "text-muted-foreground")}>
+                    {overdue && <AlertTriangle className="mr-0.5 inline h-2.5 w-2.5" />}
+                    {stageDays}d · {prospect.qualScore}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={(e) => { e.stopPropagation(); navigate({ to: "/inbox", search: { prospect: prospect.id } }); }}
+                  >
+                    <Inbox className="mr-1 h-3 w-3" /> Inbox
+                  </Button>
+                </div>
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent align="start" className="w-80 space-y-2">
+              <div>
+                <div className="font-display text-sm font-semibold">{prospect.name}</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {prospect.platform} · {prospect.niche || "no niche"}
+                </div>
+              </div>
+              {prospect.bio && (
+                <p className="line-clamp-3 text-xs text-muted-foreground">{prospect.bio}</p>
+              )}
+              <div className="grid grid-cols-4 gap-1 text-[10px]">
+                {(["need", "timeline", "authority", "budget"] as const).map((k) => (
+                  <div key={k} className="rounded border border-border bg-background px-1.5 py-1 text-center">
+                    <div className="uppercase tracking-widest text-muted-foreground">{k.slice(0, 4)}</div>
+                    <div className="num font-semibold">{prospect.bant[k]}/2</div>
+                  </div>
+                ))}
+              </div>
+              {Object.entries(prospect.signals).filter(([, v]) => v).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(prospect.signals)
+                    .filter(([, v]) => v)
+                    .map(([k]) => (
+                      <span key={k} className="rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
+                        {k}
+                      </span>
+                    ))}
+                </div>
+              )}
+              <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
+                Next: <span className="text-foreground">{nextAction}</span>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         </div>
-        {prospect.bio && (
-          <p className="line-clamp-3 text-xs text-muted-foreground">{prospect.bio}</p>
-        )}
-        <div className="grid grid-cols-4 gap-1 text-[10px]">
-          {(["need", "timeline", "authority", "budget"] as const).map((k) => (
-            <div key={k} className="rounded border border-border bg-background px-1.5 py-1 text-center">
-              <div className="uppercase tracking-widest text-muted-foreground">{k.slice(0, 4)}</div>
-              <div className="num font-semibold">{prospect.bant[k]}/2</div>
-            </div>
-          ))}
-        </div>
-        {Object.entries(prospect.signals).filter(([, v]) => v).length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {Object.entries(prospect.signals)
-              .filter(([, v]) => v)
-              .map(([k]) => (
-                <span key={k} className="rounded bg-success/15 px-1.5 py-0.5 text-[10px] text-success">
-                  {k}
-                </span>
-              ))}
-          </div>
-        )}
-        <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
-          Next: <span className="text-foreground">{nextAction}</span>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        <ContextMenuItem onClick={() => navigate({ to: "/prospects/$id", params: { id: prospect.id } })}>
+          <ArrowRight className="mr-2 h-3.5 w-3.5" /> Open prospect
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => navigate({ to: "/inbox", search: { prospect: prospect.id } })}>
+          <MessageSquare className="mr-2 h-3.5 w-3.5" /> Open in inbox
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={() => togglePin(prospect.id)}>
+          <Pin className="mr-2 h-3.5 w-3.5" /> {prospect.pinned ? "Unpin" : "Pin to top"}
+        </ContextMenuItem>
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <ArrowRight className="mr-2 h-3.5 w-3.5" /> Move to stage
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-44">
+            {STAGES.filter((s) => s !== prospect.stage).map((s) => (
+              <ContextMenuItem key={s} onClick={() => moveStage(prospect.id, s)}>
+                {s}
+              </ContextMenuItem>
+            ))}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+        <ContextMenuItem
+          onClick={() => {
+            const dup = duplicateProspect(prospect.id);
+            if (dup) toast.success(`Duplicated as ${dup.name}`);
+          }}
+        >
+          <Copy className="mr-2 h-3.5 w-3.5" /> Duplicate
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={() => {
+            if (confirm(`Delete ${prospect.name}? This cannot be undone.`)) {
+              deleteProspect(prospect.id);
+              toast.success("Prospect deleted");
+            }
+          }}
+        >
+          <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
