@@ -1,84 +1,74 @@
+# Build plan — 20 more upgrades (items 21–40)
 
-# Build plan — 20 upgrades
-
-This is a big batch. I'll group the 20 items into 4 themed passes so each one ships as a coherent, testable change instead of a sprawl of edits. Nothing already working gets rebuilt — these layer on top.
-
-Note on item #20 (GHL claim modal): the **no-automation** core rule forbids mutating prospect state without an explicit user action. The modal is fine because the user clicks "moved to Call Booked" themselves — but the modal will only **prompt**, never auto-claim or auto-log anything.
+Same approach as the previous batch: group into themed passes, layer onto existing code, never rebuild what works. The no-automation rule still holds — anything that touches prospect state is gated by an explicit user click.
 
 ---
 
-## Pass 1 — Pipeline board overhaul (items 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+## Pass 1 — Prospect record + card enrichments (items 21, 22, 23, 24, 25, 26, 27, 28)
 
-Rewrite `src/routes/pipeline.tsx` board view + the in-file `Card` component:
+Single biggest pass. Touches `src/routes/prospects.$id.tsx`, `src/routes/pipeline.tsx`, `src/components/ProspectCard.tsx`, `src/components/ProspectDrawer.tsx`, plus a few new small components.
 
-- **Active/Inactive toggle** (#3): default board shows Found → Connected → VN1 Sent → Replied → VN2 Sent → Calendar Sent → Call Booked. Toggle button reveals Cold, Nurturing, Re-Engaged, Dead, Closed.
-- **Column headers** (#9): show count + total potential commission (DIY £75, DWY £225, DFY £900).
-- **New richer card** with:
-  - Large platform emoji (#7), name, pin icon (#10)
-  - Tier-coloured left border + tier badge (#6): DFY gold, DWY blue, DIY neutral. Overdue overrides with red border + "Overdue" badge (#1, #4). DM-confirmed signal → star icon (#4). Score > 75 → subtle ring highlight (#4).
-  - Last message preview + recommended next-action chip from playbook (#1)
-  - Hover action bar: Log VN, Move stage (dropdown), Open Inbox (#2)
-  - HoverCard popup with bio, last activity, BANT breakdown, buying signals (#8)
-- **Pin** (#10): persisted on prospect via new `pinned` field; pinned items sort to top of their column.
-- **Confetti on Call Booked** (#5): trigger when drag/drop or stage-change handler moves a prospect into Call Booked.
+- **#21 Score breakdown panel**: new `QualScoreBreakdown` component on the prospect record. Shows each contributing factor (BANT subtotals, buying-signal count, stage bonus, intent bonus) with a "+N" weight, and a "what would push this up" suggestion list.
+- **#22 Duplicate prospect**: new "Duplicate" button on the record header and in the card right-click context menu (already have one via `ContextMenu` in shadcn). Pre-fills the new-prospect drawer with everything except `name`, `handle`, `profile_url`. Uses existing `addProspect` action.
+- **#23 Star/pin priority**: reuse the existing `pinned` field shipped in batch 1. Already sorts to top of every pipeline column; extend the same sort to the dashboard Today's Queue list and the `/prospects` table. Star icon already rendered on cards — add it to the record header too.
+- **#24 Tier tooltips**: new `TierBadge` component that wraps the existing tier label in a shadcn `Tooltip` with the price + setter cut. Used everywhere a tier currently renders (cards, record header, drawer, prospects table). One source of truth in `src/lib/btf/tiers.ts`.
+- **#25 LinkedIn profile preview**: on the record, if `linkedinProfiles[profileUrl]` exists in the store, render a `ProfileCard` with headline / location / about. Otherwise show a button that opens `profile_url` in a new tab.
+- **#26 BANT traffic light**: replace the numeric/slider BANT display with four coloured pills (green=2, amber=1, red=0). Card-level shows a single overall traffic light (worst score wins).
+- **#27 Buying signals progress bar**: replace the bare checklist with a `Progress` bar (e.g. 5/7 = 71%) above the checkboxes. Checkboxes stay editable below.
+- **#28 Suggested next script**: new `SuggestedScript` panel that picks a script from the existing playbook based on `stage`, `tier` and buying signals. Re-renders when stage changes. No AI call — just a deterministic lookup against `scripts`/playbook content already in the store.
 
-DB: add `pinned boolean default false` to `prospects` via migration.
+No DB migration needed (all read-side or reusing existing columns).
 
-## Pass 2 — Dashboard becomes Today's Queue hero (items 11, 12, 14, 15, 16)
+---
 
-Rewrite `src/routes/index.tsx`:
+## Pass 2 — Conversations workspace merge (items 29, 30, 31, 32, 33, 34)
 
-- **Top: weather-report sentence** (#15) — auto-generated from live counts (overdue, follow-ups due, calls booked this week).
-- **Motivational sub-line** (#14) — dynamic ("2 calls from weekly target", etc).
-- **Hero: Today's Queue** (#11) — dominates the screen. Each row: prospect, recommended action, one-click action button (Open Inbox / Log VN / Mark Sent) that runs without leaving the page.
-- **Projected monthly commission** (#16) as the single biggest number, with breakdown ("3 DFY × £900 + 2 DWY × £225") and progress toward monthly target from settings.
-- **Momentum strip** (#12): streak counter, weekly VN progress bar, daily connections counter.
+- **#29 Merge Inbox into LinkedIn co-pilot**: turn `src/routes/linkedin.tsx` into the primary conversation workspace with two tabs — `Conversations` (current co-pilot) and `Message Log` (current inbox view). Remove the Inbox entry from the sidebar (`AppSidebar.tsx`); the route stays so old links don't 404 but redirects to `/linkedin?tab=log`.
+- **#30 Read/unread state**: add `read_at timestamptz nullable` to `conversations` table via migration. Thread list shows bold name + coloured dot when `read_at` is null or older than `last_synced_at`. Opening a thread sets `read_at = now()`. Right-click → "Mark as unread" clears it.
+- **#31 Reply-time tracker**: compute `lastInboundAt` from messages. Show "Replied 2d ago" at the top of the open conversation and in the list. >3 days = amber, >7 days = red with `Overdue` label.
+- **#32 Sentiment tag**: new optional `sentiment text` column on `conversations` (`warm | cooling | dead`). Computed on demand by an existing AI helper when the user opens a thread or clicks "Refresh sentiment" — never automatically polling. Rendered as a coloured chip in the thread list.
+- **#33 Templates panel**: new `TemplatesSheet` slide-in (shadcn `Sheet`) opened from a "Templates" button in the conversation composer. Reads from existing `scripts` table + a small curated set of defaults (calendar link, objections, re-engagement, VN). One-click inserts into composer.
+- **#34 Context-aware VN script**: in the VN-from-conversation flow (existing AI assistant in `src/lib/ai/aiAssistants.functions.ts`), include the last 5 messages from the thread in the prompt. Server function only — no client change beyond passing `threadId`.
 
-## Pass 3 — KPI auto-wiring (#13)
+DB: migration adds `conversations.read_at` and `conversations.sentiment`.
 
-In `src/lib/store.ts`, in `moveStage` and `logActivity` (or the equivalent VN-log path), increment today's `kpi_entries` row:
-- → Replied: `replies++`
-- → VN1 Sent / VN2 Sent: `vn_sent++`
-- → Connected: `connections_accepted++`
-- → Calendar Sent: `calendars_sent++`
-- → Call Booked: `booked++`
-- Logging a connection request: `connections_sent++`
+---
 
-Plus a daily-cap warning when `connections_sent` >= cap (from settings).
+## Pass 3 — Global UX + onboarding (items 35, 36, 37, 38, 39, 40)
 
-## Pass 4 — Prospect record redesign + GHL guard (items 17, 18, 19, 20)
+- **#35 Global search (⌘K)**: new `CommandPalette` component mounted in `__root.tsx`. Uses shadcn `Command` + `Dialog`. Cmd/Ctrl+K opens it; Esc / outside-click closes. Searches `prospects` by name, niche, bio, profile_url. Result row = platform emoji + name + stage + score.
+- **#36 Naming audit**: pick canonical labels and apply everywhere:
+  - "LinkedIn Co-Pilot" → **Conversations**
+  - "Inbox" → folded in as **Message Log** tab
+  - "Pipeline" stays
+  - "Prospects" stays
+  - "KPI" → **Targets** (matches Settings tab name)
+  - "Outreach" → **Playbook** (already named playbook elsewhere — pick playbook)
+  Apply across `AppSidebar`, route `head()` titles, page H1s, and button labels.
+- **#37 Mobile pipeline → list + bottom tab bar**: in `pipeline.tsx`, hide kanban below 768px and render a flat list sorted by urgency (overdue first, then pinned, then days-in-stage desc). `AppSidebar` collapses on `<768px` to a fixed bottom tab bar with 4 entries: Dashboard, Prospects, Conversations, Settings.
+- **#38 Onboarding checklist**: on `/` (dashboard), if `prospects.length === 0` or any of (calendar link, AI provider configured) is missing, show a 3-step checklist card. Steps: 1) Set calendar link (→ Settings/Profile), 2) Configure AI provider (→ Settings/AI Config), 3) Add first prospect (→ opens new-prospect drawer). Each step gets a green check when satisfied. Card disappears when all three are complete.
+- **#39 Split Settings into tabs**: `src/routes/settings.tsx` becomes three tabs — **Your Profile** (name, LinkedIn URL, Instagram handle, calendar link, role start date), **AI Config** (provider, model, API key, base URL), **Targets** (monthly commission target, daily VN target, daily connection target, manager names).
+- **#40 AI provider missing banner**: shared `AiSetupBanner` component rendered on every page that uses AI features (linkedin/conversations, prospect record analyzer, training). Detects "AI provider not configured" (Lovable AI key absent for self-hosted, or `settings.aiProvider === 'none'`) and links to Settings → AI Config.
 
-Rework `src/routes/prospects.$id.tsx`:
-
-- **Sticky notes field** (#19) at top — textarea, debounced auto-save to `prospects.notes`, no submit button.
-- **Profile Analyzer panel** (#17) inlined as a prominent card near the top, reusing `ProfileQualifierBox` with the prospect's `profileUrl` pre-filled (no need to go to /linkedin).
-- **Chronological timeline** (#18) replacing the current activity display: messages, stage changes, notes, analyses — merged, sorted desc, with type icons.
-- **GHL claim modal** (#20): triggered when stage → Call Booked anywhere (pipeline DnD, drawer, table). Yes / Remind Me Later. "Remind Me Later" stores an unclaimed flag on the prospect (`ghl_claimed boolean`, `ghl_remind boolean`). Sidebar badge counts unclaimed GHL calls. Re-prompts on next app open.
-
-DB: add `ghl_claimed boolean default false`, `ghl_remind_at timestamptz` to `prospects`.
+DB: none.
 
 ---
 
 ## Technical details
 
-- **Migrations** (one combined): add `pinned`, `ghl_claimed`, `ghl_remind_at` columns to `prospects`.
-- **Confetti**: use `canvas-confetti` (small, no deps). `bun add canvas-confetti`.
-- **HoverCard**: already in `src/components/ui/hover-card.tsx`.
-- **KPI auto-wire**: extend `useStore` actions; today's row upserted via existing sync layer.
-- **No-automation respect**: every increment, modal, and queue action is gated by an explicit user click (stage drag, button press). No `useEffect` mutates server state.
-- **Tier border colours**: add semantic tokens `--tier-dfy` (gold), `--tier-dwy` (blue) in `src/styles.css`. Existing red destructive token used for overdue.
+- **Migrations** (one combined for Pass 2): add `conversations.read_at timestamptz` and `conversations.sentiment text`.
+- **Tier source of truth**: new `src/lib/btf/tiers.ts` with `{ id, label, price, setterCutMin, setterCutMax, included }`. All tier references read from here.
+- **No new heavy deps**. shadcn `Command`, `Sheet`, `Tooltip`, `Progress`, `Tabs` are already present.
+- **No-automation respect**: sentiment refresh is click-gated, template insert is click-gated, duplicate is click-gated, mark-as-read on open is a direct UX action (not background polling).
 
-## Out of scope (won't touch)
+## Out of scope
 
-- The BTF profile qualifier prompt (just shipped, working).
 - Auth, Supabase client files, edge functions.
-- Existing inbox, linkedin analyzer page, settings, training routes — except where reused.
+- Existing playbook content, training route, KPI charts — except where reused.
+- Multi-platform (Instagram/Twitter) conversation parity — LinkedIn remains the primary workspace.
 
-## Order I'll ship
+## Ship order
 
-1. Migration (pinned, ghl fields) — ask for approval, then apply.
-2. Install `canvas-confetti`.
-3. Pass 1 (pipeline) → Pass 2 (dashboard) → Pass 3 (KPI wiring) → Pass 4 (prospect record + GHL modal).
-4. Verify in preview after each pass.
-
-Approve and I'll start with the migration.
+1. Pass 1 (prospect record + card enrichments) — no migration.
+2. Migration for Pass 2 (`read_at`, `sentiment`), then Pass 2 code.
+3. Pass 3 (global search, naming, mobile, onboarding, settings split, AI banner).
