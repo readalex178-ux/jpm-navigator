@@ -228,12 +228,29 @@ export function AssistantBubble() {
 
           <div className="border-t border-border p-3">
             <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={onCsvSelected}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                aria-label="Upload CSV"
+                title="Upload a CSV to import prospects"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder="What did you just do?"
+                placeholder="What did you just do? (or attach a CSV)"
                 rows={2}
                 className="resize-none"
                 disabled={sending}
@@ -252,8 +269,9 @@ export function AssistantBubble() {
               </Button>
             </div>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              ⌘ + Enter to send · nothing is saved until you click Apply
+              Enter to send · attach a CSV to import · nothing is saved until you click Apply
             </p>
+
           </div>
         </SheetContent>
       </Sheet>
