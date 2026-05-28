@@ -544,8 +544,16 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
             <div className="mt-2 text-xs text-muted-foreground num">{stageDays}d in stage</div>
           </Section>
 
-          <Section title="Qualification">
-            <div className="space-y-3">
+          <Section
+            title="Qualification"
+            action={
+              <div className="flex items-center gap-2">
+                <BantOverall bant={prospect.bant} />
+                <TierBadge tier={prospect.tier} />
+              </div>
+            }
+          >
+            <div className="space-y-4">
               <div>
                 <div className="mb-2 flex items-center justify-between text-xs">
                   <span className="uppercase tracking-widest text-muted-foreground">Score</span>
@@ -558,37 +566,77 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
                   onValueChange={(v) => setQualScore(prospect.id, v[0])}
                 />
               </div>
-              {(["need", "timeline", "authority", "budget"] as const).map((k) => (
-                <div key={k} className="flex items-center justify-between gap-2">
-                  <span className="text-xs uppercase tracking-widest text-muted-foreground">{k}</span>
-                  <Select
-                    value={String(prospect.bant[k])}
-                    onValueChange={(v) => setBant(prospect.id, { ...prospect.bant, [k]: Number(v) as 0 | 1 | 2 })}
-                  >
-                    <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">0</SelectItem>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+              {/* #26 BANT traffic light — visual first, editable below */}
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">BANT</div>
+                <BantTrafficLight bant={prospect.bant} />
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  {(["budget", "authority", "need", "timeline"] as const).map((k) => (
+                    <div key={k} className="flex flex-col items-center gap-1">
+                      <div className="inline-flex overflow-hidden rounded border border-border">
+                        {[0, 1, 2].map((v) => {
+                          const active = prospect.bant[k] === v;
+                          return (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() =>
+                                setBant(prospect.id, {
+                                  ...prospect.bant,
+                                  [k]: v as 0 | 1 | 2,
+                                })
+                              }
+                              className={cn(
+                                "h-5 w-5 text-[10px] num transition-colors",
+                                active
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background text-muted-foreground hover:bg-surface-elevated",
+                              )}
+                              aria-label={`${k} = ${v}`}
+                            >
+                              {v}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* #21 Score breakdown — visible without extra clicks */}
+              <div className="border-t border-border pt-3">
+                <QualScoreBreakdown prospect={prospect} />
+              </div>
             </div>
           </Section>
 
+          {/* #27 Buying signals — progress bar leads, checkboxes below */}
           <Section title="Buying signals">
-            <div className="space-y-2">
-              {(Object.keys(SIGNAL_LABELS) as (keyof BuyingSignals)[]).map((k) => (
-                <label key={k} className="flex cursor-pointer items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={prospect.signals[k]}
-                    onCheckedChange={(v) => setSignals(prospect.id, { ...prospect.signals, [k]: !!v })}
-                  />
-                  {SIGNAL_LABELS[k]}
-                </label>
-              ))}
-            </div>
+            <BuyingSignalsProgress
+              signals={prospect.signals}
+              onChange={(next) => setSignals(prospect.id, next)}
+            />
+          </Section>
+
+          {/* #25 LinkedIn profile preview */}
+          <Section title="LinkedIn profile">
+            <LinkedinProfilePreview prospect={prospect} />
+          </Section>
+
+          {/* #28 Suggested next script — deterministic, updates on stage change */}
+          <Section title="Suggested next script">
+            <SuggestedScript
+              prospect={prospect}
+              onInsert={(text) => {
+                setMsgDirection("me");
+                setMsgText(text);
+                toast.message("Loaded into composer", {
+                  description: "Edit it then hit Log message.",
+                });
+              }}
+            />
           </Section>
 
           <Section title="Bio">
