@@ -58,7 +58,7 @@ export function CommandPalette() {
     const needle = q.toLowerCase();
     return prospects
       .filter((p) =>
-        [p.name, p.niche, p.bio, p.profileUrl, p.handle]
+        [p.name, p.niche, p.bio, p.profileUrl]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(needle)),
       )
