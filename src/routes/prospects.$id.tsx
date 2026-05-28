@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { ConversationLog, buildConversation } from "@/components/ConversationLog";
 import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
 import { ProspectCoachChat } from "@/components/ProspectCoachChat";
+import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
 import {
   STAGES,
   SIGNAL_LABELS,
