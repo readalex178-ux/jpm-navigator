@@ -91,11 +91,25 @@ export function ProposalCard({ proposal, onPatch }: Props) {
       return { icon: ArrowRight, label: "Update stage" };
     if (proposal.kind === "add_prospect")
       return { icon: UserPlus, label: "Add prospect" };
+    if (proposal.kind === "import_csv")
+      return { icon: FileSpreadsheet, label: "Import CSV" };
     return { icon: Sparkles, label: "Answer" };
   })();
   const Icon = header.icon;
 
   if (proposal.kind === "answer_only") return null;
+
+  if (proposal.kind === "import_csv") {
+    return (
+      <ImportCsvCard
+        proposal={proposal}
+        onPatch={onPatch}
+        header={{ Icon, label: header.label }}
+      />
+    );
+  }
+
+
 
   return (
     <div className="rounded-lg border border-border bg-card/60 p-3 text-sm space-y-2">
