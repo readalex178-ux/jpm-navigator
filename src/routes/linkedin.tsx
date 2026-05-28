@@ -426,6 +426,30 @@ function LinkedInPage() {
             </div>
           ) : (
             <>
+              {(() => {
+                const reply = replyAgeBucket(activeThread);
+                if (reply.bucket === "none") return null;
+                return (
+                  <div
+                    className={cn(
+                      "mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium",
+                      reply.bucket === "red" &&
+                        "bg-destructive/10 text-destructive",
+                      reply.bucket === "amber" &&
+                        "bg-amber-500/10 text-amber-500",
+                      reply.bucket === "fresh" &&
+                        "bg-surface text-muted-foreground",
+                    )}
+                  >
+                    {formatReplyAge(reply.days)}
+                    {reply.bucket === "red" && (
+                      <span className="rounded bg-destructive px-1 py-0.5 text-[9px] uppercase tracking-widest text-destructive-foreground">
+                        Overdue
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
               <AnalyzerStrip
                 analysis={analysis}
                 loading={analyzing}
