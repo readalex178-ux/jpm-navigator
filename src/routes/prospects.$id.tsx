@@ -67,6 +67,8 @@ function ProspectDetail() {
   const logVN = useStore((s) => s.logVN);
   const deleteProspect = useStore((s) => s.deleteProspect);
   const updateProspect = useStore((s) => s.updateProspect);
+  const duplicateProspect = useStore((s) => s.duplicateProspect);
+  const togglePin = useStore((s) => s.togglePin);
   const addProspectAnalysis = useStore((s) => s.addProspectAnalysis);
   const settings = useStore((s) => s.settings);
 
