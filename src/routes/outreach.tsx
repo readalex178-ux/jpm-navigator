@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { PageBody, PageHeader, Section } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ToneMatchIndicator } from "@/components/ToneMatchIndicator";
 import { useStore, daysSince } from "@/lib/store";
 import { SEQUENCE, platformEmoji } from "@/lib/btf/types";
 import { cn } from "@/lib/utils";
@@ -101,10 +102,6 @@ function OutreachPage() {
           <div className="grid gap-3">
             {filtered.map(({ p, touchDays, next, overdue, stale }) => {
               const last = p.activities[0];
-              const lastVN = p.vnLog[0];
-              const toneMatch =
-                lastVN?.reply === "VN" ? "matching" : lastVN?.reply === "text" ? "warm" : "cold";
-
               return (
                 <Section
                   key={p.id}
@@ -116,16 +113,7 @@ function OutreachPage() {
                           stale {touchDays}d
                         </Badge>
                       )}
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px]",
-                          toneMatch === "matching" && "border-success text-success",
-                          toneMatch === "cold" && "border-destructive text-destructive",
-                        )}
-                      >
-                        Tone: {toneMatch}
-                      </Badge>
+                      <ToneMatchIndicator prospect={p} />
                       <Button asChild size="sm" variant="ghost">
                         <Link to="/prospects/$id" params={{ id: p.id }}>
                           Open
