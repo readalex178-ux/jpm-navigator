@@ -182,6 +182,7 @@ function AuthedShell() {
           <GhlClaimModal />
           <CommandPalette />
           <AssistantBubble />
+          <BackupReminder />
         </div>
       </div>
     </SidebarProvider>
