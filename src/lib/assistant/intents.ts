@@ -23,9 +23,18 @@ export const ProposalSchema = z.discriminatedUnion("kind", [
     notes: z.string().max(1000).optional(),
   }),
   z.object({
+    kind: z.literal("import_csv"),
+    fileName: z.string().max(255).default(""),
+    rows: z
+      .array(z.record(z.string(), z.any()))
+      .max(500),
+    skippedCount: z.number().int().nonnegative().default(0),
+  }),
+  z.object({
     kind: z.literal("answer_only"),
   }),
 ]);
+
 
 export type Proposal = z.infer<typeof ProposalSchema>;
 

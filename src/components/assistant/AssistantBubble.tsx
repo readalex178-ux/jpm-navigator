@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, X, Send, Loader2, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Trash2, Paperclip } from "lucide-react";
+import { parseProspectsCsv } from "@/lib/csvImport";
+
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +29,46 @@ export function AssistantBubble() {
   const { messages, loaded, append, patchProposal, clearAll } = useAssistantThread();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onCsvSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    await append("user", `📎 Uploaded ${file.name}`);
+    try {
+      const text = await file.text();
+      const parsed = parseProspectsCsv(text);
+      if (parsed.errors.length) {
+        await append("assistant", `⚠️ ${parsed.errors.join(" ")}`);
+        return;
+      }
+      if (!parsed.rows.length) {
+        await append(
+          "assistant",
+          `No valid rows found in ${file.name}.${parsed.failures.length ? ` (${parsed.failures.length} skipped)` : ""}`,
+        );
+        return;
+      }
+      const proposal: ProposalRecord = {
+        id: uid(),
+        kind: "import_csv",
+        fileName: file.name,
+        rows: parsed.rows as unknown as Record<string, unknown>[],
+        skippedCount: parsed.failures.length,
+      };
+      await append(
+        "assistant",
+        `Parsed **${parsed.rows.length}** prospect${parsed.rows.length === 1 ? "" : "s"} from ${file.name}${parsed.failures.length ? ` (${parsed.failures.length} rows skipped).` : "."} Review and approve which to add to your pipeline.`,
+        [proposal],
+      );
+    } catch (err) {
+      console.error("[assistant] csv parse failed", err);
+      await append("assistant", "⚠️ Couldn't read that file. Make sure it's a valid CSV.");
+    }
+  };
+
+
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -186,12 +228,29 @@ export function AssistantBubble() {
 
           <div className="border-t border-border p-3">
             <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={onCsvSelected}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                aria-label="Upload CSV"
+                title="Upload a CSV to import prospects"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder="What did you just do?"
+                placeholder="What did you just do? (or attach a CSV)"
                 rows={2}
                 className="resize-none"
                 disabled={sending}
@@ -210,8 +269,9 @@ export function AssistantBubble() {
               </Button>
             </div>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              ⌘ + Enter to send · nothing is saved until you click Apply
+              Enter to send · attach a CSV to import · nothing is saved until you click Apply
             </p>
+
           </div>
         </SheetContent>
       </Sheet>
