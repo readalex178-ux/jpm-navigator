@@ -77,7 +77,6 @@ function ToolsPage() {
 function ScriptBuilderTab() {
   const fn = useServerFn(buildVN1Script);
   const [text, setText] = useState("");
-  const [intent, setIntent] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<VN1ScriptResult | null>(null);
   const [priorChecked, setPriorChecked] = useState(0);
@@ -105,7 +104,6 @@ function ScriptBuilderTab() {
         data: {
           profileText: text.trim(),
           priorOpeners,
-          userIntent: intent.trim() || undefined,
         },
       });
       if (r.ok) { setRes(r.result); setPriorChecked(r.priorChecked); }
@@ -142,29 +140,6 @@ function ScriptBuilderTab() {
           placeholder="Paste full profile content here…"
           className="min-h-[220px] text-xs"
         />
-        <div className="mt-3">
-          <label className="text-[11px] uppercase tracking-widest text-muted-foreground">
-            What do you want to say? (optional)
-          </label>
-          <Textarea
-            value={intent}
-            onChange={(e) => setIntent(e.target.value)}
-            placeholder="e.g. 'lead with their recent retreat post and ask if they're open to a quick chat about getting more 1:1 conversations'"
-            className="mt-1 min-h-[64px] resize-none text-xs"
-          />
-          {intent.trim() && (
-            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>AI will shape all 3 scripts around this — your wording stays intact.</span>
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() => setIntent("")}
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
         <div className="mt-2 flex justify-end">
           <Button onClick={run} disabled={busy}>
             {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
