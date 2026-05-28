@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { PageBody, PageHeader, Section, StatCard } from "@/components/Page";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Copy, Sparkles } from "lucide-react";
+import { Loader2, Copy, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { useStore, todayStr, daysSince } from "@/lib/store";
-import { DAILY_TARGETS, WEEKLY_BENCHMARKS, PLATFORMS, platformEmoji, type Platform } from "@/lib/btf/types";
+import { DAILY_TARGETS, WEEKLY_BENCHMARKS, PLATFORMS, platformEmoji, type Platform, type KpiDay } from "@/lib/btf/types";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kpi")({
