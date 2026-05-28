@@ -46,6 +46,7 @@ import {
 import { LayoutGrid, Table as TableIcon, Pin, Star, AlertTriangle, Inbox, Copy, Trash2, ArrowRight, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ObjectionPanel } from "@/components/ObjectionPanel";
 
 export const Route = createFileRoute("/pipeline")({
   head: () => ({
