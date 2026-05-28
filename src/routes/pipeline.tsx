@@ -324,7 +324,7 @@ function Card({ prospect }: { prospect: Prospect }) {
                   </span>
                 </div>
 
-                <div className="mt-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="mt-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -333,6 +333,7 @@ function Card({ prospect }: { prospect: Prospect }) {
                   >
                     <Inbox className="mr-1 h-3 w-3" /> Inbox
                   </Button>
+                  <ObjectionPanel triggerLabel="Objections" triggerVariant="ghost" triggerSize="sm" className="h-6 px-2 text-[10px]" />
                 </div>
               </div>
             </HoverCardTrigger>
