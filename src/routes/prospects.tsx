@@ -53,7 +53,6 @@ export const Route = createFileRoute("/prospects")({
 function ProspectsPage() {
   const prospects = useStore((s) => s.prospects);
   const addProspect = useStore((s) => s.addProspect);
-  const deleteProspect = useStore((s) => s.deleteProspect);
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -70,33 +69,56 @@ function ProspectsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
+
   const handleImport = async (file: File) => {
     try {
       const text = await file.text();
-      const { rows, errors } = parseProspectsCsv(text);
-      if (!rows.length) {
-        toast.error(errors[0] ?? "No rows found.");
-        return;
-      }
+      const parsed = parseProspectsCsv(text);
       const existing = new Set(
         prospects.map((p) => `${p.name.toLowerCase()}|${(p.profileUrl ?? "").toLowerCase()}`),
       );
       let added = 0;
       let skipped = 0;
-      for (const r of rows) {
+      const duplicateFailures: { row: number; reason: string }[] = [];
+      parsed.rows.forEach((r, i) => {
         const key = `${r.name.toLowerCase()}|${(r.profileUrl ?? "").toLowerCase()}`;
-        if (existing.has(key)) { skipped++; continue; }
-        addProspect(r);
-        existing.add(key);
-        added++;
-      }
-      toast.success(
-        `Imported ${added} prospect${added === 1 ? "" : "s"}` +
-          (skipped ? ` · ${skipped} duplicate${skipped === 1 ? "" : "s"} skipped` : "") +
-          (errors.length ? ` · ${errors.length} row issue${errors.length === 1 ? "" : "s"}` : ""),
-      );
+        if (existing.has(key)) {
+          skipped++;
+          duplicateFailures.push({ row: i + 2, reason: `Duplicate of existing prospect "${r.name}"` });
+          return;
+        }
+        try {
+          addProspect(r);
+          existing.add(key);
+          added++;
+        } catch (e) {
+          parsed.failures.push({
+            row: i + 2,
+            reason: e instanceof Error ? e.message : "Insert failed",
+          });
+        }
+      });
+      const result: ImportResult = {
+        filename: file.name,
+        added,
+        skippedDuplicates: skipped,
+        failures: parsed.failures,
+        errors: parsed.errors,
+      };
+      setImportResult(result);
+      appendImportLog({
+        filename: file.name,
+        added,
+        skippedDuplicates: skipped,
+        failed: parsed.failures.length,
+        failures: parsed.failures,
+      });
+      setHistoryKey((n) => n + 1);
     } catch (e) {
-      toast.error("Could not read file.");
+      toast.error(e instanceof Error ? `Could not read file: ${e.message}` : "Could not read file.");
     }
   };
 
@@ -151,8 +173,8 @@ function ProspectsPage() {
   };
 
   const doBulkDelete = () => {
-    selectedIds.forEach((id) => deleteProspect(id));
-    toast.success(`${selectedIds.size} prospect${selectedIds.size === 1 ? "" : "s"} deleted`);
+    const toDelete = prospects.filter((p) => selectedIds.has(p.id));
+    undoableBulkDelete(toDelete);
     setSelectedIds(new Set());
     setConfirmBulkDelete(false);
   };
