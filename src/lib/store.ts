@@ -199,6 +199,8 @@ export const useStore = create<State & Actions>()(
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       deleteProspect: (id) =>
         set({ prospects: get().prospects.filter((x) => x.id !== id) }),
+      restoreProspect: (p) =>
+        set({ prospects: [p, ...get().prospects.filter((x) => x.id !== p.id)] }),
       duplicateProspect: (id, overrides) => {
         const src = get().prospects.find((x) => x.id === id);
         if (!src) return null;
