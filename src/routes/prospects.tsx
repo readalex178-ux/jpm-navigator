@@ -349,7 +349,7 @@ function ProspectsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedIds.size} prospect{selectedIds.size === 1 ? "" : "s"}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the selected prospects and their activity logs. This cannot be undone.
+              You'll have 5 seconds to undo this from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
