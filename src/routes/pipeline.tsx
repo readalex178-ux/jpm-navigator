@@ -95,7 +95,8 @@ function PipelinePage() {
     const id = String(e.active.id);
     const stage = e.over?.id as Stage | undefined;
     if (!stage) return;
-    moveStage(id, stage);
+    // Drag-drop moves are undoable too.
+    void import("@/lib/undoable").then((m) => m.undoableStageMove(id, stage));
   };
 
   return (
