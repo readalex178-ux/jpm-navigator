@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { ConversationLog, buildConversation } from "@/components/ConversationLog";
 import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
 import { ProspectCoachChat } from "@/components/ProspectCoachChat";
+import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
+import { ProspectTimeline } from "@/components/ProspectTimeline";
 import {
   STAGES,
   SIGNAL_LABELS,
@@ -304,6 +306,13 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
               className="resize-none bg-amber-400/5"
             />
           </Section>
+
+          <ProfileQualifierBox />
+
+          <Section title="Timeline">
+            <ProspectTimeline prospectId={prospect.id} />
+          </Section>
+
 
           <Section title="Conversation">
             <ConversationLog activities={prospect.activities} vnLog={prospect.vnLog} />
