@@ -116,7 +116,7 @@ export function AppSidebar() {
                       <Link to={item.url} className="flex items-center gap-3">
                         <item.icon className="h-4 w-4" />
                         {!collapsed && <span className="flex-1">{item.title}</span>}
-                        {item.url === "/" && dueCount > 0 && (
+                        {item.url === "/on-deck" && dueCount > 0 && (
                           <span
                             className={cn(
                               "grid place-items-center rounded-full bg-primary px-1.5 text-[10px] font-semibold leading-none text-primary-foreground",
