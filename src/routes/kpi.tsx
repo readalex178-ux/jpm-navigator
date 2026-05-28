@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { PageBody, PageHeader, Section, StatCard } from "@/components/Page";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Copy, Sparkles } from "lucide-react";
+import { Loader2, Copy, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { useStore, todayStr, daysSince } from "@/lib/store";
-import { DAILY_TARGETS, WEEKLY_BENCHMARKS, PLATFORMS, platformEmoji, type Platform } from "@/lib/btf/types";
+import { DAILY_TARGETS, WEEKLY_BENCHMARKS, PLATFORMS, platformEmoji, type Platform, type KpiDay } from "@/lib/btf/types";
 import { chat, AiNotConfiguredError } from "@/lib/ai/client";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kpi")({
@@ -115,31 +116,194 @@ function TodayTab() {
   );
 }
 
+// --- Week helpers ---
+function startOfWeek(d: Date = new Date()): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  // Monday = start of week. JS getDay(): Sun=0..Sat=6 -> shift so Mon=0
+  const dow = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+function ymd(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+function weekDates(): string[] {
+  const start = startOfWeek();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return ymd(d);
+  });
+}
+function shortDay(date: string) {
+  const d = new Date(date + "T00:00:00");
+  return d.toLocaleDateString(undefined, { weekday: "short" });
+}
+
+type MetricKey = "vnSent" | "connectionsSent" | "replies" | "booked" | "shows" | "hours";
+
 function WeeklyTab() {
   const prospects = useStore((s) => s.prospects);
-  const counts = useMemo(() => {
-    const out: Partial<Record<Platform, number>> = {};
-    prospects.forEach((p) => {
-      if ((p.stage === "Call Booked" || p.stage === "Closed") && daysSince(p.stageEnteredAt) <= 7) {
-        out[p.platform] = (out[p.platform] ?? 0) + 1;
-      }
-    });
-    return out;
-  }, [prospects]);
-  const total = Object.values(counts).reduce((a, b) => a + (b ?? 0), 0);
-  const target = Object.values(WEEKLY_BENCHMARKS).reduce((a, b) => a + b, 0);
+  const kpiDays = useStore((s) => s.kpiDays);
+  const [expanded, setExpanded] = useState<MetricKey | null>(null);
+
+  const week = useMemo(() => weekDates(), []);
+  const byDate = useMemo(() => {
+    const map = new Map<string, KpiDay>();
+    kpiDays.forEach((k) => map.set(k.date, k));
+    return map;
+  }, [kpiDays]);
+
+  const rows: KpiDay[] = useMemo(
+    () =>
+      week.map(
+        (d) =>
+          byDate.get(d) ?? {
+            date: d,
+            vnSent: 0,
+            connectionsSent: 0,
+            connectionsAccepted: 0,
+            replies: 0,
+            activeConvos: 0,
+            calendarsSent: 0,
+            booked: 0,
+            shows: 0,
+            hours: 0,
+            byPlatform: {},
+          },
+      ),
+    [week, byDate],
+  );
+
+  const totals = useMemo(
+    () =>
+      rows.reduce(
+        (a, r) => ({
+          vnSent: a.vnSent + r.vnSent,
+          connectionsSent: a.connectionsSent + r.connectionsSent,
+          connectionsAccepted: a.connectionsAccepted + (r.connectionsAccepted ?? 0),
+          replies: a.replies + r.replies,
+          booked: a.booked + r.booked,
+          shows: a.shows + r.shows,
+          hours: a.hours + r.hours,
+        }),
+        { vnSent: 0, connectionsSent: 0, connectionsAccepted: 0, replies: 0, booked: 0, shows: 0, hours: 0 },
+      ),
+    [rows],
+  );
+
+  // Targets: derived from daily targets × 5 workdays + WEEKLY_BENCHMARKS for booked.
+  const platformBookedTarget = Object.values(WEEKLY_BENCHMARKS).reduce((a, b) => a + b, 0);
+  const targets: Record<MetricKey, number> = {
+    vnSent: DAILY_TARGETS.vnLinkedIn * 5,
+    connectionsSent: DAILY_TARGETS.connections * 5,
+    replies: Math.round(DAILY_TARGETS.vnLinkedIn * 5 * (DAILY_TARGETS.replyRate / 100)),
+    booked: platformBookedTarget,
+    shows: Math.round(platformBookedTarget * (DAILY_TARGETS.showRate / 100)),
+    hours: 25,
+  };
+
+  // Booked + shows: pull contributing prospects from this week's stage entries.
+  const weekStartMs = new Date(week[0] + "T00:00:00").getTime();
+  const weekEndMs = weekStartMs + 7 * 86_400_000;
+  const bookedProspects = useMemo(
+    () =>
+      prospects.filter((p) => {
+        if (p.stage !== "Call Booked" && p.stage !== "Closed" && p.stage !== "No Show") return false;
+        const t = new Date(p.stageEnteredAt).getTime();
+        return t >= weekStartMs && t < weekEndMs;
+      }),
+    [prospects, weekStartMs, weekEndMs],
+  );
+
+  const perPlatform: Partial<Record<Platform, number>> = {};
+  prospects.forEach((p) => {
+    const t = new Date(p.stageEnteredAt).getTime();
+    if ((p.stage === "Call Booked" || p.stage === "Closed") && t >= weekStartMs && t < weekEndMs) {
+      perPlatform[p.platform] = (perPlatform[p.platform] ?? 0) + 1;
+    }
+  });
+
+  const metrics: { key: MetricKey; label: string; unit?: string }[] = [
+    { key: "vnSent", label: "Voice notes sent" },
+    { key: "connectionsSent", label: "Connection requests" },
+    { key: "replies", label: "Replies received" },
+    { key: "booked", label: "Calls booked" },
+    { key: "shows", label: "Shows" },
+    { key: "hours", label: "Hours worked", unit: "h" },
+  ];
+
+  const todayKey = todayStr();
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <StatCard label="Calls this week" value={total} accent />
-        <StatCard label="Weekly target" value={target} />
-        <StatCard label="To goal" value={Math.max(0, target - total)} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard label="Calls booked" value={totals.booked} accent hint={`Target ${targets.booked}`} />
+        <StatCard label="Shows" value={totals.shows} hint={`Target ${targets.shows}`} />
+        <StatCard label="VNs sent" value={totals.vnSent} hint={`Target ${targets.vnSent}`} />
+        <StatCard label="Hours" value={totals.hours} hint={`Target ${targets.hours}`} />
       </div>
-      <Section title="Per-platform vs benchmark">
+
+      <Section title="This week vs targets">
+        <ul className="space-y-1.5">
+          {metrics.map((m) => {
+            const got = Number(totals[m.key] ?? 0);
+            const tgt = targets[m.key];
+            const pct = tgt > 0 ? Math.min(100, (got / tgt) * 100) : 0;
+            const isOpen = expanded === m.key;
+            return (
+              <li key={m.key} className="rounded-md border border-border bg-surface/40">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(isOpen ? null : m.key)}
+                  className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-surface"
+                >
+                  {isOpen ? (
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span>{m.label}</span>
+                      <span className="num text-xs text-muted-foreground">
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            pct >= 100 ? "text-success" : pct >= 60 ? "text-foreground" : "text-amber-500",
+                          )}
+                        >
+                          {got}
+                          {m.unit ?? ""}
+                        </span>
+                        <span> / {tgt}{m.unit ?? ""}</span>
+                        <span className="ml-2 text-muted-foreground/70">{Math.round(pct)}%</span>
+                      </span>
+                    </div>
+                    <Progress value={pct} className="h-1.5" />
+                  </div>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-border bg-background/30 px-3 py-3">
+                    <DrillDown
+                      metric={m.key}
+                      rows={rows}
+                      todayKey={todayKey}
+                      bookedProspects={bookedProspects}
+                    />
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+
+      <Section title="Booked calls by platform">
         <div className="space-y-3">
           {PLATFORMS.filter((p) => p.value !== "tiktok").map((p) => {
-            const got = counts[p.value] ?? 0;
+            const got = perPlatform[p.value] ?? 0;
             const tgt = WEEKLY_BENCHMARKS[p.value];
             const pct = tgt > 0 ? Math.min(100, (got / tgt) * 100) : 0;
             return (
@@ -154,6 +318,92 @@ function WeeklyTab() {
           })}
         </div>
       </Section>
+    </div>
+  );
+}
+
+function DrillDown({
+  metric,
+  rows,
+  todayKey,
+  bookedProspects,
+}: {
+  metric: MetricKey;
+  rows: KpiDay[];
+  todayKey: string;
+  bookedProspects: { id: string; name: string; stage: string; platform: Platform; stageEnteredAt: string }[];
+}) {
+  // Day-by-day contribution table
+  return (
+    <div className="space-y-3">
+      <table className="w-full text-xs">
+        <thead className="text-left uppercase tracking-widest text-muted-foreground">
+          <tr>
+            <th className="py-1.5">Day</th>
+            <th>Date</th>
+            <th className="text-right">Value</th>
+          </tr>
+        </thead>
+        <tbody className="num">
+          {rows.map((r) => {
+            const v = Number(r[metric] ?? 0);
+            const isToday = r.date === todayKey;
+            return (
+              <tr
+                key={r.date}
+                className={cn("border-t border-border/60", isToday && "bg-primary/5")}
+              >
+                <td className={cn("py-1.5 font-sans", isToday && "font-semibold text-primary")}>
+                  {shortDay(r.date)}
+                  {isToday && <span className="ml-1 text-[10px] text-primary/70">(today)</span>}
+                </td>
+                <td className="font-sans text-muted-foreground">{r.date}</td>
+                <td className={cn("text-right", v === 0 && "text-muted-foreground/60")}>{v}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {(metric === "booked" || metric === "shows") && (
+        <div>
+          <div className="mb-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Prospects that contributed this week
+          </div>
+          {bookedProspects.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-background/40 py-3 text-center text-xs text-muted-foreground">
+              No booked prospects logged for this week yet.
+            </div>
+          ) : (
+            <ul className="space-y-1">
+              {bookedProspects.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between rounded-md border border-border bg-background/50 px-2.5 py-1.5 text-xs"
+                >
+                  <Link
+                    to="/prospects/$id"
+                    params={{ id: p.id }}
+                    className="truncate font-medium hover:text-primary"
+                  >
+                    {platformEmoji(p.platform)} {p.name}
+                  </Link>
+                  <span className="text-muted-foreground">
+                    {p.stage} · {new Date(p.stageEnteredAt).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {metric === "vnSent" && (
+        <p className="text-[11px] text-muted-foreground">
+          Sourced from your daily VN counter. Log a script in the Scripts tab to
+          attribute reply/book rates per variation.
+        </p>
+      )}
     </div>
   );
 }
