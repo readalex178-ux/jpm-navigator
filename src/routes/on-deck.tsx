@@ -34,7 +34,7 @@ type Bucket = "all" | "overdue" | "today" | "stage-age";
 
 function OnDeckPage() {
   const prospects = useStore((s) => s.prospects);
-  const togglePinned = useStore((s) => s.togglePinned);
+  const togglePin = useStore((s) => s.togglePin);
   const due = useMemo(() => getDueFollowUps(prospects), [prospects]);
   const [bucket, setBucket] = useState<Bucket>("all");
 
@@ -110,7 +110,7 @@ function OnDeckPage() {
       ) : (
         <ul className="space-y-2">
           {filtered.map((d) => (
-            <OnDeckRow key={d.prospect.id} item={d} onPin={togglePinned} />
+            <OnDeckRow key={d.prospect.id} item={d} onPin={togglePin} />
           ))}
         </ul>
       )}
