@@ -1,5 +1,11 @@
-import { Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { type Prospect, SIGNAL_LABELS, type BuyingSignals } from "@/lib/btf/types";
+import { Button } from "@/components/ui/button";
+import { buildProspectContext } from "@/lib/ai/prospectContext";
+import { explainQualScore } from "@/lib/ai/explainScore.functions";
 
 type Factor = {
   label: string;
