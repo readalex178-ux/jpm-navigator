@@ -267,37 +267,50 @@ ${data.history ? `PRIOR ANALYZER NOTES:\n${data.history}` : ""}`;
 
 const VN1_BUILDER_SYS = `${BTF_ANALYZER_SYSTEM}
 
-You will be given RAW PASTED CONTENT from a LinkedIn profile. Your job: produce ONE ready-to-record Voice Note #1 script that the setter can read out loud verbatim.
+You will be given RAW PASTED CONTENT from a LinkedIn profile. Your job: produce THREE distinct ready-to-record Voice Note #1 scripts the setter can read out loud verbatim. Each one must take a DIFFERENT angle (e.g. one direct/curious, one personalisation-led, one bold/contrarian) so the setter can pick the best fit.
 
-HARD RULES — these are non-negotiable, the script is rejected if any are broken:
-- Maximum 150 words. Count them.
-- NO brackets of any kind. No "[Name]", no "[pause]", no "{{first_name}}", no parenthetical pacing cues. The script is final spoken text only.
-- NO placeholders. Resolve their actual first name from the profile. If you genuinely cannot find a first name, omit the name entirely and open with "Hey".
-- Must follow the BTF Master Script structure in this exact order:
+HARD RULES — these are non-negotiable, each script is rejected if any are broken:
+- Each script ≤150 words. Count them.
+- NO brackets of any kind. No "[Name]", no "[pause]", no "{{first_name}}", no parenthetical pacing cues. Final spoken text only.
+- NO placeholders. Resolve their actual first name from the profile. If you cannot find a first name, omit it and open with "Hey".
+- Every script must follow the BTF Master Script structure in this exact order:
   1) HOOK — "Hey <first name>, figured I'd send a quick voice note so you didn't have to read a whole book here."
-  2) PERSONALISATION — 2-3 sentences citing ONE specific real detail from their profile (offer, headline, recent post, role). Prove you actually looked.
+  2) PERSONALISATION — 2-3 sentences citing ONE specific real detail from their profile. Prove you actually looked.
   3) BRIDGE — must use the literal number 19 founders/service providers and the phrase "more direct, one-on-one conversations" and "without relying on paid ads".
-  4) RELEVANCE — one sentence connecting BTF to their world / market (use the right market trust line if obvious).
+  4) RELEVANCE — one sentence connecting BTF to their world / market.
   5) CLOSE — default: "Let me know if you're open to hearing how it works?"
 - Casual, human, conversational. Zero corporate speak. No emojis. No exclamation marks unless absolutely warranted.
 - Never name the product. Never say "podcast". Never mention pricing.
 
+If a USER INTENT is provided, EVERY script must honour that intent — refine the wording and BTF framing only, never ignore or contradict it.
+
 Return JSON ONLY:
 {
   "firstName": "<the first name you used, or empty string>",
-  "wordCount": <integer count of words in script>,
-  "script": "<the full final spoken text, plain prose, no brackets, no labels>",
-  "personalisationDetail": "<the specific real detail you anchored on>",
   "market": "<market bucket if identifiable>",
-  "warnings": ["<any rule you almost broke or had to skip>"]
+  "personalisationDetail": "<the specific real detail you anchored on>",
+  "variants": [
+    {
+      "angle": "<short 2-4 word label e.g. 'Direct curiosity', 'Personalisation-led', 'Bold contrarian'>",
+      "script": "<full final spoken text, plain prose, no brackets>",
+      "wordCount": <integer>
+    },
+    { ... }, { ... }
+  ],
+  "warnings": ["<any rule you almost broke>"]
 }`;
 
-export const VN1ScriptResultSchema = z.object({
-  firstName: z.string().max(60),
-  wordCount: z.number().int().min(0).max(500),
+const VariantSchema = z.object({
+  angle: z.string().max(60),
   script: z.string().min(10).max(2000),
-  personalisationDetail: z.string().max(400),
-  market: z.string().max(80),
+  wordCount: z.number().int().min(0).max(500),
+});
+
+export const VN1ScriptResultSchema = z.object({
+  firstName: z.string().max(60).default(""),
+  market: z.string().max(80).default(""),
+  personalisationDetail: z.string().max(400).default(""),
+  variants: z.array(VariantSchema).min(1).max(3),
   warnings: z.array(z.string()).max(8).default([]),
 });
 export type VN1ScriptResult = z.infer<typeof VN1ScriptResultSchema>;
@@ -308,6 +321,7 @@ export const buildVN1Script = createServerFn({ method: "POST" })
     z.object({
       profileText: z.string().min(10).transform((s) => s.slice(0, 20000)),
       priorOpeners: z.array(z.string().max(2000)).max(10).optional(),
+      userIntent: z.string().max(1000).optional(),
     }).parse(data),
   )
   .handler(async ({ data }): Promise<{ ok: true; result: VN1ScriptResult; priorChecked: number } | { ok: false; error: string }> => {
@@ -317,9 +331,13 @@ export const buildVN1Script = createServerFn({ method: "POST" })
         priors.length > 0
           ? `\n\nDO NOT REUSE these openers (this prospect has already heard them — write something materially different):\n${priors.map((p, i) => `(${i + 1}) ${p.slice(0, 400)}`).join("\n")}\n`
           : "";
+      const intent = (data.userIntent ?? "").trim();
+      const intentBlock = intent
+        ? `\n\n=== USER INTENT (REQUIRED) ===\nThe setter wants every script to convey this — do not ignore, soften past recognition, or contradict it:\n"""${intent}"""\n`
+        : "";
       const text = await callWithFallback(
         VN1_BUILDER_SYS,
-        `PROFILE:\n\n${data.profileText}${priorBlock}\n\nReturn JSON only.`,
+        `PROFILE:\n\n${data.profileText}${priorBlock}${intentBlock}\n\nReturn JSON only — exactly 3 distinct variants.`,
         true,
       );
       let raw: unknown;
@@ -331,14 +349,16 @@ export const buildVN1Script = createServerFn({ method: "POST" })
         raw = JSON.parse(m[0]);
       }
       const parsed = VN1ScriptResultSchema.parse(raw);
-      // Server-side sanity: strip any bracketed cues that slipped through.
-      parsed.script = parsed.script.replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "").replace(/\s{2,}/g, " ").trim();
-      parsed.wordCount = parsed.script.split(/\s+/).filter(Boolean).length;
+      parsed.variants = parsed.variants.map((v) => {
+        const cleaned = v.script.replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "").replace(/\s{2,}/g, " ").trim();
+        return { ...v, script: cleaned, wordCount: cleaned.split(/\s+/).filter(Boolean).length };
+      });
       return { ok: true, result: parsed, priorChecked: priors.length };
     } catch (e) {
       console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }
   });
+
 
 /* =========================
  * 4. Paste-a-thread analyser (no extension required)

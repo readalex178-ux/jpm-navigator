@@ -77,6 +77,7 @@ function ToolsPage() {
 function ScriptBuilderTab() {
   const fn = useServerFn(buildVN1Script);
   const [text, setText] = useState("");
+  const [intent, setIntent] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<VN1ScriptResult | null>(null);
   const [priorChecked, setPriorChecked] = useState(0);
@@ -100,7 +101,13 @@ function ScriptBuilderTab() {
             .slice(0, 10)
             .map((s) => s.text)
         : undefined;
-      const r = await fn({ data: { profileText: text.trim(), priorOpeners } });
+      const r = await fn({
+        data: {
+          profileText: text.trim(),
+          priorOpeners,
+          userIntent: intent.trim() || undefined,
+        },
+      });
       if (r.ok) { setRes(r.result); setPriorChecked(r.priorChecked); }
       else toast.error(r.error);
     } catch (e) {
@@ -133,34 +140,47 @@ function ScriptBuilderTab() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Paste full profile content here…"
-          className="min-h-[260px] text-xs"
+          className="min-h-[220px] text-xs"
         />
+        <div className="mt-3">
+          <label className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            What do you want to say? (optional)
+          </label>
+          <Textarea
+            value={intent}
+            onChange={(e) => setIntent(e.target.value)}
+            placeholder="e.g. 'lead with their recent retreat post and ask if they're open to a quick chat about getting more 1:1 conversations'"
+            className="mt-1 min-h-[64px] resize-none text-xs"
+          />
+          {intent.trim() && (
+            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>AI will shape all 3 scripts around this — your wording stays intact.</span>
+              <button
+                type="button"
+                className="text-primary hover:underline"
+                onClick={() => setIntent("")}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
         <div className="mt-2 flex justify-end">
           <Button onClick={run} disabled={busy}>
             {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-            Generate voice note
+            Generate 3 scripts
           </Button>
         </div>
       </Section>
 
-      <Section
-        title="Your voice-note opener"
-        action={res && (
-          <Button size="sm" variant="outline" onClick={() => copy(res.script, "Script copied")}>
-            <Copy className="mr-1 h-3 w-3" /> Copy
-          </Button>
-        )}
-      >
+      <Section title="Your voice-note options">
         {!res ? (
           <div className="rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-            Your voice note will appear here — ≤150 words, no brackets, ready to record.
+            3 voice-note variants will appear here — each ≤150 words, no brackets, ready to record.
           </div>
         ) : (
           <div className="space-y-3 text-sm">
             <div className="flex flex-wrap gap-1.5 text-[10px]">
-              <Badge variant="outline" className={cn(res.wordCount <= 150 ? "border-success text-success" : "border-destructive text-destructive")}>
-                {res.wordCount} words
-              </Badge>
               {res.firstName && <Badge variant="outline">First name: {res.firstName}</Badge>}
               {res.market && <Badge variant="outline">{res.market}</Badge>}
               {priorChecked > 0 && (
@@ -169,14 +189,37 @@ function ScriptBuilderTab() {
                 </Badge>
               )}
             </div>
-            <div className="rounded-md bg-surface p-3 leading-relaxed whitespace-pre-wrap">
-              {res.script}
-            </div>
             {res.personalisationDetail && (
               <div className="text-[11px] text-muted-foreground">
                 <span className="uppercase tracking-widest">Anchor:</span> {res.personalisationDetail}
               </div>
             )}
+            <div className="space-y-2">
+              {res.variants.map((v, i) => (
+                <div key={i} className="rounded-md border border-border bg-card p-3">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge className="h-fit px-1.5 py-0 text-[10px]">{v.angle}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "h-fit px-1.5 py-0 text-[10px]",
+                          v.wordCount <= 150 ? "border-success text-success" : "border-destructive text-destructive",
+                        )}
+                      >
+                        {v.wordCount} words
+                      </Badge>
+                    </div>
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => copy(v.script, "Script copied")}>
+                      <Copy className="mr-1 h-3 w-3" /> Copy
+                    </Button>
+                  </div>
+                  <div className="rounded-md bg-surface p-2 text-xs leading-relaxed whitespace-pre-wrap">
+                    {v.script}
+                  </div>
+                </div>
+              ))}
+            </div>
             {res.warnings.length > 0 && (
               <div className="rounded bg-amber-500/10 p-2 text-[11px] text-amber-500">
                 ⚠ {res.warnings.join(" · ")}
@@ -188,6 +231,7 @@ function ScriptBuilderTab() {
     </div>
   );
 }
+
 
 /* ===================== 2. Thread Analyser ===================== */
 function ThreadAnalyserTab() {
