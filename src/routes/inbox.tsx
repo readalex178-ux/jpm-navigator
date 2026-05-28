@@ -73,6 +73,8 @@ function InboxPage() {
   const callSuggest = useServerFn(suggestReplies);
   const [aiBusy, setAiBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestRepliesResult["suggestions"] | null>(null);
+  const [userIntent, setUserIntent] = useState("");
+
 
   // Historical messages from Supabase, grouped by prospect_id
   const queryClient = useQueryClient();
@@ -231,8 +233,10 @@ function InboxPage() {
             date: m.date,
             text: m.text,
           })),
+          userIntent: userIntent.trim() || undefined,
         },
       });
+
       if (!res.ok) throw new Error(res.error);
       setSuggestions(res.result.suggestions);
     } catch (e) {
@@ -492,9 +496,35 @@ function InboxPage() {
                       ) : (
                         <Sparkles className="mr-1 h-3 w-3" />
                       )}
-                      {suggestions ? "Regenerate" : "Suggest 3 replies"}
+                      {suggestions
+                        ? "Regenerate"
+                        : userIntent.trim()
+                          ? "Shape my message"
+                          : "Suggest 3 replies"}
                     </Button>
                   </div>
+                  <div className="mt-2">
+                    <Textarea
+                      value={userIntent}
+                      onChange={(e) => setUserIntent(e.target.value)}
+                      placeholder="Optional — say what you want to convey (e.g. 'ask if Friday works for a 15-min call'). AI will write 3 versions in your voice."
+                      rows={2}
+                      className="min-h-[44px] resize-none text-xs"
+                    />
+                    {userIntent.trim() && (
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>AI will shape this into 3 angles — your wording stays intact.</span>
+                        <button
+                          type="button"
+                          className="text-primary hover:underline"
+                          onClick={() => setUserIntent("")}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {suggestions && (
                     <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">
                       {suggestions.map((s, i) => (

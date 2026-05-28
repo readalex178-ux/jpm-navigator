@@ -95,6 +95,7 @@ export const suggestReplies = createServerFn({ method: "POST" })
         bio: z.string().max(4000).optional(),
         signals: z.array(z.string()).max(20).optional(),
         messages: z.array(ConvMessageSchema).max(60),
+        userIntent: z.string().max(1000).optional(),
       })
       .parse(data),
   )
@@ -112,6 +113,10 @@ export const suggestReplies = createServerFn({ method: "POST" })
             `[${m.date.slice(0, 16)}] ${m.fromMe ? "ME" : "THEM"} (${m.type}): ${m.text}`,
         )
         .join("\n");
+      const intent = (data.userIntent ?? "").trim();
+      const intentBlock = intent
+        ? `\n\n=== USER INTENT (REQUIRED) ===\nThe setter wants to convey this — every draft MUST express this intent in their own voice. Do not ignore, soften past recognition, or contradict it. Refine wording, tone, and BTF framing only:\n"""${intent}"""\n`
+        : "";
       const user = `PROSPECT: ${data.prospectName}
 Platform: ${data.platform ?? "—"}
 Niche: ${data.niche ?? "—"}
@@ -121,9 +126,10 @@ Buying signals: ${(data.signals ?? []).join(", ") || "none"}
 Bio: ${data.bio ?? "—"}
 
 CONVERSATION (chronological):
-${convo || "(no messages yet — suggest 3 cold openers)"}
+${convo || "(no messages yet — suggest 3 cold openers)"}${intentBlock}
 
-Return JSON only — exactly 3 suggestions, each a different angle.`;
+Return JSON only — exactly 3 suggestions, each a different angle${intent ? " on the user's stated intent above" : ""}.`;
+
 
       try {
         let text: string;
