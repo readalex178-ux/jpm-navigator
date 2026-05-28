@@ -7,13 +7,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { suggestNextAction, type NextAction } from "@/lib/ai/nextAction.functions";
 import { useStore } from "@/lib/store";
-import { buildConversation } from "@/components/ConversationLog";
+import { buildConversation, type ConvMessage } from "@/components/ConversationLog";
 import type { Prospect, Stage, ActivityType } from "@/lib/btf/types";
 import { STAGES } from "@/lib/btf/types";
 
 type Props = {
   prospect: Prospect;
-  extras?: Array<{ fromMe: boolean; type: ActivityType; date: string; text: string }>;
+  extras?: ConvMessage[];
   /** Optional callback to push the draft into a composer. */
   onUseDraft?: (text: string, type: ActivityType) => void;
 };
