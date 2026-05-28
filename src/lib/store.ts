@@ -193,8 +193,30 @@ export const useStore = create<State & Actions>()(
           lastTouchAt: p.lastTouchAt ?? p.createdAt ?? now(),
         };
         set({ prospects: [prospect, ...get().prospects] });
+        // Auto-wire KPI counters on user-driven prospect creation, based on initial stage.
+        const date = today();
+        const day = get().kpiDays.find((k) => k.date === date) ?? blankKpi(date);
+        const bumped: Partial<KpiDay> & { date: string } = { date };
+        // Any new prospect added to the pipeline counts as an outbound connection touch.
+        if (prospect.stage !== "Cold" && prospect.stage !== "Nurturing") {
+          bumped.connectionsSent = day.connectionsSent + 1;
+        }
+        if (prospect.stage === "Connected") bumped.connectionsAccepted = day.connectionsAccepted + 1;
+        if (prospect.stage === "VN1 Sent" || prospect.stage === "VN2 Sent") bumped.vnSent = day.vnSent + 1;
+        if (prospect.stage === "Replied") bumped.replies = day.replies + 1;
+        if (prospect.stage === "Calendar Sent") bumped.calendarsSent = day.calendarsSent + 1;
+        if (prospect.stage === "Call Booked") bumped.booked = day.booked + 1;
+        if (Object.keys(bumped).length > 1) {
+          const exists = get().kpiDays.find((k) => k.date === date);
+          if (exists) {
+            set({ kpiDays: get().kpiDays.map((k) => (k.date === date ? { ...k, ...bumped } : k)) });
+          } else {
+            set({ kpiDays: [{ ...blankKpi(date), ...bumped }, ...get().kpiDays] });
+          }
+        }
         return prospect;
       },
+
       updateProspect: (id, patch) =>
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       deleteProspect: (id) =>
