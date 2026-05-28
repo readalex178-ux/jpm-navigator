@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { Check, X, UserPlus, MessageSquare, ArrowRight, Sparkles } from "lucide-react";
+import { Check, X, UserPlus, MessageSquare, ArrowRight, Sparkles, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
 import { matchProspects } from "@/lib/assistant/matchProspect";
 import { useApplyProposal } from "@/lib/assistant/apply";
 import type { ProposalRecord } from "@/lib/assistant/intents";
+import type { Prospect } from "@/lib/btf/types";
+
 
 interface Props {
   proposal: ProposalRecord;
