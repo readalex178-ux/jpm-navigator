@@ -30,6 +30,7 @@ import {
 import { getAllMessages, logMessage } from "@/lib/messages.functions";
 import { NextActionCard } from "@/components/NextActionCard";
 import { AiSetupBanner } from "@/components/AiSetupBanner";
+import { ObjectionPanel } from "@/components/ObjectionPanel";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
