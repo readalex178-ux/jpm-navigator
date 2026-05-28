@@ -582,6 +582,17 @@ function LinkedInPage() {
               Vault
             </Button>
           </div>
+          <div className="mt-2">
+            <TemplatesSheet
+              firstName={
+                activeThread?.participantName?.split(" ")[0] ?? "there"
+              }
+              onInsert={(text) => {
+                setDraft(text);
+                toast.success("Template loaded. Edit then Insert.");
+              }}
+            />
+          </div>
           <Button
             size="sm"
             variant="outline"
