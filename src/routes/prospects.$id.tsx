@@ -32,6 +32,7 @@ import { QualScoreBreakdown } from "@/components/QualScoreBreakdown";
 import { BantTrafficLight, BantOverall } from "@/components/BantTrafficLight";
 import { BuyingSignalsProgress } from "@/components/BuyingSignalsProgress";
 import { SuggestedScript } from "@/components/SuggestedScript";
+import { NextActionCard } from "@/components/NextActionCard";
 import { LinkedinProfilePreview } from "@/components/LinkedinProfilePreview";
 import { cn } from "@/lib/utils";
 import {
