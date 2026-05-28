@@ -159,6 +159,8 @@ function DashboardPage() {
 
       <PageBody className="space-y-6">
         <FollowUpsBanner />
+        <OnboardingChecklist onAddProspect={() => setOpen(true)} />
+
 
         {/* Motivational sub-line */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
