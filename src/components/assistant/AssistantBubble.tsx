@@ -303,6 +303,19 @@ export function AssistantBubble() {
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
+              {voiceSupported && (
+                <Button
+                  size="icon"
+                  variant={listening ? "default" : "ghost"}
+                  onClick={toggleVoice}
+                  disabled={sending}
+                  aria-label={listening ? "Stop voice input" : "Start voice input"}
+                  title={listening ? "Stop recording" : "Speak instead of typing"}
+                  className={listening ? "animate-pulse" : ""}
+                >
+                  {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+              )}
               <Textarea
                 ref={textareaRef}
                 value={input}
