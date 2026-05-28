@@ -16,6 +16,7 @@ import { Route as ProspectsRouteImport } from './routes/prospects'
 import { Route as PlaybookRouteImport } from './routes/playbook'
 import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as OutreachRouteImport } from './routes/outreach'
+import { Route as OnDeckRouteImport } from './routes/on-deck'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as KpiRouteImport } from './routes/kpi'
 import { Route as InboxRouteImport } from './routes/inbox'
@@ -58,6 +59,11 @@ const OutreachRoute = OutreachRouteImport.update({
   path: '/outreach',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnDeckRoute = OnDeckRouteImport.update({
+  id: '/on-deck',
+  path: '/on-deck',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LinkedinRoute = LinkedinRouteImport.update({
   id: '/linkedin',
   path: '/linkedin',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
+  '/on-deck': typeof OnDeckRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/playbook': typeof PlaybookRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
+  '/on-deck': typeof OnDeckRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/playbook': typeof PlaybookRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
+  '/on-deck': typeof OnDeckRoute
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/playbook': typeof PlaybookRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/kpi'
     | '/linkedin'
+    | '/on-deck'
     | '/outreach'
     | '/pipeline'
     | '/playbook'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/kpi'
     | '/linkedin'
+    | '/on-deck'
     | '/outreach'
     | '/pipeline'
     | '/playbook'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/kpi'
     | '/linkedin'
+    | '/on-deck'
     | '/outreach'
     | '/pipeline'
     | '/playbook'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   KpiRoute: typeof KpiRoute
   LinkedinRoute: typeof LinkedinRoute
+  OnDeckRoute: typeof OnDeckRoute
   OutreachRoute: typeof OutreachRoute
   PipelineRoute: typeof PipelineRoute
   PlaybookRoute: typeof PlaybookRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/outreach'
       fullPath: '/outreach'
       preLoaderRoute: typeof OutreachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/on-deck': {
+      id: '/on-deck'
+      path: '/on-deck'
+      fullPath: '/on-deck'
+      preLoaderRoute: typeof OnDeckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/linkedin': {
@@ -311,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   KpiRoute: KpiRoute,
   LinkedinRoute: LinkedinRoute,
+  OnDeckRoute: OnDeckRoute,
   OutreachRoute: OutreachRoute,
   PipelineRoute: PipelineRoute,
   PlaybookRoute: PlaybookRoute,
