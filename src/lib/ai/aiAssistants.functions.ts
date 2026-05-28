@@ -305,13 +305,21 @@ export type VN1ScriptResult = z.infer<typeof VN1ScriptResultSchema>;
 export const buildVN1Script = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ profileText: z.string().min(10).transform((s) => s.slice(0, 20000)) }).parse(data),
+    z.object({
+      profileText: z.string().min(10).transform((s) => s.slice(0, 20000)),
+      priorOpeners: z.array(z.string().max(2000)).max(10).optional(),
+    }).parse(data),
   )
-  .handler(async ({ data }): Promise<{ ok: true; result: VN1ScriptResult } | { ok: false; error: string }> => {
+  .handler(async ({ data }): Promise<{ ok: true; result: VN1ScriptResult; priorChecked: number } | { ok: false; error: string }> => {
     try {
+      const priors = (data.priorOpeners ?? []).filter((s) => s.trim().length > 0).slice(0, 10);
+      const priorBlock =
+        priors.length > 0
+          ? `\n\nDO NOT REUSE these openers (this prospect has already heard them — write something materially different):\n${priors.map((p, i) => `(${i + 1}) ${p.slice(0, 400)}`).join("\n")}\n`
+          : "";
       const text = await callWithFallback(
         VN1_BUILDER_SYS,
-        `PROFILE:\n\n${data.profileText}\n\nReturn JSON only.`,
+        `PROFILE:\n\n${data.profileText}${priorBlock}\n\nReturn JSON only.`,
         true,
       );
       let raw: unknown;
@@ -326,7 +334,7 @@ export const buildVN1Script = createServerFn({ method: "POST" })
       // Server-side sanity: strip any bracketed cues that slipped through.
       parsed.script = parsed.script.replace(/\[[^\]]*\]|\{\{[^}]*\}\}/g, "").replace(/\s{2,}/g, " ").trim();
       parsed.wordCount = parsed.script.split(/\s+/).filter(Boolean).length;
-      return { ok: true, result: parsed };
+      return { ok: true, result: parsed, priorChecked: priors.length };
     } catch (e) {
       console.error("[aiAssistants] failed", e); return { ok: false, error: "AI service temporarily unavailable." };
     }

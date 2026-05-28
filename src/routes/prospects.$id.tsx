@@ -29,6 +29,7 @@ import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
 import { ProspectTimeline } from "@/components/ProspectTimeline";
 import { TierBadge } from "@/components/TierBadge";
 import { QualScoreBreakdown } from "@/components/QualScoreBreakdown";
+import { FollowUpSuggestionChip } from "@/components/FollowUpSuggestionChip";
 import { BantTrafficLight, BantOverall } from "@/components/BantTrafficLight";
 import { BuyingSignalsProgress } from "@/components/BuyingSignalsProgress";
 import { SuggestedScript } from "@/components/SuggestedScript";
@@ -635,6 +636,11 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
               {/* #21 Score breakdown — visible without extra clicks */}
               <div className="border-t border-border pt-3">
                 <QualScoreBreakdown prospect={prospect} />
+              </div>
+
+              {/* #51 AI follow-up suggestion — proposal only, requires click */}
+              <div>
+                <FollowUpSuggestionChip prospect={prospect} />
               </div>
             </div>
           </Section>
