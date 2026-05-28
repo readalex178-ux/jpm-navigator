@@ -80,6 +80,9 @@ type Actions = {
   addProspect: (p: Partial<Prospect> & { name: string }) => Prospect;
   updateProspect: (id: string, patch: Partial<Prospect>) => void;
   deleteProspect: (id: string) => void;
+  /** Returns a deep-ish copy of `id` with cleared identity fields (name/url/handle).
+   * Activity/VN logs are NOT copied — only static qualification metadata. */
+  duplicateProspect: (id: string, overrides?: Partial<Prospect>) => Prospect | null;
   moveStage: (id: string, stage: Stage) => void;
   logActivity: (id: string, a: Omit<Activity, "id">) => void;
   logVN: (id: string, v: Omit<VNEntry, "id">) => void;
@@ -189,6 +192,30 @@ export const useStore = create<State & Actions>()(
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       deleteProspect: (id) =>
         set({ prospects: get().prospects.filter((x) => x.id !== id) }),
+      duplicateProspect: (id, overrides) => {
+        const src = get().prospects.find((x) => x.id === id);
+        if (!src) return null;
+        const copy: Prospect = {
+          ...src,
+          id: uid(),
+          name: overrides?.name ?? `${src.name} (copy)`,
+          profileUrl: overrides?.profileUrl ?? "",
+          activities: [],
+          vnLog: [],
+          createdAt: now(),
+          stageEnteredAt: now(),
+          lastTouchAt: now(),
+          notes: undefined,
+          followUpAt: undefined,
+          followUpReason: undefined,
+          pinned: false,
+          ghlClaimed: false,
+          ghlRemindAt: undefined,
+          ...overrides,
+        };
+        set({ prospects: [copy, ...get().prospects] });
+        return copy;
+      },
       moveStage: (id, stage) => {
         const prev = get().prospects.find((x) => x.id === id);
         set({
