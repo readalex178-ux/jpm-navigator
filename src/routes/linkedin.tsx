@@ -296,6 +296,7 @@ function LinkedInPage() {
       </PageHeader>
 
       <PageBody className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_360px] lg:p-4">
+        <div className="col-span-full"><AiSetupBanner /></div>
         {/* INBOX */}
         <Section
           title={`Inbox (${threadList.length}${unreadCount ? ` · ${unreadCount} unread` : ""})`}
