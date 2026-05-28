@@ -74,6 +74,10 @@ export function AppSidebar() {
   const extConnected = useStore((s) => s.extensionConnected);
   const prospects = useStore((s) => s.prospects);
   const dueCount = useMemo(() => getDueFollowUps(prospects).length, [prospects]);
+  const unclaimedGhl = useMemo(
+    () => prospects.filter((p) => p.stage === "Call Booked" && !p.ghlClaimed).length,
+    [prospects],
+  );
   const isActive = (u: string) => (u === "/" ? path === "/" : path.startsWith(u));
 
   return (
@@ -119,6 +123,17 @@ export function AppSidebar() {
                             title={`${dueCount} follow-up${dueCount > 1 ? "s" : ""} due`}
                           >
                             {!collapsed && dueCount}
+                          </span>
+                        )}
+                        {item.url === "/pipeline" && unclaimedGhl > 0 && (
+                          <span
+                            className={cn(
+                              "grid place-items-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold leading-none text-amber-50",
+                              collapsed ? "h-1.5 w-1.5 p-0" : "h-4 min-w-4",
+                            )}
+                            title={`${unclaimedGhl} unclaimed GHL call${unclaimedGhl > 1 ? "s" : ""}`}
+                          >
+                            {!collapsed && unclaimedGhl}
                           </span>
                         )}
                         {item.url === "/linkedin" && extConnected && (
