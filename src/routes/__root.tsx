@@ -27,6 +27,7 @@ import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { GhlClaimModal } from "@/components/GhlClaimModal";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AssistantBubble } from "@/components/assistant/AssistantBubble";
+import { BackupReminder } from "@/components/BackupReminder";
 
 function NotFoundComponent() {
   return (
