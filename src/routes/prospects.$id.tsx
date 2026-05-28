@@ -30,6 +30,7 @@ import { ProspectTimeline } from "@/components/ProspectTimeline";
 import { TierBadge } from "@/components/TierBadge";
 import { QualScoreBreakdown } from "@/components/QualScoreBreakdown";
 import { FollowUpSuggestionChip } from "@/components/FollowUpSuggestionChip";
+import { ObjectionPanel } from "@/components/ObjectionPanel";
 import { BantTrafficLight, BantOverall } from "@/components/BantTrafficLight";
 import { BuyingSignalsProgress } from "@/components/BuyingSignalsProgress";
 import { SuggestedScript } from "@/components/SuggestedScript";
