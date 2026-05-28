@@ -103,17 +103,65 @@ export function QualScoreBreakdown({ prospect }: { prospect: Prospect }) {
   const suggestions = buildSuggestions(prospect);
   const computed = factors.reduce((sum, f) => sum + f.earned, 0);
 
+  const cacheKey = `explainScore:${prospect.id}:${prospect.qualScore}`;
+  const [explanation, setExplanation] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem(cacheKey);
+  });
+  const [busy, setBusy] = useState(false);
+  const explain = useServerFn(explainQualScore);
+
+  const runExplain = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await explain({
+        data: { context: buildProspectContext(prospect), score: prospect.qualScore },
+      });
+      if (r.ok) {
+        setExplanation(r.explanation);
+        try { sessionStorage.setItem(cacheKey, r.explanation); } catch { /* quota */ }
+      } else {
+        toast.error(r.error);
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-2">
         <div className="text-xs uppercase tracking-widest text-muted-foreground">
           Score breakdown
         </div>
-        <div className="text-[10px] text-muted-foreground">
-          recorded <span className="num font-medium text-foreground">{prospect.qualScore}</span> · model{" "}
-          <span className="num">{computed}</span>/100
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 gap-1 px-2 text-[10px]"
+            onClick={runExplain}
+            disabled={busy}
+            aria-label="Explain qualification score"
+          >
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            {explanation ? "Re-explain" : "Explain"}
+          </Button>
+          <div className="text-[10px] text-muted-foreground">
+            recorded <span className="num font-medium text-foreground">{prospect.qualScore}</span> · model{" "}
+            <span className="num">{computed}</span>/100
+          </div>
         </div>
       </div>
+
+      {explanation && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 text-xs leading-relaxed text-foreground">
+          {explanation}
+        </div>
+      )}
+
 
       <ul className="space-y-1.5">
         {factors.map((f) => {
