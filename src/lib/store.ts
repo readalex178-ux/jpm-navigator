@@ -168,6 +168,7 @@ export const useStore = create<State & Actions>()(
       analysisHistory: {},
       prospectAnalyses: {},
       ghlPromptProspectId: null,
+      linkedinThreadReads: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
