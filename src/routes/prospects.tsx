@@ -220,10 +220,20 @@ function ProspectsPage() {
             </Button>
             <Button
               size="sm"
+              variant="ghost"
+              onClick={() => setHistoryOpen(true)}
+              title="Import history"
+              aria-label="Import history"
+            >
+              <History className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => {
                 if (!filtered.length) return toast.error("Nothing to export.");
                 downloadCsv(`prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospectsToCsv(filtered));
+                markExportNow();
                 toast.success(`Exported ${filtered.length} prospects`);
               }}
             >
