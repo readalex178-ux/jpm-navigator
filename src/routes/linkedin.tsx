@@ -126,8 +126,27 @@ function LinkedInPage() {
   }, []);
 
   const threadList = useMemo(() => {
-    return Object.values(threads).sort((a, b) => (b.scrapedAt > a.scrapedAt ? 1 : -1));
-  }, [threads]);
+    // Unread first, then most-recent message at the top.
+    return Object.values(threads).sort((a, b) => {
+      const aUnread = isThreadUnread(a, threadReads[a.threadId]) ? 1 : 0;
+      const bUnread = isThreadUnread(b, threadReads[b.threadId]) ? 1 : 0;
+      if (aUnread !== bUnread) return bUnread - aUnread;
+      return lastMessageAt(b) - lastMessageAt(a);
+    });
+  }, [threads, threadReads]);
+
+  const unreadCount = useMemo(
+    () =>
+      Object.values(threads).filter((t) =>
+        isThreadUnread(t, threadReads[t.threadId]),
+      ).length,
+    [threads, threadReads],
+  );
+
+  const selectThread = (id: string) => {
+    setActiveThreadId(id);
+    markThreadRead(id);
+  };
 
   const activeThread = activeThreadId ? threads[activeThreadId] : threadList[0];
   const activeProfile = activeThread?.participantProfileUrl
