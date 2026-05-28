@@ -102,10 +102,6 @@ function OutreachPage() {
           <div className="grid gap-3">
             {filtered.map(({ p, touchDays, next, overdue, stale }) => {
               const last = p.activities[0];
-              const lastVN = p.vnLog[0];
-              const toneMatch =
-                lastVN?.reply === "VN" ? "matching" : lastVN?.reply === "text" ? "warm" : "cold";
-
               return (
                 <Section
                   key={p.id}
@@ -117,16 +113,7 @@ function OutreachPage() {
                           stale {touchDays}d
                         </Badge>
                       )}
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px]",
-                          toneMatch === "matching" && "border-success text-success",
-                          toneMatch === "cold" && "border-destructive text-destructive",
-                        )}
-                      >
-                        Tone: {toneMatch}
-                      </Badge>
+                      <ToneMatchIndicator prospect={p} />
                       <Button asChild size="sm" variant="ghost">
                         <Link to="/prospects/$id" params={{ id: p.id }}>
                           Open
