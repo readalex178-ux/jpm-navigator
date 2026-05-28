@@ -233,8 +233,10 @@ function InboxPage() {
             date: m.date,
             text: m.text,
           })),
+          userIntent: userIntent.trim() || undefined,
         },
       });
+
       if (!res.ok) throw new Error(res.error);
       setSuggestions(res.result.suggestions);
     } catch (e) {
