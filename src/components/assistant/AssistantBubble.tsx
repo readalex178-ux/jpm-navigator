@@ -343,7 +343,7 @@ export function AssistantBubble() {
               </Button>
             </div>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              Enter to send · attach a CSV to import · nothing is saved until you click Apply
+              Enter to send · attach a CSV · {voiceSupported ? "tap mic to speak" : "voice not supported in this browser"} · nothing saves until you click Apply
             </p>
 
           </div>
