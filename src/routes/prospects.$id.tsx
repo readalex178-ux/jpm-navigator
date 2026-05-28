@@ -286,6 +286,28 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
             </a>
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => togglePin(prospect.id)}
+          title={prospect.pinned ? "Unpin" : "Pin to top of lists"}
+        >
+          <Pin className={cn("mr-1 h-4 w-4", prospect.pinned && "fill-primary text-primary")} />
+          {prospect.pinned ? "Pinned" : "Pin"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const copy = duplicateProspect(prospect.id);
+            if (copy) {
+              toast.success("Duplicated", { description: "Update name and URL on the copy." });
+              navigate({ to: "/prospects/$id", params: { id: copy.id } });
+            }
+          }}
+        >
+          <CopyPlus className="mr-1 h-4 w-4" /> Duplicate
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="mr-1 h-4 w-4" /> Edit
         </Button>
