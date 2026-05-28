@@ -346,7 +346,10 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
           </Section>
 
 
-          <Section title="Conversation">
+          <Section
+            title="Conversation"
+            action={<ObjectionPanel triggerLabel="Objections" />}
+          >
             <div className="mb-3">
               <NextActionCard prospect={prospect} />
             </div>
