@@ -22,6 +22,7 @@ import {
   SKIP_TO_CALENDAR_SCRIPT,
   recommendPreScreen,
 } from "@/lib/btf/playbook";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/tools")({
   head: () => ({
