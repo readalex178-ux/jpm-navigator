@@ -28,6 +28,7 @@ import {
   type SuggestRepliesResult,
 } from "@/lib/ai/suggestReplies.functions";
 import { getAllMessages, logMessage } from "@/lib/messages.functions";
+import { NextActionCard } from "@/components/NextActionCard";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
@@ -451,6 +452,16 @@ function InboxPage() {
                 <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
               </ScrollArea>
               <div className="space-y-2 border-t border-border p-3">
+                {/* AI next-action — single highest-leverage move */}
+                <NextActionCard
+                  prospect={selected}
+                  extras={extrasByProspect.get(selected.id) ?? []}
+                  onUseDraft={(t, k) => {
+                    setDirection("me");
+                    setType(k);
+                    setText(t);
+                  }}
+                />
                 {/* Inline AI suggestions — right above the composer */}
                 <div className="rounded-md border border-border bg-surface/60 p-2">
                   <div className="flex items-center justify-between gap-2">
