@@ -282,6 +282,11 @@ function InboxPage() {
         subtitle="Every conversation in one workspace. AI suggests — you send."
       />
 
+      <div className="px-4 pt-2">
+        <AiSetupBanner />
+      </div>
+
+
       {/* Mobile pane switcher */}
       <div className="flex gap-1 px-4 pb-2 lg:hidden">
         {([
