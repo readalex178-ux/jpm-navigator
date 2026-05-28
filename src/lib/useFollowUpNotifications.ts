@@ -75,6 +75,11 @@ export function useFollowUpNotifications() {
       );
       n.onclick = () => {
         window.focus();
+        try {
+          window.location.href = "/on-deck";
+        } catch {
+          // ignore
+        }
         n.close();
       };
     } catch (e) {
