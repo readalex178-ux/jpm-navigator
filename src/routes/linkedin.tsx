@@ -34,6 +34,7 @@ import {
   lastMessageAt,
 } from "@/lib/btf/threadStatus";
 import type { NextAction } from "@/lib/ai/analyzerSchema";
+import { AiSetupBanner } from "@/components/AiSetupBanner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -296,6 +297,7 @@ function LinkedInPage() {
       </PageHeader>
 
       <PageBody className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_360px] lg:p-4">
+        <div className="col-span-full"><AiSetupBanner /></div>
         {/* INBOX */}
         <Section
           title={`Inbox (${threadList.length}${unreadCount ? ` · ${unreadCount} unread` : ""})`}

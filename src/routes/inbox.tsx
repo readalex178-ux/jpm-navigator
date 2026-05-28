@@ -29,6 +29,7 @@ import {
 } from "@/lib/ai/suggestReplies.functions";
 import { getAllMessages, logMessage } from "@/lib/messages.functions";
 import { NextActionCard } from "@/components/NextActionCard";
+import { AiSetupBanner } from "@/components/AiSetupBanner";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
@@ -281,6 +282,11 @@ function InboxPage() {
         title="Unified Inbox"
         subtitle="Every conversation in one workspace. AI suggests — you send."
       />
+
+      <div className="px-4 pt-2">
+        <AiSetupBanner />
+      </div>
+
 
       {/* Mobile pane switcher */}
       <div className="flex gap-1 px-4 pb-2 lg:hidden">

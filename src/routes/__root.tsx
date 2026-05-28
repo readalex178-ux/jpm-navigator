@@ -25,6 +25,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { GhlClaimModal } from "@/components/GhlClaimModal";
+import { CommandPalette } from "@/components/CommandPalette";
 
 function NotFoundComponent() {
   return (
@@ -177,6 +178,7 @@ function AuthedShell() {
           </main>
           <VoiceAssistant variant="floating" />
           <GhlClaimModal />
+          <CommandPalette />
         </div>
       </div>
     </SidebarProvider>

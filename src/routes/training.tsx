@@ -9,6 +9,7 @@ import { SCENARIOS, type Scenario } from "@/lib/ai/btfFramework";
 import { useStore } from "@/lib/store";
 import { chat, chatJson, AiNotConfiguredError } from "@/lib/ai/client";
 import { toast } from "sonner";
+import { AiSetupBanner } from "@/components/AiSetupBanner";
 
 export const Route = createFileRoute("/training")({
   head: () => ({
@@ -101,6 +102,7 @@ function TrainingPage() {
       </PageHeader>
 
       <PageBody className="grid gap-4 lg:grid-cols-[280px_1fr]">
+        <div className="col-span-full"><AiSetupBanner /></div>
         <div className="space-y-4">
           <Section title="Scenarios">
             <div className="space-y-1">

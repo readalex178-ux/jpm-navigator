@@ -8,6 +8,7 @@ import { Plus, ArrowRight, Flame, Clock, Inbox, Mic, CheckCircle2, Zap, Target, 
 import { useStore, todayStr, daysSince } from "@/lib/store";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { FollowUpsBanner } from "@/components/FollowUpsBanner";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import {
   STAGE_NEXT_ACTION,
   TIER_VALUE,
@@ -158,6 +159,8 @@ function DashboardPage() {
 
       <PageBody className="space-y-6">
         <FollowUpsBanner />
+        <OnboardingChecklist onAddProspect={() => setOpen(true)} />
+
 
         {/* Motivational sub-line */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
