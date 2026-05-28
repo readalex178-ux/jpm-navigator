@@ -29,6 +29,7 @@ import {
 } from "@/lib/ai/suggestReplies.functions";
 import { getAllMessages, logMessage } from "@/lib/messages.functions";
 import { NextActionCard } from "@/components/NextActionCard";
+import { AiSetupBanner } from "@/components/AiSetupBanner";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
