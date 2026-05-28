@@ -395,6 +395,14 @@ export const useStore = create<State & Actions>()(
             x.id === id ? { ...x, pinned: !x.pinned } : x,
           ),
         }),
+      markThreadRead: (threadId) =>
+        set({ linkedinThreadReads: { ...get().linkedinThreadReads, [threadId]: now() } }),
+      markThreadUnread: (threadId) => {
+        const next = { ...get().linkedinThreadReads };
+        delete next[threadId];
+        set({ linkedinThreadReads: next });
+      },
+
 
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
