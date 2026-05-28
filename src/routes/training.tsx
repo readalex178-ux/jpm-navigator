@@ -9,6 +9,7 @@ import { SCENARIOS, type Scenario } from "@/lib/ai/btfFramework";
 import { useStore } from "@/lib/store";
 import { chat, chatJson, AiNotConfiguredError } from "@/lib/ai/client";
 import { toast } from "sonner";
+import { AiSetupBanner } from "@/components/AiSetupBanner";
 
 export const Route = createFileRoute("/training")({
   head: () => ({
