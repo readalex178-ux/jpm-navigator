@@ -128,6 +128,8 @@ type Actions = {
 
   setGhlPromptProspectId: (id: string | null) => void;
   togglePin: (id: string) => void;
+  markThreadRead: (threadId: string) => void;
+  markThreadUnread: (threadId: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
