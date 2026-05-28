@@ -8,6 +8,7 @@ import { Plus, ArrowRight, Flame, Clock, Inbox, Mic, CheckCircle2, Zap, Target, 
 import { useStore, todayStr, daysSince } from "@/lib/store";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { FollowUpsBanner } from "@/components/FollowUpsBanner";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import {
   STAGE_NEXT_ACTION,
   TIER_VALUE,
