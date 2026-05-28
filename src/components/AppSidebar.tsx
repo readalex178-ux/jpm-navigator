@@ -11,6 +11,7 @@ import {
   Flame,
   Linkedin,
   Wrench,
+  AlarmClock,
   LogOut,
   BookOpen,
 } from "lucide-react";
