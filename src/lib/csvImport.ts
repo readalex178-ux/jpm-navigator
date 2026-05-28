@@ -71,10 +71,21 @@ function mapStage(raw: string): Stage {
   return "Found";
 }
 
-export function parseProspectsCsv(text: string): { rows: ParsedProspect[]; errors: string[] } {
+export type RowIssue = { row: number; reason: string };
+
+export type ParsedCsv = {
+  rows: ParsedProspect[];
+  /** Per-row issues that prevented a row from being included. */
+  failures: RowIssue[];
+  /** Top-level errors (missing required column, empty file). */
+  errors: string[];
+};
+
+export function parseProspectsCsv(text: string): ParsedCsv {
   const errors: string[] = [];
+  const failures: RowIssue[] = [];
   const grid = parseCsv(text);
-  if (!grid.length) return { rows: [], errors: ["File is empty."] };
+  if (!grid.length) return { rows: [], failures, errors: ["File is empty."] };
   const headers = grid[0].map((h) => h.trim().toLowerCase());
   const idx = (names: string[]) => {
     for (const n of names) {
@@ -105,73 +116,81 @@ export function parseProspectsCsv(text: string): { rows: ParsedProspect[]; error
     booked: idx(["booked?", "booked"]),
     followUp: idx(["follow-up due", "follow up due", "followup due"]),
   };
-  if (cols.name === -1) return { rows: [], errors: ["Missing required column: Name"] };
+  if (cols.name === -1) return { rows: [], failures, errors: ["Missing required column: Name"] };
 
   const rows: ParsedProspect[] = [];
   for (let r = 1; r < grid.length; r++) {
-    const get = (i: number) => (i >= 0 ? (grid[r][i] ?? "").trim() : "");
-    const name = get(cols.name);
-    if (!name) { errors.push(`Row ${r + 1}: missing name, skipped.`); continue; }
-    const platform = get(cols.platform).toLowerCase();
-    const stageRaw = get(cols.stage);
-    const tier = get(cols.tier).toUpperCase();
-    const leadTypeRaw = get(cols.leadType);
-    const numOr = (v: string, d: number) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
-    const bant012 = (v: string): 0 | 1 | 2 => Math.max(0, Math.min(2, Math.round(numOr(v, 0)))) as 0 | 1 | 2;
+    const rowNum = r + 1; // 1-indexed, accounts for header row
+    try {
+      const get = (i: number) => (i >= 0 ? (grid[r][i] ?? "").trim() : "");
+      const name = get(cols.name);
+      if (!name) {
+        failures.push({ row: rowNum, reason: "Missing name" });
+        continue;
+      }
+      const platform = get(cols.platform).toLowerCase();
+      const stageRaw = get(cols.stage);
+      const tier = get(cols.tier).toUpperCase();
+      const leadTypeRaw = get(cols.leadType);
+      const numOr = (v: string, d: number) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
+      const bant012 = (v: string): 0 | 1 | 2 => Math.max(0, Math.min(2, Math.round(numOr(v, 0)))) as 0 | 1 | 2;
 
-    const createdAt = parseDate(get(cols.date));
-    const notesText = get(cols.notes) || get(cols.bio);
-    const followUp = get(cols.followUp);
+      const createdAt = parseDate(get(cols.date));
+      const notesText = get(cols.notes) || get(cols.bio);
+      const followUp = get(cols.followUp);
 
-    // Derive stage from flags if explicit stage is weak.
-    let stage = mapStage(stageRaw);
-    const vn1Flag = yes(get(cols.vn1));
-    const vn2Flag = yes(get(cols.vn2));
-    const repliedFlag = yes(get(cols.replied));
-    const bookedFlag = yes(get(cols.booked));
-    if (bookedFlag) stage = "Call Booked";
-    else if (vn2Flag) stage = "VN2 Sent";
-    else if (repliedFlag && stage !== "VN2 Sent") stage = "Replied";
-    else if (vn1Flag && stage === "Found") stage = "VN1 Sent";
+      // Derive stage from flags if explicit stage is weak.
+      let stage = mapStage(stageRaw);
+      const vn1Flag = yes(get(cols.vn1));
+      const vn2Flag = yes(get(cols.vn2));
+      const repliedFlag = yes(get(cols.replied));
+      const bookedFlag = yes(get(cols.booked));
+      if (bookedFlag) stage = "Call Booked";
+      else if (vn2Flag) stage = "VN2 Sent";
+      else if (repliedFlag && stage !== "VN2 Sent") stage = "Replied";
+      else if (vn1Flag && stage === "Found") stage = "VN1 Sent";
 
-    // Build activity + VN log from the flags so the timeline reflects history.
-    const dateBase = createdAt ?? new Date().toISOString();
-    const activities: Activity[] = [];
-    const vnLog: VNEntry[] = [];
-    if (vn1Flag) {
-      vnLog.push({ id: uid(), date: dateBase, variation: "VN1", reply: repliedFlag ? "VN" : "none" });
-      activities.push({ id: uid(), date: dateBase, type: "VN", notes: "VN1 sent (import)", fromMe: true });
+      // Build activity + VN log from the flags so the timeline reflects history.
+      const dateBase = createdAt ?? new Date().toISOString();
+      const activities: Activity[] = [];
+      const vnLog: VNEntry[] = [];
+      if (vn1Flag) {
+        vnLog.push({ id: uid(), date: dateBase, variation: "VN1", reply: repliedFlag ? "VN" : "none" });
+        activities.push({ id: uid(), date: dateBase, type: "VN", notes: "VN1 sent (import)", fromMe: true });
+      }
+      if (repliedFlag) activities.push({ id: uid(), date: dateBase, type: "note", notes: "Prospect replied (import)", fromMe: false });
+      if (vn2Flag) {
+        vnLog.push({ id: uid(), date: dateBase, variation: "VN2", reply: "none" });
+        activities.push({ id: uid(), date: dateBase, type: "VN", notes: "VN2 sent (import)", fromMe: true });
+      }
+      if (bookedFlag) activities.push({ id: uid(), date: dateBase, type: "note", notes: "Call booked (import)", fromMe: true });
+      if (followUp) activities.push({ id: uid(), date: dateBase, type: "note", notes: `Follow-up due: ${followUp}`, fromMe: true });
+
+      rows.push({
+        name,
+        platform: (validPlatforms.has(platform as Platform) ? platform : "linkedin") as Platform,
+        profileUrl: get(cols.profileUrl),
+        niche: get(cols.niche),
+        bio: notesText,
+        leadType: (validLeadTypes.has(leadTypeRaw) ? leadTypeRaw : "Direct") as LeadType,
+        tier: (validTiers.has(tier) ? tier : "DWY") as Tier,
+        stage,
+        qualScore: Math.max(0, Math.min(100, numOr(get(cols.qualScore), 0))),
+        bant: {
+          need: bant012(get(cols.need)),
+          timeline: bant012(get(cols.timeline)),
+          authority: bant012(get(cols.authority)),
+          budget: bant012(get(cols.budget)),
+        },
+        activities,
+        vnLog,
+        createdAt,
+        stageEnteredAt: createdAt,
+        lastTouchAt: createdAt,
+      });
+    } catch (e) {
+      failures.push({ row: rowNum, reason: e instanceof Error ? e.message : "Unknown parse error" });
     }
-    if (repliedFlag) activities.push({ id: uid(), date: dateBase, type: "note", notes: "Prospect replied (import)", fromMe: false });
-    if (vn2Flag) {
-      vnLog.push({ id: uid(), date: dateBase, variation: "VN2", reply: "none" });
-      activities.push({ id: uid(), date: dateBase, type: "VN", notes: "VN2 sent (import)", fromMe: true });
-    }
-    if (bookedFlag) activities.push({ id: uid(), date: dateBase, type: "note", notes: "Call booked (import)", fromMe: true });
-    if (followUp) activities.push({ id: uid(), date: dateBase, type: "note", notes: `Follow-up due: ${followUp}`, fromMe: true });
-
-    rows.push({
-      name,
-      platform: (validPlatforms.has(platform as Platform) ? platform : "linkedin") as Platform,
-      profileUrl: get(cols.profileUrl),
-      niche: get(cols.niche),
-      bio: notesText,
-      leadType: (validLeadTypes.has(leadTypeRaw) ? leadTypeRaw : "Direct") as LeadType,
-      tier: (validTiers.has(tier) ? tier : "DWY") as Tier,
-      stage,
-      qualScore: Math.max(0, Math.min(100, numOr(get(cols.qualScore), 0))),
-      bant: {
-        need: bant012(get(cols.need)),
-        timeline: bant012(get(cols.timeline)),
-        authority: bant012(get(cols.authority)),
-        budget: bant012(get(cols.budget)),
-      },
-      activities,
-      vnLog,
-      createdAt,
-      stageEnteredAt: createdAt,
-      lastTouchAt: createdAt,
-    });
   }
-  return { rows, errors };
+  return { rows, failures, errors };
 }
