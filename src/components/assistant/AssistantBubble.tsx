@@ -30,6 +30,64 @@ export function AssistantBubble() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const baseInputRef = useRef("");
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(true);
+
+  useEffect(() => {
+    const SR =
+      (typeof window !== "undefined" &&
+        ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) ||
+      null;
+    if (!SR) {
+      setVoiceSupported(false);
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = typeof navigator !== "undefined" ? navigator.language || "en-US" : "en-US";
+    rec.onresult = (e: any) => {
+      let finalText = "";
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      if (finalText) {
+        baseInputRef.current = (baseInputRef.current + " " + finalText).replace(/\s+/g, " ").trim();
+      }
+      const combined = (baseInputRef.current + (interim ? " " + interim : "")).trim();
+      setInput(combined);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    return () => {
+      try {
+        rec.stop();
+      } catch {}
+    };
+  }, []);
+
+  const toggleVoice = () => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (listening) {
+      try {
+        rec.stop();
+      } catch {}
+      setListening(false);
+    } else {
+      baseInputRef.current = input;
+      try {
+        rec.start();
+        setListening(true);
+      } catch {}
+    }
+  };
 
   const onCsvSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
