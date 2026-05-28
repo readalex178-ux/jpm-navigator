@@ -18,7 +18,8 @@ export function useApplyProposal() {
           logActivity(prospectId, {
             type: at,
             date: new Date().toISOString(),
-            note: proposal.note || undefined,
+            notes: proposal.note || "",
+            fromMe: true,
           });
           toast.success("Activity logged");
           return { ok: true, prospectId, label: `Logged ${at}` };
