@@ -245,7 +245,7 @@ function WeeklyTab() {
         <StatCard label="Hours" value={totals.hours} hint={`Target ${targets.hours}`} />
       </div>
 
-      <Section title="This week vs targets" subtitle="Auto-tallied from your daily logs. Click any row to drill down.">
+      <Section title="This week vs targets">
         <ul className="space-y-1.5">
           {metrics.map((m) => {
             const got = Number(totals[m.key] ?? 0);
@@ -300,7 +300,7 @@ function WeeklyTab() {
         </ul>
       </Section>
 
-      <Section title="Booked calls by platform" subtitle="Counted from prospect stages this week.">
+      <Section title="Booked calls by platform">
         <div className="space-y-3">
           {PLATFORMS.filter((p) => p.value !== "tiktok").map((p) => {
             const got = perPlatform[p.value] ?? 0;
