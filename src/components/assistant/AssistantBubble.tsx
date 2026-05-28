@@ -29,6 +29,46 @@ export function AssistantBubble() {
   const { messages, loaded, append, patchProposal, clearAll } = useAssistantThread();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onCsvSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    await append("user", `📎 Uploaded ${file.name}`);
+    try {
+      const text = await file.text();
+      const parsed = parseProspectsCsv(text);
+      if (parsed.errors.length) {
+        await append("assistant", `⚠️ ${parsed.errors.join(" ")}`);
+        return;
+      }
+      if (!parsed.rows.length) {
+        await append(
+          "assistant",
+          `No valid rows found in ${file.name}.${parsed.failures.length ? ` (${parsed.failures.length} skipped)` : ""}`,
+        );
+        return;
+      }
+      const proposal: ProposalRecord = {
+        id: uid(),
+        kind: "import_csv",
+        fileName: file.name,
+        rows: parsed.rows as unknown as Record<string, unknown>[],
+        skippedCount: parsed.failures.length,
+      };
+      await append(
+        "assistant",
+        `Parsed **${parsed.rows.length}** prospect${parsed.rows.length === 1 ? "" : "s"} from ${file.name}${parsed.failures.length ? ` (${parsed.failures.length} rows skipped).` : "."} Review and approve which to add to your pipeline.`,
+        [proposal],
+      );
+    } catch (err) {
+      console.error("[assistant] csv parse failed", err);
+      await append("assistant", "⚠️ Couldn't read that file. Make sure it's a valid CSV.");
+    }
+  };
+
+
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
