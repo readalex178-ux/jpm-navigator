@@ -82,6 +82,8 @@ type Actions = {
   addProspect: (p: Partial<Prospect> & { name: string }) => Prospect;
   updateProspect: (id: string, patch: Partial<Prospect>) => void;
   deleteProspect: (id: string) => void;
+  /** Restore a previously deleted prospect verbatim (used by undo). */
+  restoreProspect: (p: Prospect) => void;
   /** Returns a deep-ish copy of `id` with cleared identity fields (name/url/handle).
    * Activity/VN logs are NOT copied — only static qualification metadata. */
   duplicateProspect: (id: string, overrides?: Partial<Prospect>) => Prospect | null;
