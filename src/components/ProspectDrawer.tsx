@@ -52,7 +52,6 @@ export function ProspectDrawer({
 }) {
   const addProspect = useStore((s) => s.addProspect);
   const updateProspect = useStore((s) => s.updateProspect);
-  const deleteProspect = useStore((s) => s.deleteProspect);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [name, setName] = useState("");
@@ -204,14 +203,17 @@ export function ProspectDrawer({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {editing?.name || "prospect"}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the prospect and their activity log. This cannot be undone.
+              You'll have 5 seconds to undo this from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (editing) deleteProspect(editing.id);
+                if (editing) {
+                  // Lazy import keeps the drawer bundle small.
+                  void import("@/lib/undoable").then((m) => m.undoableDelete(editing));
+                }
                 setConfirmDelete(false);
                 onOpenChange(false);
               }}

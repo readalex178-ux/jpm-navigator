@@ -82,6 +82,8 @@ type Actions = {
   addProspect: (p: Partial<Prospect> & { name: string }) => Prospect;
   updateProspect: (id: string, patch: Partial<Prospect>) => void;
   deleteProspect: (id: string) => void;
+  /** Restore a previously deleted prospect verbatim (used by undo). */
+  restoreProspect: (p: Prospect) => void;
   /** Returns a deep-ish copy of `id` with cleared identity fields (name/url/handle).
    * Activity/VN logs are NOT copied — only static qualification metadata. */
   duplicateProspect: (id: string, overrides?: Partial<Prospect>) => Prospect | null;
@@ -197,6 +199,8 @@ export const useStore = create<State & Actions>()(
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
       deleteProspect: (id) =>
         set({ prospects: get().prospects.filter((x) => x.id !== id) }),
+      restoreProspect: (p) =>
+        set({ prospects: [p, ...get().prospects.filter((x) => x.id !== p.id)] }),
       duplicateProspect: (id, overrides) => {
         const src = get().prospects.find((x) => x.id === id);
         if (!src) return null;

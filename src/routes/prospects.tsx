@@ -3,8 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { PageBody, PageHeader } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Download, Upload, Trash2, X, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Download, Upload, Trash2, X, ArrowUpDown, History } from "lucide-react";
 import { ProspectCard } from "@/components/ProspectCard";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { useStore } from "@/lib/store";
@@ -13,6 +12,11 @@ import { PLATFORMS, STAGES, type Platform, type Stage, type Tier } from "@/lib/b
 import { prospectsToCsv, downloadCsv } from "@/lib/csvExport";
 import { parseProspectsCsv } from "@/lib/csvImport";
 import { toast } from "sonner";
+import { ImportResultsModal, type ImportResult } from "@/components/ImportResultsModal";
+import { ImportHistorySheet } from "@/components/ImportHistorySheet";
+import { appendImportLog } from "@/lib/importLog";
+import { markExportNow } from "@/lib/csvBackup";
+import { undoableBulkDelete } from "@/lib/undoable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +53,6 @@ export const Route = createFileRoute("/prospects")({
 function ProspectsPage() {
   const prospects = useStore((s) => s.prospects);
   const addProspect = useStore((s) => s.addProspect);
-  const deleteProspect = useStore((s) => s.deleteProspect);
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -66,33 +69,56 @@ function ProspectsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
+
   const handleImport = async (file: File) => {
     try {
       const text = await file.text();
-      const { rows, errors } = parseProspectsCsv(text);
-      if (!rows.length) {
-        toast.error(errors[0] ?? "No rows found.");
-        return;
-      }
+      const parsed = parseProspectsCsv(text);
       const existing = new Set(
         prospects.map((p) => `${p.name.toLowerCase()}|${(p.profileUrl ?? "").toLowerCase()}`),
       );
       let added = 0;
       let skipped = 0;
-      for (const r of rows) {
+      const duplicateFailures: { row: number; reason: string }[] = [];
+      parsed.rows.forEach((r, i) => {
         const key = `${r.name.toLowerCase()}|${(r.profileUrl ?? "").toLowerCase()}`;
-        if (existing.has(key)) { skipped++; continue; }
-        addProspect(r);
-        existing.add(key);
-        added++;
-      }
-      toast.success(
-        `Imported ${added} prospect${added === 1 ? "" : "s"}` +
-          (skipped ? ` · ${skipped} duplicate${skipped === 1 ? "" : "s"} skipped` : "") +
-          (errors.length ? ` · ${errors.length} row issue${errors.length === 1 ? "" : "s"}` : ""),
-      );
+        if (existing.has(key)) {
+          skipped++;
+          duplicateFailures.push({ row: i + 2, reason: `Duplicate of existing prospect "${r.name}"` });
+          return;
+        }
+        try {
+          addProspect(r);
+          existing.add(key);
+          added++;
+        } catch (e) {
+          parsed.failures.push({
+            row: i + 2,
+            reason: e instanceof Error ? e.message : "Insert failed",
+          });
+        }
+      });
+      const result: ImportResult = {
+        filename: file.name,
+        added,
+        skippedDuplicates: skipped,
+        failures: parsed.failures,
+        errors: parsed.errors,
+      };
+      setImportResult(result);
+      appendImportLog({
+        filename: file.name,
+        added,
+        skippedDuplicates: skipped,
+        failed: parsed.failures.length,
+        failures: parsed.failures,
+      });
+      setHistoryKey((n) => n + 1);
     } catch (e) {
-      toast.error("Could not read file.");
+      toast.error(e instanceof Error ? `Could not read file: ${e.message}` : "Could not read file.");
     }
   };
 
@@ -147,8 +173,8 @@ function ProspectsPage() {
   };
 
   const doBulkDelete = () => {
-    selectedIds.forEach((id) => deleteProspect(id));
-    toast.success(`${selectedIds.size} prospect${selectedIds.size === 1 ? "" : "s"} deleted`);
+    const toDelete = prospects.filter((p) => selectedIds.has(p.id));
+    undoableBulkDelete(toDelete);
     setSelectedIds(new Set());
     setConfirmBulkDelete(false);
   };
@@ -194,10 +220,20 @@ function ProspectsPage() {
             </Button>
             <Button
               size="sm"
+              variant="ghost"
+              onClick={() => setHistoryOpen(true)}
+              title="Import history"
+              aria-label="Import history"
+            >
+              <History className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => {
                 if (!filtered.length) return toast.error("Nothing to export.");
                 downloadCsv(`prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospectsToCsv(filtered));
+                markExportNow();
                 toast.success(`Exported ${filtered.length} prospects`);
               }}
             >
@@ -313,7 +349,7 @@ function ProspectsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedIds.size} prospect{selectedIds.size === 1 ? "" : "s"}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the selected prospects and their activity logs. This cannot be undone.
+              You'll have 5 seconds to undo this from the toast notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -327,6 +363,9 @@ function ProspectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportResultsModal result={importResult} onClose={() => setImportResult(null)} />
+      <ImportHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} refreshKey={historyKey} />
     </>
   );
 }

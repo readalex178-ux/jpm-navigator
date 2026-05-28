@@ -95,7 +95,8 @@ function PipelinePage() {
     const id = String(e.active.id);
     const stage = e.over?.id as Stage | undefined;
     if (!stage) return;
-    moveStage(id, stage);
+    // Drag-drop moves are undoable too.
+    void import("@/lib/undoable").then((m) => m.undoableStageMove(id, stage));
   };
 
   return (
@@ -251,9 +252,7 @@ function Column({ stage, items }: { stage: Stage; items: Prospect[] }) {
 function Card({ prospect }: { prospect: Prospect }) {
   const navigate = useNavigate();
   const togglePin = useStore((s) => s.togglePin);
-  const moveStage = useStore((s) => s.moveStage);
   const duplicateProspect = useStore((s) => s.duplicateProspect);
-  const deleteProspect = useStore((s) => s.deleteProspect);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: prospect.id });
   const stageDays = daysSince(prospect.stageEnteredAt);
   const limit = STAGE_AGE_LIMIT[prospect.stage];
@@ -389,7 +388,12 @@ function Card({ prospect }: { prospect: Prospect }) {
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-44">
             {STAGES.filter((s) => s !== prospect.stage).map((s) => (
-              <ContextMenuItem key={s} onClick={() => moveStage(prospect.id, s)}>
+              <ContextMenuItem
+                key={s}
+                onClick={() => {
+                  void import("@/lib/undoable").then((m) => m.undoableStageMove(prospect.id, s));
+                }}
+              >
                 {s}
               </ContextMenuItem>
             ))}
@@ -407,10 +411,7 @@ function Card({ prospect }: { prospect: Prospect }) {
         <ContextMenuItem
           className="text-destructive focus:text-destructive"
           onClick={() => {
-            if (confirm(`Delete ${prospect.name}? This cannot be undone.`)) {
-              deleteProspect(prospect.id);
-              toast.success("Prospect deleted");
-            }
+            void import("@/lib/undoable").then((m) => m.undoableDelete(prospect));
           }}
         >
           <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
