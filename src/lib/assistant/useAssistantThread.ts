@@ -15,7 +15,7 @@ const uid = () => Math.random().toString(36).slice(2, 11);
 
 export function useAssistantThread() {
   const auth = useAuth();
-  const userId = auth.status === "authed" ? auth.user.id : null;
+  const userId = auth.status === "authed" && auth.user ? auth.user.id : null;
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
 
