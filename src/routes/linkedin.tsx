@@ -26,6 +26,13 @@ import { AnalyzerHistoryTimeline } from "@/components/linkedin/AnalyzerHistoryTi
 import { InboxTriageDot, InboxTriageVerdict } from "@/components/linkedin/InboxTriageDot";
 import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
 import { ProspectStateButton } from "@/components/linkedin/ProspectStateButton";
+import { TemplatesSheet } from "@/components/linkedin/TemplatesSheet";
+import {
+  isThreadUnread,
+  replyAgeBucket,
+  formatReplyAge,
+  lastMessageAt,
+} from "@/lib/btf/threadStatus";
 import type { NextAction } from "@/lib/ai/analyzerSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -74,6 +81,9 @@ function LinkedInPage() {
   const upsertKpiDay = useStore((s) => s.upsertKpiDay);
   const getKpiDay = useStore((s) => s.getKpiDay);
   const addVnScript = useStore((s) => s.addVnScript);
+  const threadReads = useStore((s) => s.linkedinThreadReads);
+  const markThreadRead = useStore((s) => s.markThreadRead);
+  const markThreadUnread = useStore((s) => s.markThreadUnread);
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [action, setAction] = useState<LinkedinAction>("reply");
@@ -116,8 +126,27 @@ function LinkedInPage() {
   }, []);
 
   const threadList = useMemo(() => {
-    return Object.values(threads).sort((a, b) => (b.scrapedAt > a.scrapedAt ? 1 : -1));
-  }, [threads]);
+    // Unread first, then most-recent message at the top.
+    return Object.values(threads).sort((a, b) => {
+      const aUnread = isThreadUnread(a, threadReads[a.threadId]) ? 1 : 0;
+      const bUnread = isThreadUnread(b, threadReads[b.threadId]) ? 1 : 0;
+      if (aUnread !== bUnread) return bUnread - aUnread;
+      return lastMessageAt(b) - lastMessageAt(a);
+    });
+  }, [threads, threadReads]);
+
+  const unreadCount = useMemo(
+    () =>
+      Object.values(threads).filter((t) =>
+        isThreadUnread(t, threadReads[t.threadId]),
+      ).length,
+    [threads, threadReads],
+  );
+
+  const selectThread = (id: string) => {
+    setActiveThreadId(id);
+    markThreadRead(id);
+  };
 
   const activeThread = activeThreadId ? threads[activeThreadId] : threadList[0];
   const activeProfile = activeThread?.participantProfileUrl
@@ -268,7 +297,9 @@ function LinkedInPage() {
 
       <PageBody className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_360px] lg:p-4">
         {/* INBOX */}
-        <Section title={`Inbox (${threadList.length})`}>
+        <Section
+          title={`Inbox (${threadList.length}${unreadCount ? ` · ${unreadCount} unread` : ""})`}
+        >
           {threadList.length === 0 ? (
             <div className="rounded-md border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
               {extConnected
@@ -281,34 +312,81 @@ function LinkedInPage() {
                 {threadList.map((t) => {
                   const linked = !!threadProspectMap[t.threadId];
                   const isActive = (activeThread?.threadId ?? threadList[0]?.threadId) === t.threadId;
+                  const unread = isThreadUnread(t, threadReads[t.threadId]);
+                  const reply = replyAgeBucket(t);
                   return (
-                    <button
+                    <div
                       key={t.threadId}
-                      onClick={() => setActiveThreadId(t.threadId)}
                       className={cn(
-                        "w-full rounded-md border border-transparent p-2 text-left text-sm hover:bg-surface-elevated",
+                        "group w-full rounded-md border border-transparent p-2 text-left text-sm hover:bg-surface-elevated",
                         isActive && "border-primary/40 bg-surface-elevated",
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <InboxTriageDot threadId={t.threadId} />
-                          <span className="truncate font-medium">{t.participantName}</span>
-                        </span>
-                        {linked && (
-                          <Badge variant="outline" className="text-[9px]">
-                            linked
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {t.lastMessagePreview ?? "—"}
-                      </div>
-                      <InboxTriageVerdict threadId={t.threadId} />
-                      <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
-                        {t.messages.length} msg
-                      </div>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => selectThread(t.threadId)}
+                        className="block w-full text-left"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <InboxTriageDot threadId={t.threadId} />
+                            {unread && (
+                              <span
+                                aria-label="Unread"
+                                className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]"
+                              />
+                            )}
+                            <span
+                              className={cn(
+                                "truncate",
+                                unread ? "font-semibold text-foreground" : "font-medium",
+                              )}
+                            >
+                              {t.participantName}
+                            </span>
+                          </span>
+                          {linked && (
+                            <Badge variant="outline" className="text-[9px]">
+                              linked
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {t.lastMessagePreview ?? "—"}
+                        </div>
+                        <InboxTriageVerdict threadId={t.threadId} />
+                        <div className="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                          <span>{t.messages.length} msg</span>
+                          {reply.bucket !== "none" && (
+                            <span
+                              className={cn(
+                                "rounded px-1 normal-case tracking-normal",
+                                reply.bucket === "red" &&
+                                  "bg-destructive/15 text-destructive",
+                                reply.bucket === "amber" &&
+                                  "bg-amber-500/15 text-amber-500",
+                                reply.bucket === "fresh" && "text-muted-foreground",
+                              )}
+                              title={`Last inbound ${reply.days}d ago`}
+                            >
+                              {formatReplyAge(reply.days)}
+                              {reply.bucket === "red" && " · Overdue"}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (unread) markThreadRead(t.threadId);
+                          else markThreadUnread(t.threadId);
+                        }}
+                        className="mt-1 hidden text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground group-hover:inline-block"
+                      >
+                        {unread ? "Mark read" : "Mark unread"}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -348,6 +426,30 @@ function LinkedInPage() {
             </div>
           ) : (
             <>
+              {(() => {
+                const reply = replyAgeBucket(activeThread);
+                if (reply.bucket === "none") return null;
+                return (
+                  <div
+                    className={cn(
+                      "mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium",
+                      reply.bucket === "red" &&
+                        "bg-destructive/10 text-destructive",
+                      reply.bucket === "amber" &&
+                        "bg-amber-500/10 text-amber-500",
+                      reply.bucket === "fresh" &&
+                        "bg-surface text-muted-foreground",
+                    )}
+                  >
+                    {formatReplyAge(reply.days)}
+                    {reply.bucket === "red" && (
+                      <span className="rounded bg-destructive px-1 py-0.5 text-[9px] uppercase tracking-widest text-destructive-foreground">
+                        Overdue
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
               <AnalyzerStrip
                 analysis={analysis}
                 loading={analyzing}
@@ -479,6 +581,17 @@ function LinkedInPage() {
               <Save className="mr-1 h-3 w-3" />
               Vault
             </Button>
+          </div>
+          <div className="mt-2">
+            <TemplatesSheet
+              firstName={
+                activeThread?.participantName?.split(" ")[0] ?? "there"
+              }
+              onInsert={(text) => {
+                setDraft(text);
+                toast.success("Template loaded. Edit then Insert.");
+              }}
+            />
           </div>
           <Button
             size="sm"

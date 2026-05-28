@@ -61,6 +61,8 @@ type State = {
   prospectAnalyses: Record<string, ProspectAnalysisEntry[]>; // prospectId -> chronological
   /** Transient: when set, GhlClaimModal opens for this prospect. */
   ghlPromptProspectId: string | null;
+  /** threadId -> ISO timestamp the user last opened/marked-read that thread. */
+  linkedinThreadReads: Record<string, string>;
 };
 
 export type ProspectAnalysisEntry = {
@@ -126,6 +128,8 @@ type Actions = {
 
   setGhlPromptProspectId: (id: string | null) => void;
   togglePin: (id: string) => void;
+  markThreadRead: (threadId: string) => void;
+  markThreadUnread: (threadId: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
@@ -164,6 +168,7 @@ export const useStore = create<State & Actions>()(
       analysisHistory: {},
       prospectAnalyses: {},
       ghlPromptProspectId: null,
+      linkedinThreadReads: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -390,6 +395,14 @@ export const useStore = create<State & Actions>()(
             x.id === id ? { ...x, pinned: !x.pinned } : x,
           ),
         }),
+      markThreadRead: (threadId) =>
+        set({ linkedinThreadReads: { ...get().linkedinThreadReads, [threadId]: now() } }),
+      markThreadUnread: (threadId) => {
+        const next = { ...get().linkedinThreadReads };
+        delete next[threadId];
+        set({ linkedinThreadReads: next });
+      },
+
 
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {

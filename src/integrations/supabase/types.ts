@@ -22,6 +22,8 @@ export type Database = {
           last_synced_at: string | null
           platform: string
           prospect_id: string
+          read_at: string | null
+          sentiment: string | null
           updated_at: string
           user_id: string
         }
@@ -32,6 +34,8 @@ export type Database = {
           last_synced_at?: string | null
           platform?: string
           prospect_id: string
+          read_at?: string | null
+          sentiment?: string | null
           updated_at?: string
           user_id: string
         }
@@ -42,6 +46,8 @@ export type Database = {
           last_synced_at?: string | null
           platform?: string
           prospect_id?: string
+          read_at?: string | null
+          sentiment?: string | null
           updated_at?: string
           user_id?: string
         }
