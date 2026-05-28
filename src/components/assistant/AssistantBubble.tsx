@@ -319,7 +319,10 @@ export function AssistantBubble() {
               <Textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  baseInputRef.current = e.target.value;
+                }}
                 onKeyDown={onKey}
                 placeholder="What did you just do? (or attach a CSV)"
                 rows={2}
