@@ -41,6 +41,7 @@ const groups = [
     label: "Today",
     items: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
+      { title: "On Deck", url: "/on-deck", icon: AlarmClock },
       { title: "Inbox", url: "/inbox", icon: Inbox },
       { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
       { title: "Prospects", url: "/prospects", icon: Users },
