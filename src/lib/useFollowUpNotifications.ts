@@ -38,12 +38,19 @@ export function useFollowUpNotifications() {
 
     firedThisSession.current = true;
 
-    // In-app toast — always shown
-    toast.message(`${due.length} follow-up${due.length > 1 ? "s" : ""} due`, {
-      description: due
-        .slice(0, 3)
-        .map((d) => d.prospect.name)
-        .join(", ") + (due.length > 3 ? "…" : ""),
+    // In-app toast — always shown, deep-links to On Deck
+    toast.message(`${due.length} follow-up${due.length > 1 ? "s" : ""} overdue`, {
+      description:
+        due
+          .slice(0, 3)
+          .map((d) => d.prospect.name)
+          .join(", ") + (due.length > 3 ? "…" : ""),
+      action: {
+        label: "Open On Deck",
+        onClick: () => {
+          if (typeof window !== "undefined") window.location.href = "/on-deck";
+        },
+      },
     });
 
     // OS notification — only if permitted, and not already fired today
