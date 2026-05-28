@@ -78,13 +78,29 @@ function ScriptBuilderTab() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<VN1ScriptResult | null>(null);
+  const [priorChecked, setPriorChecked] = useState(0);
+  const [prospectId, setProspectId] = useState<string>("");
+
+  const prospects = useStore((s) => s.prospects);
+  const vnScripts = useStore((s) => s.vnScripts);
+
+  const prospectOptions = prospects
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 200);
 
   const run = async () => {
     if (text.trim().length < 10) return toast.error("Paste a profile first.");
-    setBusy(true); setRes(null);
+    setBusy(true); setRes(null); setPriorChecked(0);
     try {
-      const r = await fn({ data: { profileText: text.trim() } });
-      if (r.ok) setRes(r.result);
+      const priorOpeners = prospectId
+        ? vnScripts
+            .filter((s) => s.prospectId === prospectId && s.text?.trim().length)
+            .slice(0, 10)
+            .map((s) => s.text)
+        : undefined;
+      const r = await fn({ data: { profileText: text.trim(), priorOpeners } });
+      if (r.ok) { setRes(r.result); setPriorChecked(r.priorChecked); }
       else toast.error(r.error);
     } catch (e) {
       toast.error((e as Error).message);
@@ -97,6 +113,21 @@ function ScriptBuilderTab() {
         <p className="mb-2 text-xs text-muted-foreground">
           Paste the prospect's LinkedIn profile — name, headline, about, and any recent posts. The more context, the sharper the opener.
         </p>
+        <div className="mb-2 flex items-center gap-2">
+          <label className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            Link to prospect (optional)
+          </label>
+          <select
+            value={prospectId}
+            onChange={(e) => setProspectId(e.target.value)}
+            className="flex-1 rounded border border-border bg-background px-2 py-1 text-xs"
+          >
+            <option value="">— none —</option>
+            {prospectOptions.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -131,6 +162,11 @@ function ScriptBuilderTab() {
               </Badge>
               {res.firstName && <Badge variant="outline">First name: {res.firstName}</Badge>}
               {res.market && <Badge variant="outline">{res.market}</Badge>}
+              {priorChecked > 0 && (
+                <Badge variant="outline" className="border-primary/40 text-primary">
+                  Checked {priorChecked} previous opener{priorChecked === 1 ? "" : "s"} ✓
+                </Badge>
+              )}
             </div>
             <div className="rounded-md bg-surface p-3 leading-relaxed whitespace-pre-wrap">
               {res.script}
