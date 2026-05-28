@@ -637,6 +637,11 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
               <div className="border-t border-border pt-3">
                 <QualScoreBreakdown prospect={prospect} />
               </div>
+
+              {/* #51 AI follow-up suggestion — proposal only, requires click */}
+              <div>
+                <FollowUpSuggestionChip prospect={prospect} />
+              </div>
             </div>
           </Section>
 
