@@ -34,6 +34,7 @@ import {
   lastMessageAt,
 } from "@/lib/btf/threadStatus";
 import type { NextAction } from "@/lib/ai/analyzerSchema";
+import { AiSetupBanner } from "@/components/AiSetupBanner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
