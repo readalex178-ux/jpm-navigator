@@ -81,6 +81,9 @@ function LinkedInPage() {
   const upsertKpiDay = useStore((s) => s.upsertKpiDay);
   const getKpiDay = useStore((s) => s.getKpiDay);
   const addVnScript = useStore((s) => s.addVnScript);
+  const threadReads = useStore((s) => s.linkedinThreadReads);
+  const markThreadRead = useStore((s) => s.markThreadRead);
+  const markThreadUnread = useStore((s) => s.markThreadUnread);
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [action, setAction] = useState<LinkedinAction>("reply");
