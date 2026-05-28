@@ -458,6 +458,7 @@ function InboxPage() {
                     </span>
                   </div>
                 </div>
+                <ObjectionPanel triggerLabel="Objections" triggerVariant="ghost" triggerSize="sm" />
               </div>
               <ScrollArea className="flex-1 p-3">
                 <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
