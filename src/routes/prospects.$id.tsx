@@ -30,6 +30,7 @@ import { ProspectTimeline } from "@/components/ProspectTimeline";
 import { TierBadge } from "@/components/TierBadge";
 import { QualScoreBreakdown } from "@/components/QualScoreBreakdown";
 import { FollowUpSuggestionChip } from "@/components/FollowUpSuggestionChip";
+import { ObjectionPanel } from "@/components/ObjectionPanel";
 import { BantTrafficLight, BantOverall } from "@/components/BantTrafficLight";
 import { BuyingSignalsProgress } from "@/components/BuyingSignalsProgress";
 import { SuggestedScript } from "@/components/SuggestedScript";
@@ -346,7 +347,10 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
           </Section>
 
 
-          <Section title="Conversation">
+          <Section
+            title="Conversation"
+            action={<ObjectionPanel triggerLabel="Objections" />}
+          >
             <div className="mb-3">
               <NextActionCard prospect={prospect} />
             </div>
@@ -550,13 +554,24 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
               {prospect.vnLog.length === 0 && (
                 <li className="py-3 text-sm text-muted-foreground">No VNs logged.</li>
               )}
-              {prospect.vnLog.map((v) => (
-                <li key={v.id} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="num text-xs text-muted-foreground">{v.date.slice(0, 10)}</span>
-                  <span className="flex-1 truncate">{v.variation}</span>
-                  <Badge variant={v.reply === "none" ? "outline" : "secondary"}>{v.reply}</Badge>
-                </li>
-              ))}
+              {prospect.vnLog.map((v) => {
+                // #52 reply badges — green=VN reply, blue=text reply, grey=no reply
+                const replyClass =
+                  v.reply === "VN"
+                    ? "border-success bg-success/15 text-success"
+                    : v.reply === "text"
+                    ? "border-blue-500/60 bg-blue-500/15 text-blue-400"
+                    : "border-border bg-muted text-muted-foreground";
+                const replyLabel =
+                  v.reply === "VN" ? "VN reply" : v.reply === "text" ? "Text reply" : "No reply";
+                return (
+                  <li key={v.id} className="flex items-center gap-3 py-2 text-sm">
+                    <span className="num text-xs text-muted-foreground">{v.date.slice(0, 10)}</span>
+                    <span className="flex-1 truncate">{v.variation}</span>
+                    <Badge variant="outline" className={replyClass}>{replyLabel}</Badge>
+                  </li>
+                );
+              })}
             </ul>
           </Section>
         </div>
