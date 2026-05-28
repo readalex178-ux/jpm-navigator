@@ -11,12 +11,13 @@ import {
   Mic,
   Copy,
   ArrowRight,
+  CopyPlus,
+  Pin,
 } from "lucide-react";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { PageBody, PageHeader, Section } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,12 +27,17 @@ import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
 import { ProspectCoachChat } from "@/components/ProspectCoachChat";
 import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
 import { ProspectTimeline } from "@/components/ProspectTimeline";
+import { TierBadge } from "@/components/TierBadge";
+import { QualScoreBreakdown } from "@/components/QualScoreBreakdown";
+import { BantTrafficLight, BantOverall } from "@/components/BantTrafficLight";
+import { BuyingSignalsProgress } from "@/components/BuyingSignalsProgress";
+import { SuggestedScript } from "@/components/SuggestedScript";
+import { LinkedinProfilePreview } from "@/components/LinkedinProfilePreview";
+import { cn } from "@/lib/utils";
 import {
   STAGES,
-  SIGNAL_LABELS,
   platformEmoji,
   type Stage,
-  type BuyingSignals,
   type ActivityType,
   type ReplyType,
 } from "@/lib/btf/types";
