@@ -101,6 +101,7 @@ function TrainingPage() {
       </PageHeader>
 
       <PageBody className="grid gap-4 lg:grid-cols-[280px_1fr]">
+        <div className="col-span-full"><AiSetupBanner /></div>
         <div className="space-y-4">
           <Section title="Scenarios">
             <div className="space-y-1">
