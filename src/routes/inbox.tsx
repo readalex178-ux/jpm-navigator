@@ -73,6 +73,8 @@ function InboxPage() {
   const callSuggest = useServerFn(suggestReplies);
   const [aiBusy, setAiBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestRepliesResult["suggestions"] | null>(null);
+  const [userIntent, setUserIntent] = useState("");
+
 
   // Historical messages from Supabase, grouped by prospect_id
   const queryClient = useQueryClient();
