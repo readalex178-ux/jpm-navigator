@@ -388,7 +388,12 @@ function Card({ prospect }: { prospect: Prospect }) {
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-44">
             {STAGES.filter((s) => s !== prospect.stage).map((s) => (
-              <ContextMenuItem key={s} onClick={() => moveStage(prospect.id, s)}>
+              <ContextMenuItem
+                key={s}
+                onClick={() => {
+                  void import("@/lib/undoable").then((m) => m.undoableStageMove(prospect.id, s));
+                }}
+              >
                 {s}
               </ContextMenuItem>
             ))}
@@ -406,10 +411,7 @@ function Card({ prospect }: { prospect: Prospect }) {
         <ContextMenuItem
           className="text-destructive focus:text-destructive"
           onClick={() => {
-            if (confirm(`Delete ${prospect.name}? This cannot be undone.`)) {
-              deleteProspect(prospect.id);
-              toast.success("Prospect deleted");
-            }
+            void import("@/lib/undoable").then((m) => m.undoableDelete(prospect));
           }}
         >
           <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
