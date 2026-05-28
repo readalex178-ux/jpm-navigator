@@ -363,6 +363,9 @@ function ProspectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportResultsModal result={importResult} onClose={() => setImportResult(null)} />
+      <ImportHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} refreshKey={historyKey} />
     </>
   );
 }
