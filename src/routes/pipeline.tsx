@@ -252,9 +252,7 @@ function Column({ stage, items }: { stage: Stage; items: Prospect[] }) {
 function Card({ prospect }: { prospect: Prospect }) {
   const navigate = useNavigate();
   const togglePin = useStore((s) => s.togglePin);
-  const moveStage = useStore((s) => s.moveStage);
   const duplicateProspect = useStore((s) => s.duplicateProspect);
-  const deleteProspect = useStore((s) => s.deleteProspect);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: prospect.id });
   const stageDays = daysSince(prospect.stageEnteredAt);
   const limit = STAGE_AGE_LIMIT[prospect.stage];
