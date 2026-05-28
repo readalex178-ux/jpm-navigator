@@ -153,8 +153,10 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["message_kind"]
           prospect_id: string
+          read_at: string | null
           sender: Database["public"]["Enums"]["message_sender"]
           sent_at: string
+          sentiment: string | null
           transcript: string | null
           user_id: string
           variation_name: string | null
@@ -166,8 +168,10 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["message_kind"]
           prospect_id: string
+          read_at?: string | null
           sender: Database["public"]["Enums"]["message_sender"]
           sent_at?: string
+          sentiment?: string | null
           transcript?: string | null
           user_id: string
           variation_name?: string | null
@@ -179,8 +183,10 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["message_kind"]
           prospect_id?: string
+          read_at?: string | null
           sender?: Database["public"]["Enums"]["message_sender"]
           sent_at?: string
+          sentiment?: string | null
           transcript?: string | null
           user_id?: string
           variation_name?: string | null
