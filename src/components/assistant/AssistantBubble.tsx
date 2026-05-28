@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, X, Send, Loader2, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Trash2, Paperclip } from "lucide-react";
+import { parseProspectsCsv } from "@/lib/csvImport";
+
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
