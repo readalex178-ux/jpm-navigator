@@ -13,7 +13,6 @@ import { Route as VnVaultRouteImport } from './routes/vn-vault'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ProspectsRouteImport } from './routes/prospects'
 import { Route as PlaybookRouteImport } from './routes/playbook'
 import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as OutreachRouteImport } from './routes/outreach'
@@ -25,6 +24,7 @@ import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GhlClaimsRouteImport } from './routes/ghl-claims'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProspectsIndexRouteImport } from './routes/prospects.index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 
@@ -46,11 +46,6 @@ const ToolsRoute = ToolsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProspectsRoute = ProspectsRouteImport.update({
-  id: '/prospects',
-  path: '/prospects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlaybookRoute = PlaybookRouteImport.update({
@@ -108,6 +103,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProspectsIndexRoute = ProspectsIndexRouteImport.update({
+  id: '/prospects/',
+  path: '/prospects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProspectsIdRoute = ProspectsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -131,13 +131,13 @@ export interface FileRoutesByFullPath {
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/playbook': typeof PlaybookRoute
-  '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
   '/vn-vault': typeof VnVaultRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/prospects/$id': typeof ProspectsIdRoute
+  '/prospects/': typeof ProspectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -151,13 +151,13 @@ export interface FileRoutesByTo {
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/playbook': typeof PlaybookRoute
-  '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
   '/vn-vault': typeof VnVaultRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/prospects/$id': typeof ProspectsIdRoute
+  '/prospects': typeof ProspectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -172,13 +172,13 @@ export interface FileRoutesById {
   '/outreach': typeof OutreachRoute
   '/pipeline': typeof PipelineRoute
   '/playbook': typeof PlaybookRoute
-  '/prospects': typeof ProspectsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
   '/vn-vault': typeof VnVaultRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/prospects/$id': typeof ProspectsIdRoute
+  '/prospects/': typeof ProspectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -194,13 +194,13 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/pipeline'
     | '/playbook'
-    | '/prospects'
     | '/settings'
     | '/tools'
     | '/training'
     | '/vn-vault'
     | '/api/transcribe'
     | '/prospects/$id'
+    | '/prospects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -214,13 +214,13 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/pipeline'
     | '/playbook'
-    | '/prospects'
     | '/settings'
     | '/tools'
     | '/training'
     | '/vn-vault'
     | '/api/transcribe'
     | '/prospects/$id'
+    | '/prospects'
   id:
     | '__root__'
     | '/'
@@ -234,13 +234,13 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/pipeline'
     | '/playbook'
-    | '/prospects'
     | '/settings'
     | '/tools'
     | '/training'
     | '/vn-vault'
     | '/api/transcribe'
     | '/prospects/$id'
+    | '/prospects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -255,12 +255,12 @@ export interface RootRouteChildren {
   OutreachRoute: typeof OutreachRoute
   PipelineRoute: typeof PipelineRoute
   PlaybookRoute: typeof PlaybookRoute
-  ProspectsRoute: typeof ProspectsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   ToolsRoute: typeof ToolsRoute
   TrainingRoute: typeof TrainingRoute
   VnVaultRoute: typeof VnVaultRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
+  ProspectsIndexRoute: typeof ProspectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -291,13 +291,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/prospects': {
-      id: '/prospects'
-      path: '/prospects'
-      fullPath: '/prospects'
-      preLoaderRoute: typeof ProspectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/playbook': {
@@ -377,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prospects/': {
+      id: '/prospects/'
+      path: '/prospects'
+      fullPath: '/prospects/'
+      preLoaderRoute: typeof ProspectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prospects/$id': {
       id: '/prospects/$id'
       path: '/$id'
@@ -394,18 +394,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ProspectsRouteChildren {
-  ProspectsIdRoute: typeof ProspectsIdRoute
-}
-
-const ProspectsRouteChildren: ProspectsRouteChildren = {
-  ProspectsIdRoute: ProspectsIdRoute,
-}
-
-const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
-  ProspectsRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
@@ -418,13 +406,23 @@ const rootRouteChildren: RootRouteChildren = {
   OutreachRoute: OutreachRoute,
   PipelineRoute: PipelineRoute,
   PlaybookRoute: PlaybookRoute,
-  ProspectsRoute: ProspectsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   ToolsRoute: ToolsRoute,
   TrainingRoute: TrainingRoute,
   VnVaultRoute: VnVaultRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
+  ProspectsIndexRoute: ProspectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

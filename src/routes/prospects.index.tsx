@@ -40,7 +40,7 @@ const SORT_LABELS: Record<SortOption, string> = {
 };
 
 
-export const Route = createFileRoute("/prospects")({
+export const Route = createFileRoute("/prospects/")({
   head: () => ({
     meta: [
       { title: "Prospects — BTF Setter OS" },
