@@ -161,6 +161,7 @@ function DashboardPage() {
       <PageBody className="space-y-6">
         <FollowUpsBanner />
         <OnboardingChecklist onAddProspect={() => setOpen(true)} />
+        <DailyBriefingCard />
 
 
         {/* Motivational sub-line */}
