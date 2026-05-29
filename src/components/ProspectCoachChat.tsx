@@ -34,13 +34,8 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   const setFollowUp = useStore((s) => s.setFollowUp);
   const messages = useStore((s) => s.coachChats[prospect.id] ?? []) as ChatMsg[];
   const appendCoachChat = useStore((s) => s.appendCoachChat);
-  const clearCoachChat = useStore((s) => s.clearCoachChat);
-  const setMessages = (next: ChatMsg[]) => {
-    // Replace transcript for this prospect by clearing + re-appending the diff.
-    clearCoachChat(prospect.id);
-    const stamp = new Date().toISOString();
-    next.forEach((m) => appendCoachChat(prospect.id, { ...m, at: stamp }));
-  };
+  const appendMsg = (m: ChatMsg) =>
+    appendCoachChat(prospect.id, { ...m, at: new Date().toISOString() });
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
