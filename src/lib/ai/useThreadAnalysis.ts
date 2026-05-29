@@ -76,9 +76,16 @@ export function useThreadAnalysis(threadId: string | null | undefined) {
           if (prospect) {
             setBant(prospect.id, res.analysis.bantSuggestion as typeof prospect.bant);
             setQualScore(prospect.id, res.analysis.qualScoreSuggestion);
-            if (res.analysis.market && !prospect.niche) {
-              updateProspect(prospect.id, { niche: res.analysis.market });
+            const patch: Partial<typeof prospect> = {};
+            if (res.analysis.market && !prospect.niche) patch.niche = res.analysis.market;
+            // AI now owns the ICP fit check — convert flag ID list to the
+            // Record<string, boolean> shape the UI expects.
+            if (res.analysis.icpFlags && res.analysis.icpFlags.length > 0) {
+              const flagMap: Record<string, boolean> = {};
+              for (const id of res.analysis.icpFlags) flagMap[id] = true;
+              patch.icpFlags = flagMap;
             }
+            if (Object.keys(patch).length > 0) updateProspect(prospect.id, patch);
           }
         } else {
           setError(res.error);
