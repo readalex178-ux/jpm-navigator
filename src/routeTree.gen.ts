@@ -38,6 +38,16 @@ const TrainingRoute = TrainingRouteImport.update({
   path: '/training',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VnVaultRoute = VnVaultRouteImport.update({
+  id: '/vn-vault',
+  path: '/vn-vault',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KeywordsRoute = KeywordsRouteImport.update({
+  id: '/keywords',
+  path: '/keywords',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ToolsRoute = ToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
