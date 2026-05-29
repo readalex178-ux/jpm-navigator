@@ -713,3 +713,16 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
     </>
   );
 }
+
+function ProspectConversation({ prospect }: { prospect: import("@/lib/btf/types").Prospect }) {
+  const { onEdit, onDelete } = useEditConversation(prospect.id);
+  return (
+    <ConversationLog
+      activities={prospect.activities}
+      vnLog={prospect.vnLog}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    />
+  );
+}
+
