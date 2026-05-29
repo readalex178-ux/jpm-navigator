@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth/useAuth";
+import { toast } from "sonner";
 import type { ProposalRecord } from "./intents";
 
 export type ThreadMessage = {
@@ -19,6 +20,7 @@ export function useAssistantThread() {
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  // Load + realtime subscribe so chats on one device appear on the other.
   useEffect(() => {
     if (!userId) {
       setMessages([]);
@@ -31,10 +33,11 @@ export function useAssistantThread() {
         .from("assistant_messages")
         .select("id, role, content, proposals, created_at")
         .order("created_at", { ascending: true })
-        .limit(200);
+        .limit(500);
       if (cancelled) return;
       if (error) {
         console.error("[assistant] load history failed", error);
+        toast.error("Couldn't load chat history");
         setLoaded(true);
         return;
       }
@@ -49,8 +52,73 @@ export function useAssistantThread() {
       );
       setLoaded(true);
     })();
+
+    const channel = supabase
+      .channel(`assistant_messages:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "assistant_messages",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            id: string;
+            role: string;
+            content: string;
+            proposals: ProposalRecord[] | null;
+            created_at: string;
+          };
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === row.id)) return prev;
+            return [
+              ...prev,
+              {
+                id: row.id,
+                role: row.role as "user" | "assistant",
+                content: row.content,
+                proposals: row.proposals ?? [],
+                createdAt: row.created_at,
+              },
+            ];
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "assistant_messages",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const row = payload.new as { id: string; proposals: ProposalRecord[] | null };
+          setMessages((prev) =>
+            prev.map((m) => (m.id === row.id ? { ...m, proposals: row.proposals ?? [] } : m)),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "assistant_messages",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const row = payload.old as { id: string };
+          setMessages((prev) => prev.filter((m) => m.id !== row.id));
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, [userId]);
 
@@ -68,7 +136,10 @@ export function useAssistantThread() {
         createdAt: new Date().toISOString(),
       };
       setMessages((m) => [...m, optimistic]);
-      if (!userId) return optimistic;
+      if (!userId) {
+        toast.error("Sign in to save chat history");
+        return optimistic;
+      }
       const { data, error } = await supabase
         .from("assistant_messages")
         .insert({ user_id: userId, role, content, proposals })
@@ -76,9 +147,10 @@ export function useAssistantThread() {
         .single();
       if (error) {
         console.error("[assistant] save failed", error);
+        toast.error("Chat didn't save — check connection");
         return optimistic;
       }
-      // reconcile id
+      // reconcile optimistic id with DB id
       setMessages((m) =>
         m.map((x) =>
           x.id === optimistic.id
@@ -108,7 +180,10 @@ export function useAssistantThread() {
         .from("assistant_messages")
         .update({ proposals: next })
         .eq("id", messageId);
-      if (error) console.error("[assistant] patch failed", error);
+      if (error) {
+        console.error("[assistant] patch failed", error);
+        toast.error("Couldn't save action update");
+      }
     },
     [userId],
   );
@@ -120,7 +195,10 @@ export function useAssistantThread() {
       .from("assistant_messages")
       .delete()
       .eq("user_id", userId);
-    if (error) console.error("[assistant] clear failed", error);
+    if (error) {
+      console.error("[assistant] clear failed", error);
+      toast.error("Couldn't clear chat history");
+    }
   }, [userId]);
 
   return { messages, loaded, append, patchProposal, clearAll };
