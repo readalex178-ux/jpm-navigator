@@ -102,7 +102,7 @@ function HistoryRow({
 }
 
 export function AnalyzerHistoryTimeline({ threadId }: { threadId: string }) {
-  const history = useStore((s) => s.analysisHistory[threadId] ?? []);
+  const history = useStore((s) => s.analysisHistory[threadId]) ?? [];
   const [open, setOpen] = useState(false);
 
   if (history.length === 0) return null;
