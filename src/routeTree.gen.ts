@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VnVaultRouteImport } from './routes/vn-vault'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -19,6 +20,7 @@ import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as OnDeckRouteImport } from './routes/on-deck'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as KpiRouteImport } from './routes/kpi'
+import { Route as KeywordsRouteImport } from './routes/keywords'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as GhlClaimsRouteImport } from './routes/ghl-claims'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -26,6 +28,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 
+const VnVaultRoute = VnVaultRouteImport.update({
+  id: '/vn-vault',
+  path: '/vn-vault',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
@@ -76,6 +83,11 @@ const KpiRoute = KpiRouteImport.update({
   path: '/kpi',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KeywordsRoute = KeywordsRouteImport.update({
+  id: '/keywords',
+  path: '/keywords',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
@@ -112,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/ghl-claims': typeof GhlClaimsRoute
   '/inbox': typeof InboxRoute
+  '/keywords': typeof KeywordsRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
   '/on-deck': typeof OnDeckRoute
@@ -122,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
+  '/vn-vault': typeof VnVaultRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
@@ -130,6 +144,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/ghl-claims': typeof GhlClaimsRoute
   '/inbox': typeof InboxRoute
+  '/keywords': typeof KeywordsRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
   '/on-deck': typeof OnDeckRoute
@@ -140,6 +155,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
+  '/vn-vault': typeof VnVaultRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
@@ -149,6 +165,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/ghl-claims': typeof GhlClaimsRoute
   '/inbox': typeof InboxRoute
+  '/keywords': typeof KeywordsRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
   '/on-deck': typeof OnDeckRoute
@@ -159,6 +176,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/tools': typeof ToolsRoute
   '/training': typeof TrainingRoute
+  '/vn-vault': typeof VnVaultRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/prospects/$id': typeof ProspectsIdRoute
 }
@@ -169,6 +187,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/ghl-claims'
     | '/inbox'
+    | '/keywords'
     | '/kpi'
     | '/linkedin'
     | '/on-deck'
@@ -179,6 +198,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tools'
     | '/training'
+    | '/vn-vault'
     | '/api/transcribe'
     | '/prospects/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -187,6 +207,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/ghl-claims'
     | '/inbox'
+    | '/keywords'
     | '/kpi'
     | '/linkedin'
     | '/on-deck'
@@ -197,6 +218,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tools'
     | '/training'
+    | '/vn-vault'
     | '/api/transcribe'
     | '/prospects/$id'
   id:
@@ -205,6 +227,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/ghl-claims'
     | '/inbox'
+    | '/keywords'
     | '/kpi'
     | '/linkedin'
     | '/on-deck'
@@ -215,6 +238,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tools'
     | '/training'
+    | '/vn-vault'
     | '/api/transcribe'
     | '/prospects/$id'
   fileRoutesById: FileRoutesById
@@ -224,6 +248,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   GhlClaimsRoute: typeof GhlClaimsRoute
   InboxRoute: typeof InboxRoute
+  KeywordsRoute: typeof KeywordsRoute
   KpiRoute: typeof KpiRoute
   LinkedinRoute: typeof LinkedinRoute
   OnDeckRoute: typeof OnDeckRoute
@@ -234,11 +259,19 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   ToolsRoute: typeof ToolsRoute
   TrainingRoute: typeof TrainingRoute
+  VnVaultRoute: typeof VnVaultRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vn-vault': {
+      id: '/vn-vault'
+      path: '/vn-vault'
+      fullPath: '/vn-vault'
+      preLoaderRoute: typeof VnVaultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training': {
       id: '/training'
       path: '/training'
@@ -309,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KpiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/keywords': {
+      id: '/keywords'
+      path: '/keywords'
+      fullPath: '/keywords'
+      preLoaderRoute: typeof KeywordsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inbox': {
       id: '/inbox'
       path: '/inbox'
@@ -371,6 +411,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   GhlClaimsRoute: GhlClaimsRoute,
   InboxRoute: InboxRoute,
+  KeywordsRoute: KeywordsRoute,
   KpiRoute: KpiRoute,
   LinkedinRoute: LinkedinRoute,
   OnDeckRoute: OnDeckRoute,
@@ -381,8 +422,19 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   ToolsRoute: ToolsRoute,
   TrainingRoute: TrainingRoute,
+  VnVaultRoute: VnVaultRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
