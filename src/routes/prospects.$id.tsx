@@ -242,6 +242,13 @@ function ProspectDetail() {
       // does not violate the no-automation rule.
       setBant(prospect.id, res.result.bantSuggestion as typeof prospect.bant);
       setQualScore(prospect.id, res.result.qualScoreSuggestion);
+      // AI owns the ICP fit check now — convert flag ID list into the
+      // Record<string, boolean> the IcpFlagChecker UI reads.
+      if (res.result.icpFlags && res.result.icpFlags.length > 0) {
+        const flagMap: Record<string, boolean> = {};
+        for (const id of res.result.icpFlags) flagMap[id] = true;
+        updateProspect(prospect.id, { icpFlags: flagMap });
+      }
       addProspectAnalysis(prospect.id, {
         stageAtTime: prospect.stage,
         verdictLine: res.result.verdictLine,
