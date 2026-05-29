@@ -33,6 +33,7 @@ import { FollowUpSuggestionChip } from "@/components/FollowUpSuggestionChip";
 import { ObjectionPanel } from "@/components/ObjectionPanel";
 import { BantTrafficLight, BantOverall } from "@/components/BantTrafficLight";
 import { BuyingSignalsProgress } from "@/components/BuyingSignalsProgress";
+import { IcpFlagChecker } from "@/components/IcpFlagChecker";
 import { SuggestedScript } from "@/components/SuggestedScript";
 import { NextActionCard } from "@/components/NextActionCard";
 import { LinkedinProfilePreview } from "@/components/LinkedinProfilePreview";
@@ -666,6 +667,11 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
               signals={prospect.signals}
               onChange={(next) => setSignals(prospect.id, next)}
             />
+          </Section>
+
+          {/* #60 ICP green / red flag checker — boosts qual score on click */}
+          <Section title="ICP fit check">
+            <IcpFlagChecker prospect={prospect} />
           </Section>
 
           {/* #25 LinkedIn profile preview */}

@@ -16,6 +16,8 @@ import {
   LogOut,
   BookOpen,
   CheckCircle2,
+  Mic,
+  Tags,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -56,6 +58,8 @@ const groups = [
       { title: "LinkedIn", url: "/linkedin", icon: Linkedin },
       { title: "Templates", url: "/outreach", icon: MessageSquare },
       { title: "Tools", url: "/tools", icon: Wrench },
+      { title: "VN Vault", url: "/vn-vault", icon: Mic },
+      { title: "Keyword Bank", url: "/keywords", icon: Tags },
     ],
   },
   {

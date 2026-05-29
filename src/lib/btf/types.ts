@@ -174,6 +174,8 @@ export type Prospect = {
   ghlClaimed?: boolean;
   /** If set, re-prompt the GHL claim modal on next app open. */
   ghlRemindAt?: string;
+  /** ICP green/red flags ticked during qualification (id -> checked). Cleared on Apply. */
+  icpFlags?: Record<string, boolean>;
 };
 
 export type KpiDay = {
