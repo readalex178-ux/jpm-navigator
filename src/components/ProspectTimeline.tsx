@@ -14,7 +14,7 @@ type Item = {
 
 export function ProspectTimeline({ prospectId }: { prospectId: string }) {
   const prospect = useStore((s) => s.prospects.find((p) => p.id === prospectId));
-  const analyses = useStore((s) => s.prospectAnalyses[prospectId] ?? []);
+  const analyses = useStore((s) => s.prospectAnalyses[prospectId]) ?? [];
 
   const items = useMemo<Item[]>(() => {
     if (!prospect) return [];
