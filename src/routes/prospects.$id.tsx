@@ -388,7 +388,7 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
             <div className="mb-3">
               <NextActionCard prospect={prospect} />
             </div>
-            <ProspectConversation prospect={prospect} />
+            <ProspectConversation prospect={prospect} extras={extras} />
 
 
             <div className="mt-4 space-y-2 rounded-md border border-border bg-surface p-3">
