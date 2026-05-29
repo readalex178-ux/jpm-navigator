@@ -309,6 +309,27 @@ export const useStore = create<State & Actions>()(
               : x,
           ),
         }),
+      updateActivity: (prospectId, activityId, patch) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? {
+                  ...x,
+                  activities: x.activities.map((a) =>
+                    a.id === activityId ? { ...a, ...patch } : a,
+                  ),
+                }
+              : x,
+          ),
+        }),
+      deleteActivity: (prospectId, activityId) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? { ...x, activities: x.activities.filter((a) => a.id !== activityId) }
+              : x,
+          ),
+        }),
       logVN: (id, v) => {
         set({
           prospects: get().prospects.map((x) =>
