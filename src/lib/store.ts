@@ -347,6 +347,22 @@ export const useStore = create<State & Actions>()(
           set({ kpiDays: [{ ...blankKpi(date), vnSent: 1 }, ...get().kpiDays] });
         }
       },
+      updateVN: (prospectId, vnId, patch) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? { ...x, vnLog: x.vnLog.map((v) => (v.id === vnId ? { ...v, ...patch } : v)) }
+              : x,
+          ),
+        }),
+      deleteVN: (prospectId, vnId) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? { ...x, vnLog: x.vnLog.filter((v) => v.id !== vnId) }
+              : x,
+          ),
+        }),
       setSignals: (id, signals) =>
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, signals } : x)) }),
       setBant: (id, bant) =>
