@@ -109,9 +109,9 @@ const ProspectsIndexRoute = ProspectsIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProspectsIdRoute = ProspectsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ProspectsRoute,
+  id: '/prospects/$id',
+  path: '/prospects/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
   id: '/api/transcribe',
@@ -260,6 +260,7 @@ export interface RootRouteChildren {
   TrainingRoute: typeof TrainingRoute
   VnVaultRoute: typeof VnVaultRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
+  ProspectsIdRoute: typeof ProspectsIdRoute
   ProspectsIndexRoute: typeof ProspectsIndexRoute
 }
 
@@ -379,10 +380,10 @@ declare module '@tanstack/react-router' {
     }
     '/prospects/$id': {
       id: '/prospects/$id'
-      path: '/$id'
+      path: '/prospects/$id'
       fullPath: '/prospects/$id'
       preLoaderRoute: typeof ProspectsIdRouteImport
-      parentRoute: typeof ProspectsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/transcribe': {
       id: '/api/transcribe'
@@ -411,18 +412,9 @@ const rootRouteChildren: RootRouteChildren = {
   TrainingRoute: TrainingRoute,
   VnVaultRoute: VnVaultRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
+  ProspectsIdRoute: ProspectsIdRoute,
   ProspectsIndexRoute: ProspectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

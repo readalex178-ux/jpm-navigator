@@ -141,6 +141,9 @@ type Actions = {
 
   addKeyword: (kw: string) => void;
   removeKeyword: (kw: string) => void;
+
+  appendCoachChat: (prospectId: string, msg: CoachChatMsg) => void;
+  clearCoachChat: (prospectId: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
