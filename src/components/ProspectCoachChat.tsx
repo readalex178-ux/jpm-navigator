@@ -93,8 +93,9 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
-    const next: ChatMsg[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(next);
+    const userMsg: ChatMsg = { role: "user", content: trimmed };
+    appendMsg(userMsg);
+    const next: ChatMsg[] = [...messages, userMsg];
     setInput("");
     setBusy(true);
 
@@ -113,7 +114,7 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
         toast.error(chatRes.error);
         return;
       }
-      setMessages([...next, { role: "assistant", content: chatRes.content }]);
+      appendMsg({ role: "assistant", content: chatRes.content });
       requestAnimationFrame(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
       });
