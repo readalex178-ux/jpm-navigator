@@ -63,6 +63,8 @@ type State = {
   ghlPromptProspectId: string | null;
   /** threadId -> ISO timestamp the user last opened/marked-read that thread. */
   linkedinThreadReads: Record<string, string>;
+  /** User-added keywords for the Keyword Bank (BTF-seeded ones live in code). */
+  keywordBank: string[];
 };
 
 export type ProspectAnalysisEntry = {
@@ -132,6 +134,9 @@ type Actions = {
   togglePin: (id: string) => void;
   markThreadRead: (threadId: string) => void;
   markThreadUnread: (threadId: string) => void;
+
+  addKeyword: (kw: string) => void;
+  removeKeyword: (kw: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
@@ -171,6 +176,7 @@ export const useStore = create<State & Actions>()(
       prospectAnalyses: {},
       ghlPromptProspectId: null,
       linkedinThreadReads: {},
+      keywordBank: [],
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -428,6 +434,16 @@ export const useStore = create<State & Actions>()(
         delete next[threadId];
         set({ linkedinThreadReads: next });
       },
+
+      addKeyword: (kw) => {
+        const trimmed = kw.trim();
+        if (!trimmed) return;
+        const existing = get().keywordBank;
+        if (existing.includes(trimmed)) return;
+        set({ keywordBank: [trimmed, ...existing] });
+      },
+      removeKeyword: (kw) =>
+        set({ keywordBank: get().keywordBank.filter((x) => x !== kw) }),
 
 
       importJson: (data) => set({ ...get(), ...data }),
