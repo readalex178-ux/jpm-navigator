@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ExternalLink,
@@ -50,6 +51,7 @@ import { useStore, daysSince, todayStr } from "@/lib/store";
 import { chat, chatJson, AiNotConfiguredError } from "@/lib/ai/client";
 import { nextMoveFromConversation, type NextMoveResult } from "@/lib/ai/aiAssistants.functions";
 import { toast } from "sonner";
+import { getAllMessages, logMessage } from "@/lib/messages.functions";
 
 export const Route = createFileRoute("/prospects/$id")({
   head: () => ({
@@ -76,6 +78,9 @@ function ProspectDetail() {
   const togglePin = useStore((s) => s.togglePin);
   const addProspectAnalysis = useStore((s) => s.addProspectAnalysis);
   const settings = useStore((s) => s.settings);
+  const queryClient = useQueryClient();
+  const fetchAllMessages = useServerFn(getAllMessages);
+  const callLogMessage = useServerFn(logMessage);
 
   // Composer state
   const [msgDirection, setMsgDirection] = useState<"them" | "me">("them");
@@ -95,6 +100,12 @@ function ProspectDetail() {
   const [aiAction, setAiAction] = useState<string>("");
   const [aiBusy, setAiBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+
+  const { data: dbMessagesData } = useQuery({
+    queryKey: ["inbox-messages"],
+    queryFn: () => fetchAllMessages(),
+    staleTime: 30_000,
+  });
 
   // Sticky notes — debounced auto-save to prospect.notes.
   const [notesDraft, setNotesDraft] = useState(prospect?.notes ?? "");
@@ -122,6 +133,13 @@ function ProspectDetail() {
     [prospect],
   );
 
+  const extras = useMemo(
+    () => (dbMessagesData?.messages ?? [])
+      .filter((m) => m.prospectId === prospect?.id)
+      .map((m) => ({ id: m.id, date: m.date, fromMe: m.fromMe, type: m.type, text: m.text })),
+    [dbMessagesData, prospect?.id],
+  );
+
   if (!prospect) {
     return (
       <PageBody>
@@ -142,6 +160,20 @@ function ProspectDetail() {
     if (msgType === "VN" && fromMe) {
       logVN(prospect.id, { date, variation: text.slice(0, 80), reply: "none" });
     }
+    void callLogMessage({
+      data: {
+        prospectId: prospect.id,
+        sender: fromMe ? "me" : "them",
+        kind: msgType === "VN" ? "vn" : msgType,
+        content: text,
+        variationName: msgType === "VN" && fromMe ? text.slice(0, 80) : undefined,
+        sentAt: date,
+      },
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["inbox-messages"] }))
+      .catch((e) => {
+        toast.error(`Sync failed: ${(e as Error).message}`);
+      });
     setMsgText("");
     toast.success(fromMe ? "Logged your message" : "Logged their message");
   };
@@ -714,12 +746,19 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
   );
 }
 
-function ProspectConversation({ prospect }: { prospect: import("@/lib/btf/types").Prospect }) {
+function ProspectConversation({
+  prospect,
+  extras,
+}: {
+  prospect: import("@/lib/btf/types").Prospect;
+  extras: Array<{ id: string; date: string; fromMe: boolean; type: string; text: string }>;
+}) {
   const { onEdit, onDelete } = useEditConversation(prospect.id);
   return (
     <ConversationLog
       activities={prospect.activities}
       vnLog={prospect.vnLog}
+      extras={extras}
       onEdit={onEdit}
       onDelete={onDelete}
     />
