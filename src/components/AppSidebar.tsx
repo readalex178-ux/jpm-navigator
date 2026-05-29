@@ -46,6 +46,7 @@ const groups = [
       { title: "On Deck", url: "/on-deck", icon: AlarmClock },
       { title: "Inbox", url: "/inbox", icon: Inbox },
       { title: "Pipeline", url: "/pipeline", icon: KanbanSquare },
+      { title: "GHL Claims", url: "/ghl-claims", icon: CheckCircle2 },
       { title: "Prospects", url: "/prospects", icon: Users },
     ],
   },
