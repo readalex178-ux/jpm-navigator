@@ -96,7 +96,7 @@ export const updateMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ message: DbMessage }> => {
     const { supabase, userId } = context;
-    const patch: Record<string, unknown> = {};
+    const patch: { sender?: "me" | "them"; kind?: z.infer<typeof KindSchema>; content?: string } = {};
     if (data.sender) patch.sender = data.sender;
     if (data.kind) patch.kind = data.kind;
     if (data.content !== undefined) patch.content = data.content;
