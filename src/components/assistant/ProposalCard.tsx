@@ -119,14 +119,27 @@ export function ProposalCard({ proposal, onPatch }: Props) {
       </div>
 
       {proposal.kind === "log_activity" && (
-        <div className="space-y-1">
-          <div>
-            <span className="text-muted-foreground">Type: </span>
-            <Badge variant="secondary">{proposal.activityType}</Badge>
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="text-muted-foreground">Type</label>
+            <select
+              value={proposal.activityType}
+              onChange={(e) => onPatch({ activityType: e.target.value as typeof proposal.activityType })}
+              className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+            >
+              {["VN","text","email","comment","like","call","note"].map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
           </div>
-          {proposal.note && (
-            <div className="text-foreground/90">"{proposal.note}"</div>
-          )}
+          <textarea
+            value={proposal.note}
+            onChange={(e) => onPatch({ note: e.target.value })}
+            placeholder="Exact message text…"
+            rows={3}
+            className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <p className="text-[10px] text-muted-foreground">Edit before applying — this is what gets logged verbatim.</p>
         </div>
       )}
 
