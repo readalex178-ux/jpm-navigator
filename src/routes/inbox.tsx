@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
 import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
+import { useEditConversation } from "@/lib/conversation/useEditConversation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
