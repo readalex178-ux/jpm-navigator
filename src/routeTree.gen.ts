@@ -20,6 +20,7 @@ import { Route as OnDeckRouteImport } from './routes/on-deck'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as KpiRouteImport } from './routes/kpi'
 import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as GhlClaimsRouteImport } from './routes/ghl-claims'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProspectsIdRouteImport } from './routes/prospects.$id'
@@ -80,6 +81,11 @@ const InboxRoute = InboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GhlClaimsRoute = GhlClaimsRouteImport.update({
+  id: '/ghl-claims',
+  path: '/ghl-claims',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -104,6 +110,7 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
+  '/ghl-claims': typeof GhlClaimsRoute
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
+  '/ghl-claims': typeof GhlClaimsRoute
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
+  '/ghl-claims': typeof GhlClaimsRoute
   '/inbox': typeof InboxRoute
   '/kpi': typeof KpiRoute
   '/linkedin': typeof LinkedinRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analytics'
+    | '/ghl-claims'
     | '/inbox'
     | '/kpi'
     | '/linkedin'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/analytics'
+    | '/ghl-claims'
     | '/inbox'
     | '/kpi'
     | '/linkedin'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/analytics'
+    | '/ghl-claims'
     | '/inbox'
     | '/kpi'
     | '/linkedin'
@@ -210,6 +222,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  GhlClaimsRoute: typeof GhlClaimsRoute
   InboxRoute: typeof InboxRoute
   KpiRoute: typeof KpiRoute
   LinkedinRoute: typeof LinkedinRoute
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ghl-claims': {
+      id: '/ghl-claims'
+      path: '/ghl-claims'
+      fullPath: '/ghl-claims'
+      preLoaderRoute: typeof GhlClaimsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -349,6 +369,7 @@ const ProspectsRouteWithChildren = ProspectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
+  GhlClaimsRoute: GhlClaimsRoute,
   InboxRoute: InboxRoute,
   KpiRoute: KpiRoute,
   LinkedinRoute: LinkedinRoute,
@@ -365,3 +386,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
