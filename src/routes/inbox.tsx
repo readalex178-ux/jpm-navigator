@@ -461,7 +461,7 @@ function InboxPage() {
                 <ObjectionPanel triggerLabel="Objections" triggerVariant="ghost" triggerSize="sm" />
               </div>
               <ScrollArea className="flex-1 p-3">
-                <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
+                <InboxConversation selected={selected} extras={extrasByProspect.get(selected.id) ?? []} />
               </ScrollArea>
               <div className="space-y-2 border-t border-border p-3">
                 {/* AI next-action — single highest-leverage move */}
