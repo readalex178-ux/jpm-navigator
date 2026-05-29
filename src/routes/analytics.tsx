@@ -4,7 +4,7 @@ import { PageBody, PageHeader, Section } from "@/components/Page";
 import { useStore } from "@/lib/store";
 import { TIER_VALUE, type Tier, type Stage } from "@/lib/btf/types";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+// badge removed: variations no longer track booked count
 import { TrendingUp, Target, Trophy, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
