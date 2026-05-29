@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ConversationLog, buildConversation } from "@/components/ConversationLog";
+import { useEditConversation } from "@/lib/conversation/useEditConversation";
 import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
 import { ProspectCoachChat } from "@/components/ProspectCoachChat";
 import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
@@ -355,7 +356,7 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
             <div className="mb-3">
               <NextActionCard prospect={prospect} />
             </div>
-            <ConversationLog activities={prospect.activities} vnLog={prospect.vnLog} />
+            <ProspectConversation prospect={prospect} />
 
 
             <div className="mt-4 space-y-2 rounded-md border border-border bg-surface p-3">
@@ -712,3 +713,16 @@ ${prospect.activities.slice(0, 5).map((a) => `- ${a.date.slice(0, 10)} ${a.fromM
     </>
   );
 }
+
+function ProspectConversation({ prospect }: { prospect: import("@/lib/btf/types").Prospect }) {
+  const { onEdit, onDelete } = useEditConversation(prospect.id);
+  return (
+    <ConversationLog
+      activities={prospect.activities}
+      vnLog={prospect.vnLog}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    />
+  );
+}
+

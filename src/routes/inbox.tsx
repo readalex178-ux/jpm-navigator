@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore, todayStr } from "@/lib/store";
 import { PageHeader } from "@/components/Page";
 import { ConversationLog, buildConversation, type ConvMessage } from "@/components/ConversationLog";
+import { useEditConversation } from "@/lib/conversation/useEditConversation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -461,7 +462,7 @@ function InboxPage() {
                 <ObjectionPanel triggerLabel="Objections" triggerVariant="ghost" triggerSize="sm" />
               </div>
               <ScrollArea className="flex-1 p-3">
-                <ConversationLog activities={selected.activities} vnLog={selected.vnLog} extras={extrasByProspect.get(selected.id) ?? []} />
+                <InboxConversation selected={selected} extras={extrasByProspect.get(selected.id) ?? []} />
               </ScrollArea>
               <div className="space-y-2 border-t border-border p-3">
                 {/* AI next-action — single highest-leverage move */}
@@ -705,3 +706,23 @@ function InboxPage() {
     </div>
   );
 }
+
+function InboxConversation({
+  selected,
+  extras,
+}: {
+  selected: import("@/lib/btf/types").Prospect;
+  extras: ConvMessage[];
+}) {
+  const { onEdit, onDelete } = useEditConversation(selected.id);
+  return (
+    <ConversationLog
+      activities={selected.activities}
+      vnLog={selected.vnLog}
+      extras={extras}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    />
+  );
+}
+

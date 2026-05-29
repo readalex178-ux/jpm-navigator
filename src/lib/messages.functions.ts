@@ -81,3 +81,61 @@ export const logMessage = createServerFn({ method: "POST" })
       },
     };
   });
+
+export const updateMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        sender: SenderSchema.optional(),
+        kind: KindSchema.optional(),
+        content: z.string().min(1).max(10_000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ message: DbMessage }> => {
+    const { supabase, userId } = context;
+    const patch: { sender?: "me" | "them"; kind?: z.infer<typeof KindSchema>; content?: string } = {};
+    if (data.sender) patch.sender = data.sender;
+    if (data.kind) patch.kind = data.kind;
+    if (data.content !== undefined) patch.content = data.content;
+    const { data: row, error } = await supabase
+      .from("messages")
+      .update(patch)
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .select("id, prospect_id, sender, kind, content, sent_at")
+      .single();
+    if (error) {
+      console.error("[updateMessage] supabase error:", error);
+      throw new Error("Failed to update message.");
+    }
+    return {
+      message: {
+        id: `db:${row.id}`,
+        prospectId: row.prospect_id,
+        fromMe: row.sender === "me",
+        type: row.kind === "vn" ? "VN" : row.kind,
+        text: row.content,
+        date: row.sent_at,
+      },
+    };
+  });
+
+export const deleteMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", userId);
+    if (error) {
+      console.error("[deleteMessage] supabase error:", error);
+      throw new Error("Failed to delete message.");
+    }
+    return { ok: true };
+  });

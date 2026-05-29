@@ -95,7 +95,11 @@ type Actions = {
   duplicateProspect: (id: string, overrides?: Partial<Prospect>) => Prospect | null;
   moveStage: (id: string, stage: Stage) => void;
   logActivity: (id: string, a: Omit<Activity, "id">) => void;
+  updateActivity: (prospectId: string, activityId: string, patch: Partial<Omit<Activity, "id">>) => void;
+  deleteActivity: (prospectId: string, activityId: string) => void;
   logVN: (id: string, v: Omit<VNEntry, "id">) => void;
+  updateVN: (prospectId: string, vnId: string, patch: Partial<Omit<VNEntry, "id">>) => void;
+  deleteVN: (prospectId: string, vnId: string) => void;
   setSignals: (id: string, s: BuyingSignals) => void;
   setBant: (id: string, b: BANT) => void;
   setQualScore: (id: string, score: number) => void;
@@ -305,6 +309,27 @@ export const useStore = create<State & Actions>()(
               : x,
           ),
         }),
+      updateActivity: (prospectId, activityId, patch) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? {
+                  ...x,
+                  activities: x.activities.map((a) =>
+                    a.id === activityId ? { ...a, ...patch } : a,
+                  ),
+                }
+              : x,
+          ),
+        }),
+      deleteActivity: (prospectId, activityId) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? { ...x, activities: x.activities.filter((a) => a.id !== activityId) }
+              : x,
+          ),
+        }),
       logVN: (id, v) => {
         set({
           prospects: get().prospects.map((x) =>
@@ -322,6 +347,22 @@ export const useStore = create<State & Actions>()(
           set({ kpiDays: [{ ...blankKpi(date), vnSent: 1 }, ...get().kpiDays] });
         }
       },
+      updateVN: (prospectId, vnId, patch) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? { ...x, vnLog: x.vnLog.map((v) => (v.id === vnId ? { ...v, ...patch } : v)) }
+              : x,
+          ),
+        }),
+      deleteVN: (prospectId, vnId) =>
+        set({
+          prospects: get().prospects.map((x) =>
+            x.id === prospectId
+              ? { ...x, vnLog: x.vnLog.filter((v) => v.id !== vnId) }
+              : x,
+          ),
+        }),
       setSignals: (id, signals) =>
         set({ prospects: get().prospects.map((x) => (x.id === id ? { ...x, signals } : x)) }),
       setBant: (id, bant) =>

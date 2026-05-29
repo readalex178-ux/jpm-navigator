@@ -39,12 +39,19 @@ You must respond with STRICT JSON matching this shape:
 }
 
 Proposal kinds:
-1. {"kind":"log_activity","prospectQuery":"<name as user said it>","activityType":"VN|text|email|comment|like|call|note","note":"<short summary of what was said/done>"}
+1. {"kind":"log_activity","prospectQuery":"<name as user said it>","activityType":"VN|text|email|comment|like|call|note","note":"<the EXACT message text, verbatim>"}
 2. {"kind":"update_stage","prospectQuery":"<name>","stage":"<one of: ${STAGES.join(", ")}>"}
 3. {"kind":"add_prospect","name":"<full name>","platform":"linkedin|instagram|tiktok|facebook|x|email","niche":"<optional>","notes":"<optional>"}
 4. {"kind":"answer_only"} — use this when the user only asked a question and no write is implied.
 
-Rules:
+CRITICAL rules for the "note" field on log_activity:
+- Copy the user's message text VERBATIM. Do NOT summarize, paraphrase, shorten, rephrase, fix grammar, or change punctuation.
+- If the user wrote: "logged: hey mate hope you're well, fancy a chat?" → note must be exactly "hey mate hope you're well, fancy a chat?"
+- Strip ONLY the meta wrapper like "I sent", "I just texted X saying", "log this to John:", "logged:". Keep the actual message intact.
+- If you can't tell which part is the message, set note to the user's full input minus the prospect name reference. Never invent or compress text.
+- For VN activities where the user describes the voice note ("sent VN about pricing"), keep their exact description — don't expand it.
+
+Other rules:
 - If the user is asking a question (who's overdue, what did I last send X) — set proposals to [] or use answer_only, and put the answer in "reply" using the prospect context provided.
 - If the user mentions BOTH logging an activity AND a stage change, return both proposals.
 - For prospectQuery, use the exact name as the user typed it. Do NOT invent IDs. The client will fuzzy-match.
