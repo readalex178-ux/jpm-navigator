@@ -314,11 +314,6 @@ function ScriptVariationPerf() {
                     <td className="px-3 py-2 font-medium">
                       <div className="flex items-center gap-2">
                         <span className="truncate">{r.variation}</span>
-                        {r.booked > 0 && (
-                          <Badge variant="outline" className="text-[9px] uppercase">
-                            {r.booked} booked
-                          </Badge>
-                        )}
                       </div>
                     </td>
                     <td className="num px-3 py-2 text-right tabular-nums">{r.sent}</td>
