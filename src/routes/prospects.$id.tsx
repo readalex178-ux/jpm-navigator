@@ -62,6 +62,12 @@ export const Route = createFileRoute("/prospects/$id")({
 
 const ACTIVITY_TYPES: ActivityType[] = ["VN", "text", "email", "comment", "like", "call", "note"];
 
+const activityTypeToKind = (type: ActivityType): "text" | "vn" | "email" | "comment" | "call" | "note" => {
+  if (type === "VN") return "vn";
+  if (type === "like") return "note";
+  return type;
+};
+
 function ProspectDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -164,7 +170,7 @@ function ProspectDetail() {
       data: {
         prospectId: prospect.id,
         sender: fromMe ? "me" : "them",
-        kind: msgType === "VN" ? "vn" : msgType,
+        kind: activityTypeToKind(msgType),
         content: text,
         variationName: msgType === "VN" && fromMe ? text.slice(0, 80) : undefined,
         sentAt: date,
