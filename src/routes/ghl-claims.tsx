@@ -76,7 +76,7 @@ function GhlClaimsPage() {
         {unclaimed.length > 0 && (
           <Section
             title="Quick checklist"
-            subtitle="Open GHL, run these for each prospect, then click Claimed."
+            
           >
             <ol className="ml-4 list-decimal space-y-1.5 text-sm text-muted-foreground">
               {GHL_CHECKLIST_STEPS.map((s) => (
@@ -182,7 +182,7 @@ function GhlClaimsPage() {
         </Section>
 
         {claimed.length > 0 && (
-          <Section title="Recently claimed" subtitle="Last 10 locked in.">
+          <Section title="Recently claimed" >
             <ul className="divide-y divide-border/60">
               {claimed.map((p) => (
                 <li key={p.id} className="flex items-center gap-3 py-2.5 text-sm">
