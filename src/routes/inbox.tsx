@@ -705,3 +705,23 @@ function InboxPage() {
     </div>
   );
 }
+
+function InboxConversation({
+  selected,
+  extras,
+}: {
+  selected: import("@/lib/btf/types").Prospect;
+  extras: ConvMessage[];
+}) {
+  const { onEdit, onDelete } = useEditConversation(selected.id);
+  return (
+    <ConversationLog
+      activities={selected.activities}
+      vnLog={selected.vnLog}
+      extras={extras}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    />
+  );
+}
+
