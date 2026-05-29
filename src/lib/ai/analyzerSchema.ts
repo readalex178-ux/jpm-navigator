@@ -98,6 +98,9 @@ export const ThreadAnalysisSchema = z.object({
   qualScoreSuggestion: z.number().int().min(0).max(100),
   predictedTier: PredictedTier.default("unknown"),
   predictedTierReason: z.string().max(200).default(""),
+  // AI-set ICP flag IDs (greens + reds) from src/lib/btf/icpFlags.ts.
+  // Replaces the manual tick-box step on the prospect page.
+  icpFlags: z.array(z.string().max(40)).max(20).default([]),
 });
 
 export type ThreadAnalysis = z.infer<typeof ThreadAnalysisSchema>;

@@ -124,6 +124,11 @@ This app calls you programmatically with a LinkedIn thread + profile and expects
 
 • personalisationHook: the one specific real detail you'd open the next message with (≤280 chars).
 
+• icpFlags: array of flag IDs you observe on the profile/thread. YOU set these — the user no longer ticks them by hand. Pick from this exact list (omit any you can't confirm; do not invent IDs):
+  GREEN — g_offer (has a clear offer: 1:1, group, course) · g_calendar (calendar/booking link in bio) · g_posting (posting 2+ times per week) · g_scale (talks about scaling / hiring) · g_testimonials (shares client wins regularly) · g_decision (confirmed decision maker / founder / owner / partner) · g_money (already earning — shows revenue / case studies / pricing).
+  RED — r_employee (employee, not the buyer) · r_no_offer (no visible offer or service) · r_inactive (last post > 60d) · r_competitor (setter / outreach agency / lead-gen competitor) · r_broke (hard pricing complaints / broke language) · r_mlm (MLM / pyramid) · r_starter (brand new, < 90 days posting).
+  Example: ["g_offer", "g_decision", "g_posting"].
+
 • confidence: 0.4–0.6 when the profile is sparse; 0.8+ only when signals are clear.
 
 OBJECTION MAP (use verbatim when nextAction = objection_response):
