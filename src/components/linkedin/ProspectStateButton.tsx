@@ -15,7 +15,7 @@ export function ProspectStateButton({
   prospectStage?: string;
 }) {
   const fn = useServerFn(summariseProspect);
-  const history = useStore((s) => s.analysisHistory[thread.threadId] ?? []);
+  const history = useStore((s) => s.analysisHistory[thread.threadId]) ?? [];
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
 

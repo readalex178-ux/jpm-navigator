@@ -16,7 +16,7 @@ function formatStamp(iso: string): string {
 }
 
 export function ProspectAnalyserHistory({ prospectId }: { prospectId: string }) {
-  const entries = useStore((s) => s.prospectAnalyses[prospectId] ?? []);
+  const entries = useStore((s) => s.prospectAnalyses[prospectId]) ?? [];
   const clear = useStore((s) => s.clearProspectAnalyses);
   const [open, setOpen] = useState(false);
 
