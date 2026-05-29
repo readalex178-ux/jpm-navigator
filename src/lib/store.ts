@@ -453,6 +453,20 @@ export const useStore = create<State & Actions>()(
       removeKeyword: (kw) =>
         set({ keywordBank: get().keywordBank.filter((x) => x !== kw) }),
 
+      appendCoachChat: (prospectId, msg) => {
+        const all = get().coachChats;
+        const prev = all[prospectId] ?? [];
+        // cap at 200 msgs per prospect to keep localStorage healthy
+        const next = [...prev, msg].slice(-200);
+        set({ coachChats: { ...all, [prospectId]: next } });
+      },
+      clearCoachChat: (prospectId) => {
+        const all = { ...get().coachChats };
+        delete all[prospectId];
+        set({ coachChats: all });
+      },
+
+
 
       importJson: (data) => set({ ...get(), ...data }),
       exportJson: () => {
