@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ConversationLog, buildConversation } from "@/components/ConversationLog";
+import { useEditConversation } from "@/lib/conversation/useEditConversation";
 import { ProspectAnalyserHistory } from "@/components/ProspectAnalyserHistory";
 import { ProspectCoachChat } from "@/components/ProspectCoachChat";
 import { ProfileQualifierBox } from "@/components/linkedin/ProfileQualifierBox";
