@@ -65,7 +65,11 @@ type State = {
   linkedinThreadReads: Record<string, string>;
   /** User-added keywords for the Keyword Bank (BTF-seeded ones live in code). */
   keywordBank: string[];
+  /** Per-prospect coach chat transcripts (so refreshing keeps the thread). */
+  coachChats: Record<string, CoachChatMsg[]>;
 };
+
+export type CoachChatMsg = { role: "user" | "assistant"; content: string; at: string };
 
 export type ProspectAnalysisEntry = {
   id: string;
