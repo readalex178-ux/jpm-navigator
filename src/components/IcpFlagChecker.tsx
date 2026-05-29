@@ -97,8 +97,8 @@ export function IcpFlagChecker({ prospect }: Props) {
         />
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Tick what you observe on the profile. Apply when you're ready — qual score never updates
-        automatically.
+        The AI ticks these on every analysis. Override any flag you disagree with, then hit
+        Apply to push the delta into qual score — nothing updates automatically.
       </p>
     </div>
   );
