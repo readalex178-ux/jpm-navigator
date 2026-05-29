@@ -441,10 +441,15 @@ Return JSON ONLY (no markdown):
   "reasoning": "<2-3 sentences explaining the call, referencing the most recent prospect message>",
   "confidence": 0.0-1.0,
   "bantSuggestion": { "need": 0-2, "timeline": 0-2, "authority": 0-2, "budget": 0-2 },
-  "qualScoreSuggestion": 0-100
+  "qualScoreSuggestion": 0-100,
+  "icpFlags": ["<flag IDs you observe — see list below>"]
 }
 
-Scoring rubric: BANT in BTF order (need → timeline → authority → budget), each 0-2. qualScoreSuggestion is your overall 0-100 read of the prospect based on signals, fit, and engagement. Use low numbers only when there's genuinely no evidence — be honest, not stingy.`;
+Scoring rubric: BANT in BTF order (need → timeline → authority → budget), each 0-2. qualScoreSuggestion is your overall 0-100 read of the prospect based on signals, fit, and engagement. Use low numbers only when there's genuinely no evidence — be honest, not stingy.
+
+icpFlags — YOU set these (the user no longer ticks them). Pick from this exact list, omit any you can't confirm:
+GREEN — g_offer · g_calendar · g_posting · g_scale · g_testimonials · g_decision · g_money.
+RED — r_employee · r_no_offer · r_inactive · r_competitor · r_broke · r_mlm · r_starter.`;
 
 export const NextMoveResultSchema = z.object({
   verdictLine: z.string().max(200),
@@ -461,6 +466,7 @@ export const NextMoveResultSchema = z.object({
     budget: z.number().min(0).max(2),
   }),
   qualScoreSuggestion: z.number().int().min(0).max(100),
+  icpFlags: z.array(z.string().max(40)).max(20).default([]),
 });
 export type NextMoveResult = z.infer<typeof NextMoveResultSchema>;
 
