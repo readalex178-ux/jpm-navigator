@@ -264,18 +264,13 @@ function ScriptVariationPerf() {
   const prospects = useStore((s) => s.prospects);
 
   const rows = useMemo(() => {
-    // VNEntry stores `variation` (or scenario). Group VNs by their variation/scenario label.
-    const byVar = new Map<string, { sent: number; replied: number; booked: number }>();
+    const byVar = new Map<string, { sent: number; replied: number }>();
     prospects.forEach((p) => {
       (p.vnLog ?? []).forEach((vn) => {
-        const key =
-          (vn as { variation?: string }).variation?.trim() ||
-          
-          "Unlabelled";
-        const e = byVar.get(key) ?? { sent: 0, replied: 0, booked: 0 };
+        const key = vn.variation?.trim() || "Unlabelled";
+        const e = byVar.get(key) ?? { sent: 0, replied: 0 };
         e.sent += 1;
         if (vn.reply && vn.reply !== "none") e.replied += 1;
-        if (false) e.booked += 1;
         byVar.set(key, e);
       });
     });
