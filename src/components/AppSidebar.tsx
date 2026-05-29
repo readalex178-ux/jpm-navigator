@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Inbox,
   TrendingUp,
+  BarChart3,
   GraduationCap,
   Settings as SettingsIcon,
   Flame,
@@ -59,6 +60,7 @@ const groups = [
     label: "Performance",
     items: [
       { title: "KPI Tracker", url: "/kpi", icon: TrendingUp },
+      { title: "Analytics", url: "/analytics", icon: BarChart3 },
       { title: "Training", url: "/training", icon: GraduationCap },
       { title: "Playbook", url: "/playbook", icon: BookOpen },
     ],
