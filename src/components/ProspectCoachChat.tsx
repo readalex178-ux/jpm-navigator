@@ -32,7 +32,7 @@ function fromLocalInputValue(local: string): string {
 
 export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   const setFollowUp = useStore((s) => s.setFollowUp);
-  const messages = useStore((s) => s.coachChats[prospect.id] ?? []) as ChatMsg[];
+  const messages = (useStore((s) => s.coachChats[prospect.id]) ?? []) as ChatMsg[];
   const appendCoachChat = useStore((s) => s.appendCoachChat);
   const appendMsg = (m: ChatMsg) =>
     appendCoachChat(prospect.id, { ...m, at: new Date().toISOString() });
