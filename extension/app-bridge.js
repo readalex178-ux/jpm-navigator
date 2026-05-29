@@ -40,8 +40,30 @@
     }
   });
 
+  // Only accept postMessages from the same window/origin as this content
+  // script. Without this check, any script running on the page could forge
+  // bridge events (e.g. inject text into the user's LinkedIn reply box).
+  const isAllowedOrigin = (origin) => {
+    if (origin === window.location.origin) return true;
+    try {
+      const u = new URL(origin);
+      if (u.protocol !== "https:" && !(u.protocol === "http:" && u.hostname === "localhost")) {
+        return false;
+      }
+      return (
+        u.hostname.endsWith(".lovable.app") ||
+        u.hostname.endsWith(".lovableproject.com") ||
+        u.hostname === "localhost"
+      );
+    } catch {
+      return false;
+    }
+  };
+
   // App → background (insert into LinkedIn reply box)
   window.addEventListener("message", (ev) => {
+    if (ev.source !== window) return;
+    if (!isAllowedOrigin(ev.origin)) return;
     const d = ev.data;
     if (!d || d.__ns !== NS || !d.event) return;
     const e = d.event;
