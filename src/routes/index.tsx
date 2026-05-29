@@ -9,6 +9,7 @@ import { useStore, todayStr, daysSince } from "@/lib/store";
 import { ProspectDrawer } from "@/components/ProspectDrawer";
 import { FollowUpsBanner } from "@/components/FollowUpsBanner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { DailyBriefingCard } from "@/components/DailyBriefingCard";
 import {
   STAGE_NEXT_ACTION,
   TIER_VALUE,
