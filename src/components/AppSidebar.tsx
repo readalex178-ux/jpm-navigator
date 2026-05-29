@@ -131,7 +131,7 @@ export function AppSidebar() {
                             {!collapsed && dueCount}
                           </span>
                         )}
-                        {item.url === "/pipeline" && unclaimedGhl > 0 && (
+                        {(item.url === "/pipeline" || item.url === "/ghl-claims") && unclaimedGhl > 0 && (
                           <span
                             className={cn(
                               "grid place-items-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold leading-none text-amber-50",
