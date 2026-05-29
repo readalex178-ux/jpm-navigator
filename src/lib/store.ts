@@ -65,7 +65,11 @@ type State = {
   linkedinThreadReads: Record<string, string>;
   /** User-added keywords for the Keyword Bank (BTF-seeded ones live in code). */
   keywordBank: string[];
+  /** Per-prospect coach chat transcripts (so refreshing keeps the thread). */
+  coachChats: Record<string, CoachChatMsg[]>;
 };
+
+export type CoachChatMsg = { role: "user" | "assistant"; content: string; at: string };
 
 export type ProspectAnalysisEntry = {
   id: string;
@@ -137,6 +141,9 @@ type Actions = {
 
   addKeyword: (kw: string) => void;
   removeKeyword: (kw: string) => void;
+
+  appendCoachChat: (prospectId: string, msg: CoachChatMsg) => void;
+  clearCoachChat: (prospectId: string) => void;
 };
 
 const blankKpi = (date: string): KpiDay => ({
@@ -177,6 +184,7 @@ export const useStore = create<State & Actions>()(
       ghlPromptProspectId: null,
       linkedinThreadReads: {},
       keywordBank: [],
+      coachChats: {},
 
       addProspect: (p) => {
         const prospect: Prospect = {
@@ -444,6 +452,20 @@ export const useStore = create<State & Actions>()(
       },
       removeKeyword: (kw) =>
         set({ keywordBank: get().keywordBank.filter((x) => x !== kw) }),
+
+      appendCoachChat: (prospectId, msg) => {
+        const all = get().coachChats;
+        const prev = all[prospectId] ?? [];
+        // cap at 200 msgs per prospect to keep localStorage healthy
+        const next = [...prev, msg].slice(-200);
+        set({ coachChats: { ...all, [prospectId]: next } });
+      },
+      clearCoachChat: (prospectId) => {
+        const all = { ...get().coachChats };
+        delete all[prospectId];
+        set({ coachChats: all });
+      },
+
 
 
       importJson: (data) => set({ ...get(), ...data }),

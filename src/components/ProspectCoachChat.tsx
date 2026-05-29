@@ -32,7 +32,10 @@ function fromLocalInputValue(local: string): string {
 
 export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   const setFollowUp = useStore((s) => s.setFollowUp);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const messages = useStore((s) => s.coachChats[prospect.id] ?? []) as ChatMsg[];
+  const appendCoachChat = useStore((s) => s.appendCoachChat);
+  const appendMsg = (m: ChatMsg) =>
+    appendCoachChat(prospect.id, { ...m, at: new Date().toISOString() });
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
@@ -90,8 +93,9 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
-    const next: ChatMsg[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(next);
+    const userMsg: ChatMsg = { role: "user", content: trimmed };
+    appendMsg(userMsg);
+    const next: ChatMsg[] = [...messages, userMsg];
     setInput("");
     setBusy(true);
 
@@ -110,7 +114,7 @@ export function ProspectCoachChat({ prospect }: { prospect: Prospect }) {
         toast.error(chatRes.error);
         return;
       }
-      setMessages([...next, { role: "assistant", content: chatRes.content }]);
+      appendMsg({ role: "assistant", content: chatRes.content });
       requestAnimationFrame(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
       });
