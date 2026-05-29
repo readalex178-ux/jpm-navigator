@@ -77,7 +77,7 @@ function mergeMessages(
       });
     }
   }
-  return dedupeMessages([...fromActs, ...fromVns, ...extras]);
+  return dedupeMessages([...extras, ...fromActs, ...fromVns]);
 }
 
 export function buildConversation(
